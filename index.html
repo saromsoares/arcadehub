@@ -1438,15 +1438,15 @@ function renderEmpresasGeral(companiesYTD) {
           <div>${badgeHtml(c.status)}</div>
         </div>
       </div>
-      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;display:flex;align-items:center;gap:6px;">
-        ${comp && comp.website ? `<a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+      ${comp && comp.website ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;">
+        <a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
           style="display:inline-flex;align-items:center;gap:5px;color:${c.color};font-size:11px;font-weight:600;
-          text-decoration:none;background:${c.color}11;border:1px solid ${c.color}33;border-radius:20px;padding:3px 10px;"
+          text-decoration:none;background:${c.color}11;border:1px solid ${c.color}33;border-radius:20px;padding:4px 12px;
+          max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
           onmouseover="this.style.background='${c.color}22'" onmouseout="this.style.background='${c.color}11'">
           🌐 ${comp.website.replace('https://','').replace('http://','').replace(/\/$/,'')}
-        </a>` : '<span style="color:#9CA3AF;font-size:11px">Sem site</span>'}
-        ${editable(comp?.website||'', 'onEditCompanyWebsite("'+c.id+'")', {type:'url', id:'ed-card-web-'+c.id, inputStyle:'min-width:180px;font-size:11px'})}
-      </div>
+        </a>
+      </div>` : ''}
     </div>`;
   }).join('');
 
