@@ -289,7 +289,7 @@
     border:1px solid rgba(0,229,255,0.1);border-radius:20px;
     padding:48px 40px;width:100%;max-width:420px;text-align:center;
   ">
-    <img src="../logo.png" alt="Arcade Hub" style="width:80px;height:80px;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 0 30px rgba(0,229,255,0.3));" />
+    <img src="../logo.png" alt="Arcade Hub" style="width:160px;height:auto;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 0 30px rgba(0,229,255,0.3));" />
     <h1 style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:#fff;margin-bottom:6px;letter-spacing:1px;">ARCADE <span style="color:#00E5FF;">HUB</span></h1>
     <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:32px;">Painel Administrativo</p>
 
@@ -301,11 +301,19 @@
       margin-bottom:12px;outline:none;transition:border-color 0.3s;
     " onfocus="this.style.borderColor='rgba(0,229,255,0.3)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
 
-    <input id="login-password" type="password" placeholder="Senha" style="
-      width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
-      background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
-      margin-bottom:24px;outline:none;transition:border-color 0.3s;
-    " onfocus="this.style.borderColor='rgba(0,229,255,0.3)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
+    <div style="position:relative;margin-bottom:24px;">
+      <input id="login-password" type="password" placeholder="Senha" style="
+        width:100%;padding:14px 18px;padding-right:48px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
+        outline:none;transition:border-color 0.3s;
+      " onfocus="this.style.borderColor='rgba(0,229,255,0.3)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
+      <button type="button" id="toggle-password" onclick="togglePassword()" style="
+        position:absolute;right:12px;top:50%;transform:translateY(-50%);
+        background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);
+        font-size:18px;padding:4px;transition:color 0.2s;
+      " onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'"
+         title="Mostrar/ocultar senha">&#x1F441;</button>
+    </div>
 
     <button id="login-btn" onclick="doLogin()" style="
       width:100%;padding:14px;border-radius:12px;border:none;
@@ -631,6 +639,18 @@ async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     showDashboard(session.user);
+  }
+}
+
+function togglePassword() {
+  const input = document.getElementById('login-password');
+  const btn = document.getElementById('toggle-password');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '&#x1F576;';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '&#x1F441;';
   }
 }
 
