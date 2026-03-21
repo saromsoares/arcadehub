@@ -649,14 +649,28 @@ async function doLogin() {
   btn.textContent = 'Entrando...';
   btn.disabled = true;
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  let { data, error } = await sb.auth.signInWithPassword({ email, password });
 
+  // If login fails, try signup (first-time setup only)
   if (error) {
-    errorEl.textContent = 'Email ou senha incorretos.';
-    errorEl.style.display = 'block';
-    btn.textContent = 'Entrar';
-    btn.disabled = false;
-    return;
+    const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+    if (signUpError || !signUpData.user) {
+      errorEl.textContent = 'Email ou senha incorretos.';
+      errorEl.style.display = 'block';
+      btn.textContent = 'Entrar';
+      btn.disabled = false;
+      return;
+    }
+    // Try login again after signup
+    const result = await sb.auth.signInWithPassword({ email, password });
+    if (result.error) {
+      errorEl.textContent = 'Conta criada. Tente novamente.';
+      errorEl.style.display = 'block';
+      btn.textContent = 'Entrar';
+      btn.disabled = false;
+      return;
+    }
+    data = result.data;
   }
 
   showDashboard(data.user);
