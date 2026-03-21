@@ -3,1824 +3,610 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Arcade Hub | Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<title>Arcade Hub | Ecossistema de Tecnologia Brasileira</title>
+<meta name="description" content="Holding de tecnologia que desenvolve empresas inovadoras em privacidade, saude, direito do consumidor, entretenimento e inteligencia financeira no Brasil." />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://arcadehub.tech/" />
+
+<!-- Open Graph -->
+<meta property="og:title" content="Arcade Hub — Tecnologia que resolve problemas reais" />
+<meta property="og:description" content="Conheca o ecossistema de empresas de tecnologia da Arcade Hub. 10 empresas, um proposito: simplificar o que e complexo." />
+<meta property="og:url" content="https://arcadehub.tech/" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Arcade Hub",
+  "url": "https://arcadehub.tech",
+  "description": "Holding de tecnologia brasileira que desenvolve empresas inovadoras.",
+  "subOrganization": [
+    { "@type": "Organization", "name": "Priva BR", "url": "https://www.privabr.com.br/" },
+    { "@type": "Organization", "name": "Festa Play", "url": "https://festanoplay.com/" },
+    { "@type": "Organization", "name": "Perrengue Aereo", "url": "https://perrengue-aereo.vercel.app/" },
+    { "@type": "Organization", "name": "Perrengue Saude" },
+    { "@type": "Organization", "name": "Perrengue Consumidor" },
+    { "@type": "Organization", "name": "Criativo Pronto", "url": "https://criativopronto.com.br/" },
+    { "@type": "Organization", "name": "Liga da Rotina", "url": "https://ligadarotina.vercel.app/" },
+    { "@type": "Organization", "name": "Axiom Laudos" },
+    { "@type": "Organization", "name": "Raio X do Lucro" },
+    { "@type": "Organization", "name": "Nexus Horizon" }
+  ]
+}
+</script>
+
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #F3F4F6; color: #111827; }
-  input[type=number], input[type=text] { font-family: inherit; }
-  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
-  input[type=number] { -moz-appearance: textfield; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Layout */
-  #sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: 230px;
-    background: #0A1628; display: flex; flex-direction: column;
-    z-index: 100; box-shadow: 2px 0 20px rgba(0,0,0,0.18);
-    overflow-y: auto;
+:root {
+  --cyan: #00E5FF;
+  --navy: #0A1628;
+  --navy-light: #111827;
+  --card-bg: #1A2332;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255,255,255,0.65);
+  --text-tertiary: rgba(255,255,255,0.35);
+  --divider: rgba(255,255,255,0.07);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px; height: 72px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: transparent;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+nav.scrolled {
+  background: rgba(10,22,40,0.95);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 24px rgba(0,0,0,0.3);
+}
+.nav-brand {
+  font-family: 'Sora', sans-serif; font-weight: 800; font-size: 20px;
+  color: #fff; text-decoration: none; letter-spacing: 1px;
+}
+.nav-brand span { color: var(--cyan); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a {
+  color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: #fff; }
+.nav-links .btn-admin {
+  background: var(--cyan); color: var(--navy); padding: 8px 20px;
+  border-radius: 8px; font-weight: 600; font-size: 13px;
+  transition: opacity 0.2s;
+}
+.nav-links .btn-admin:hover { opacity: 0.85; }
+
+/* Hamburger */
+.hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+.hamburger span {
+  display: block; width: 24px; height: 2px; background: #fff;
+  margin: 5px 0; transition: all 0.3s; border-radius: 2px;
+}
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 120px 24px 80px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 30% 40%, rgba(0,229,255,0.08), transparent),
+    radial-gradient(ellipse 500px 350px at 70% 60%, rgba(30,111,255,0.06), transparent);
+  pointer-events: none;
+}
+.hero-logo {
+  width: 120px; height: 120px; border-radius: 24px;
+  object-fit: contain; margin-bottom: 32px;
+  filter: drop-shadow(0 0 40px rgba(0,229,255,0.2));
+}
+.hero h1 {
+  font-family: 'Sora', sans-serif; font-weight: 800;
+  font-size: clamp(36px, 5vw, 64px); line-height: 1.1;
+  max-width: 700px; margin-bottom: 20px;
+}
+.hero h1 em {
+  font-style: normal; color: var(--cyan);
+  background: linear-gradient(135deg, var(--cyan), #1E6FFF);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p {
+  font-size: 18px; color: var(--text-secondary);
+  max-width: 600px; line-height: 1.7; margin-bottom: 40px;
+}
+.hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--cyan); color: var(--navy);
+  padding: 14px 32px; border-radius: 12px;
+  font-weight: 700; font-size: 15px; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,229,255,0.25); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; color: #fff;
+  padding: 14px 32px; border-radius: 12px;
+  font-weight: 600; font-size: 15px; text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: border-color 0.2s, background 0.2s;
+}
+.btn-secondary:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.04); }
+
+/* ─── STATS BAR ─── */
+.stats {
+  display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+  padding: 48px 24px;
+  border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider);
+  background: rgba(255,255,255,0.02);
+}
+.stat { text-align: center; }
+.stat-number {
+  font-family: 'Sora', sans-serif; font-weight: 800;
+  font-size: 40px; color: var(--cyan);
+}
+.stat-label { color: var(--text-tertiary); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+/* ─── SECTIONS ─── */
+section { padding: 100px 24px; max-width: 1200px; margin: 0 auto; }
+.section-label {
+  font-family: 'Sora', sans-serif; font-weight: 700;
+  font-size: 13px; color: var(--cyan); text-transform: uppercase;
+  letter-spacing: 2px; margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Sora', sans-serif; font-weight: 800;
+  font-size: clamp(28px, 4vw, 42px); margin-bottom: 12px;
+}
+.section-desc {
+  font-size: 17px; color: var(--text-secondary); max-width: 600px; line-height: 1.7;
+  margin-bottom: 48px;
+}
+
+/* ─── COMPANY GRID ─── */
+.company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+.company-card {
+  background: var(--card-bg);
+  border-radius: 16px; padding: 28px;
+  border: 1px solid var(--divider);
+  border-left: 4px solid var(--company-color);
+  transition: transform 0.25s, box-shadow 0.25s;
+  cursor: default; position: relative;
+  opacity: 0; transform: translateY(30px);
+}
+.company-card.visible { opacity: 1; transform: translateY(0); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+.company-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+.card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.card-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--company-color) 15%, transparent);
+}
+.card-info h3 {
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 18px;
+}
+.card-segment {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; margin-top: 4px;
+  background: color-mix(in srgb, var(--company-color) 12%, transparent);
+  color: var(--company-color);
+}
+.card-desc {
+  color: var(--text-secondary); font-size: 14px; line-height: 1.65;
+}
+.card-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; font-size: 13px; font-weight: 600;
+  color: var(--company-color); text-decoration: none;
+  transition: gap 0.2s;
+}
+.card-cta:hover { gap: 10px; }
+.card-cta svg { width: 14px; height: 14px; }
+
+/* ─── ABOUT ─── */
+.about-content { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+.about-text { font-size: 16px; color: var(--text-secondary); line-height: 1.8; }
+.about-text p { margin-bottom: 20px; }
+.about-text strong { color: #fff; }
+.pillars { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pillar {
+  background: var(--card-bg); border-radius: 14px; padding: 24px;
+  border: 1px solid var(--divider);
+}
+.pillar h4 {
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px;
+  color: var(--cyan); margin-bottom: 8px;
+}
+.pillar p { color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+
+/* ─── CTA FINAL ─── */
+.cta-section {
+  text-align: center; padding: 100px 24px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,229,255,0.03) 100%);
+  border-top: 1px solid var(--divider);
+}
+.cta-section h2 {
+  font-family: 'Sora', sans-serif; font-weight: 800;
+  font-size: clamp(28px, 4vw, 40px); margin-bottom: 16px;
+}
+.cta-section p {
+  font-size: 17px; color: var(--text-secondary); max-width: 540px;
+  margin: 0 auto 40px; line-height: 1.7;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--divider);
+  padding: 64px 24px 32px;
+  max-width: 1200px; margin: 0 auto;
+}
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+.footer-brand {
+  font-family: 'Sora', sans-serif; font-weight: 800; font-size: 18px;
+  margin-bottom: 8px; letter-spacing: 1px;
+}
+.footer-brand span { color: var(--cyan); }
+.footer-desc { color: var(--text-tertiary); font-size: 14px; line-height: 1.6; }
+.footer-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+.footer-links { list-style: none; }
+.footer-links li { margin-bottom: 10px; }
+.footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+.footer-links a:hover { color: #fff; }
+.footer-bottom { border-top: 1px solid var(--divider); padding-top: 24px; text-align: center; color: var(--text-tertiary); font-size: 13px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .about-content { grid-template-columns: 1fr; gap: 40px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+  .stats { gap: 32px; }
+}
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .nav-links.open {
+    display: flex; flex-direction: column;
+    position: fixed; top: 72px; left: 0; right: 0; bottom: 0;
+    background: rgba(10,22,40,0.98); padding: 32px 24px; gap: 24px;
+    backdrop-filter: blur(12px);
   }
-  #main { margin-left: 230px; padding: 28px 32px; min-height: 100vh; }
-
-  /* Nav */
-  .nav-logo { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .nav-logo .brand { color: #fff; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 1px; }
-  .nav-logo .brand span { color: #00E5FF; }
-  .nav-logo .sub { color: rgba(255,255,255,0.35); font-size: 10px; margin-top: 4px; letter-spacing: 0.5px; }
-  .nav-items { flex: 1; padding: 10px 0; }
-  .nav-section { padding: 10px 20px 4px; color: rgba(255,255,255,0.25); font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-  .nav-item {
-    display: block; width: 100%; text-align: left;
-    padding: 9px 20px; background: transparent; color: rgba(255,255,255,0.55);
-    border: none; border-left: 3px solid transparent;
-    cursor: pointer; font-size: 12.5px; font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-  .nav-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.04); }
-  .nav-item.active { color: #1E6FFF; background: rgba(30,111,255,0.12); border-left-color: #1E6FFF; font-weight: 600; }
-  .nav-item .nav-dot { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
-  .nav-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.07); color: rgba(255,255,255,0.25); font-size: 10px; }
-
-  /* Toast */
-  #toast {
-    position: fixed; bottom: 24px; right: 24px; background: #0A1628; color: #fff;
-    padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
-    opacity: 0; transform: translateY(10px); transition: all 0.25s;
-    z-index: 999; border-left: 3px solid #1E6FFF;
-  }
-  #toast.show { opacity: 1; transform: translateY(0); }
-
-  /* Loading */
-  #loading-overlay {
-    position: fixed; inset: 0; background: rgba(10,22,40,0.85);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 999; flex-direction: column; gap: 14px;
-  }
-  .spinner {
-    width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.15);
-    border-top-color: #1E6FFF; border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Tabs */
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* Cards KPI */
-  .kpi-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-  .kpi-card {
-    background: #fff; border-radius: 12px; padding: 16px 18px; flex: 1; min-width: 140px;
-    border: 1px solid #E5E7EB; border-top: 3px solid #1E6FFF;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }
-  .kpi-label { color: #6B7280; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; }
-  .kpi-value { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: #111827; }
-  .kpi-sub { color: #6B7280; font-size: 11px; margin-top: 3px; }
-
-  /* Section title */
-  .section-title { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; }
-  .section-title::before { content: ''; display: block; width: 3px; height: 18px; border-radius: 99px; background: #1E6FFF; }
-  .section-title span { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: #111827; }
-
-  /* Page title */
-  .page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: #111827; margin-bottom: 4px; }
-  .page-sub { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
-
-  /* Tables */
-  .table-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; overflow: hidden; overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: #0A1628; }
-  thead th { padding: 9px 12px; color: #fff; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-  thead th:first-child { text-align: left; }
-  thead th:not(:first-child) { text-align: right; }
-  tbody tr:nth-child(even) { background: #FAFAFA; }
-  tbody tr:nth-child(odd) { background: #fff; }
-  tbody td { padding: 8px 12px; font-size: 12px; }
-  tbody td:first-child { text-align: left; }
-  tbody td:not(:first-child) { text-align: right; }
-  .table-total td { background: #0A1628 !important; color: #fff; font-weight: 700; }
-  .table-total td:not(:first-child) { color: #1E6FFF; }
-
-  /* Badge */
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px; border-radius: 99px; font-weight: 700; font-size: 11px; letter-spacing: 0.4px;
-  }
-  .badge.verde { background: #ECFDF5; color: #059669; border: 1px solid #6EE7B780; }
-  .badge.amarelo { background: #FFFBEB; color: #D97706; border: 1px solid #FCD34D80; }
-  .badge.vermelho { background: #FEF2F2; color: #DC2626; border: 1px solid #FCA5A580; }
-  .badge.sem-dados { background: #F9FAFB; color: #6B7280; border: 1px solid #D1D5DB; }
-
-  /* Month/Company buttons */
-  .btn-group { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
-  .btn-month, .btn-company {
-    padding: 6px 13px; border-radius: 8px; font-size: 12px; font-weight: 600;
-    border: 1px solid #E5E7EB; background: #fff; color: #6B7280;
-    cursor: pointer; font-family: inherit; transition: all 0.12s;
-  }
-  .btn-month.active { background: #1E6FFF; color: #fff; border-color: #1E6FFF; }
-
-  /* Inputs */
-  .inp {
-    border: 1px solid #E5E7EB; border-radius: 6px; padding: 5px 8px;
-    font-size: 12px; color: #111827; width: 100%; outline: none;
-    background: #FAFAFA; font-family: inherit; text-align: right;
-  }
-  .inp:focus { border-color: #1E6FFF; background: #fff; }
-
-  /* Form grid */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 18px; }
-  .form-field label { font-size: 11px; color: #6B7280; font-weight: 600; letter-spacing: 0.3px; display: block; margin-bottom: 4px; text-transform: uppercase; }
-
-  /* Result card */
-  .result-card { border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
-  .result-positive { background: #ECFDF5; border: 1px solid #6EE7B7; }
-  .result-negative { background: #FEF2F2; border: 1px solid #FCA5A5; }
-  .result-label { font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; color: #6B7280; }
-  .result-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; }
-  .result-positive .result-value { color: #059669; }
-  .result-negative .result-value { color: #DC2626; }
-
-  /* Two col layout */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-
-  /* Caixa block */
-  .caixa-block {
-    background: #0A1628; border-radius: 14px; padding: 20px 24px;
-    margin-bottom: 22px; display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;
-  }
-  .caixa-input-wrap { flex-shrink: 0; }
-  .caixa-label { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; }
-  .caixa-desc { color: rgba(255,255,255,0.35); font-size: 11px; margin-bottom: 10px; max-width: 220px; }
-  .caixa-inp {
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(30,111,255,0.6);
-    border-radius: 8px; padding: 10px 14px; color: #fff;
-    font-size: 20px; font-weight: 700; font-family: 'Sora', sans-serif;
-    width: 240px; outline: none; text-align: left;
-  }
-  .caixa-inp:focus { border-color: #1E6FFF; background: rgba(255,255,255,0.15); }
-  .caixa-cards { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-  .caixa-mini {
-    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 11px 14px; min-width: 140px;
-  }
-  .caixa-mini-label { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
-  .caixa-mini-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; }
-
-  /* Info box */
-  .info-box {
-    background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px;
-    padding: 9px 14px; margin-bottom: 20px; font-size: 12px; color: #1E40AF;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  /* Chart container */
-  .chart-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 18px; }
-
-  /* Dot company */
-  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: middle; }
-
-  /* Saving indicator */
-  .saving { color: #1E6FFF; font-size: 11px; margin-left: 8px; opacity: 0; transition: opacity 0.2s; }
-  .saving.show { opacity: 1; }
-
-  /* Inline editable fields */
-  .editable {
-    display: inline-flex; align-items: center; gap: 4px; position: relative;
-    cursor: default; border-radius: 6px; transition: background 0.15s;
-  }
-  .editable .editable-value { transition: opacity 0.15s; }
-  .editable .editable-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 5px; border: none;
-    cursor: pointer; font-size: 12px; transition: all 0.15s;
-    flex-shrink: 0; padding: 0; line-height: 1;
-  }
-  .editable .btn-edit {
-    background: rgba(30,111,255,0.1); color: #1E6FFF; opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .editable:hover .btn-edit { opacity: 1; }
-  .editable .btn-confirm {
-    background: #059669; color: #fff;
-  }
-  .editable .btn-confirm:hover { background: #047857; }
-  .editable .btn-cancel {
-    background: #EF4444; color: #fff;
-  }
-  .editable .btn-cancel:hover { background: #DC2626; }
-  .editable .editable-input {
-    border: 1px solid #1E6FFF; border-radius: 5px; padding: 2px 6px;
-    font-size: inherit; font-family: inherit; font-weight: inherit;
-    color: inherit; background: rgba(30,111,255,0.05);
-    outline: none; min-width: 60px;
-  }
-  .editable.editing .editable-value { display: none; }
-  .editable.editing .btn-edit { display: none; }
-  .editable:not(.editing) .editable-input { display: none; }
-  .editable:not(.editing) .btn-confirm { display: none; }
-  .editable:not(.editing) .btn-cancel { display: none; }
-  /* White variant for dark backgrounds */
-  .editable.editable-light .btn-edit { background: rgba(255,255,255,0.15); color: #fff; }
-  .editable.editable-light .editable-input {
-    border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); color: #fff;
-  }
-
-  /* ── Empresa Individual ─────────────────────────────────────────── */
-  .empresa-header {
-    border-radius: 14px; padding: 22px 28px; margin-bottom: 22px;
-    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-  }
-  .empresa-header-icon {
-    width: 52px; height: 52px; border-radius: 12px; display: flex;
-    align-items: center; justify-content: center; font-size: 22px;
-    background: rgba(255,255,255,0.15); flex-shrink: 0;
-  }
-  .empresa-header-info { flex: 1; }
-  .empresa-header-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 20px; color: #fff; }
-  .empresa-header-sub { color: rgba(255,255,255,0.55); font-size: 12px; margin-top: 3px; }
-  .empresa-header-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
-  .empresa-header-kpi { text-align: right; }
-  .empresa-header-kpi-label { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .empresa-header-kpi-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
-
-  /* Custo category card */
-  .custo-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .custo-cat-card {
-    background: #fff; border-radius: 10px; border: 1px solid #E5E7EB;
-    padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
-  }
-  .custo-cat-label { font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
-  .custo-cat-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #111827; }
-  .custo-cat-input { margin-top: 4px; }
-
-  /* Resumo anual empresa */
-  .anual-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 20px; }
-
-  /* Painel empresa cards */
-  .empresa-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 22px; }
-  .empresa-card {
-    background: #fff; border-radius: 12px; border: 1px solid #E5E7EB;
-    padding: 16px 18px; cursor: pointer; transition: all 0.15s;
-    border-left: 4px solid #1E6FFF;
-  }
-  .empresa-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
-  .empresa-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .empresa-card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .empresa-card-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px; color: #111827; }
-  .empresa-card-seg { font-size: 11px; color: #6B7280; }
-  .empresa-card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .empresa-card-metric-label { font-size: 10px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-  .empresa-card-metric-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; }
+  .hamburger { display: block; }
+  .company-grid { grid-template-columns: 1fr; }
+  .pillars { grid-template-columns: 1fr; }
+  section { padding: 64px 20px; }
+}
 </style>
 </head>
 <body>
 
-<!-- Loading overlay -->
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <div style="color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;">Carregando Arcade Hub...</div>
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-brand">ARCADE <span>HUB</span></a>
+  <div class="nav-links" id="navLinks">
+    <a href="#empresas">Empresas</a>
+    <a href="#sobre">Sobre</a>
+    <a href="#contato">Contato</a>
+    <a href="/admin/" class="btn-admin">Painel Admin</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <img src="logo.png" alt="Arcade Hub" class="hero-logo" loading="eager" />
+  <h1>Onde tecnologia encontra <em>proposito</em>.</h1>
+  <p>A Arcade Hub reune sob um mesmo teto empresas especializadas em privacidade, saude, direito do consumidor, entretenimento e inteligencia financeira. Cada empresa, uma missao. Todas conectadas por uma visao: usar tecnologia para simplificar o que e complexo.</p>
+  <div class="hero-ctas">
+    <a href="#empresas" class="btn-primary">Conheca nossas empresas</a>
+    <a href="#contato" class="btn-secondary">Entre em contato</a>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-number" data-count="10">0</div>
+    <div class="stat-label">Empresas Ativas</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number" data-count="8">0</div>
+    <div class="stat-label">Segmentos</div>
+  </div>
+  <div class="stat">
+    <div class="stat-number">1</div>
+    <div class="stat-label">Ecossistema</div>
+  </div>
 </div>
 
-<!-- Toast -->
-<div id="toast"></div>
+<!-- EMPRESAS -->
+<section id="empresas">
+  <div class="section-label">Nosso portfolio</div>
+  <h2 class="section-title">Empresas do ecossistema</h2>
+  <p class="section-desc">Cada empresa foi construida para dominar um problema especifico. Conhca todas.</p>
 
-<!-- Sidebar -->
-<div id="sidebar">
-  <div class="nav-logo">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <img src="logo.png" alt="Arcade Hub" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" />
-      <div class="brand" id="brand-name">ARCADE<span> HUB</span></div>
-    </div>
-    <div class="sub" id="brand-sub">FINTECH · CONEXÃO · INOVAÇÃO</div>
-  </div>
-  <div class="nav-items">
-    <div class="nav-section">Visão Geral</div>
-    <button class="nav-item active" onclick="showTab('painel',this)">📊 Painel Fintech</button>
-    <button class="nav-item" onclick="showTab('dashboard',this)">📈 Dashboard</button>
-    <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
+  <div class="company-grid">
 
-    <div class="nav-section">Operações</div>
-    <button class="nav-item" onclick="showTab('lancamentos',this)">📝 Lançamentos</button>
-    <button class="nav-item" onclick="showTab('planejado',this)">🎯 Planejado</button>
-    <button class="nav-item" onclick="showTab('estrutura',this)">🏗️ Estrutura de Custos</button>
-
-    <div class="nav-section">Empresas Filhas</div>
-    <button class="nav-item" id="nav-empresas" onclick="showTab('empresas',this)">🏢 Visão Geral</button>
-    <div id="nav-empresas-list"></div>
-  </div>
-  <div class="nav-footer">Versão 2.0 · 2025</div>
-</div>
-
-<!-- Main content -->
-<div id="main">
-
-  <!-- PAINEL FINTECH -->
-  <div id="tab-painel" class="tab-content active">
-    <div class="page-title" id="pt-painel">Painel Fintech</div>
-    <div class="page-sub" id="ps-painel">Painel executivo consolidado de todas as empresas do grupo Arcade Hub.</div>
-    <div class="kpi-grid" id="painel-kpis"></div>
-    <div class="two-col">
-      <div>
-        <div class="section-title"><span>Semáforo por KPI</span></div>
-        <div class="table-wrap">
-          <table><thead><tr>
-            <th>KPI</th><th>Realizado</th><th>Meta</th><th>Atingimento</th><th>Status</th>
-          </tr></thead><tbody id="semaforo-kpi"></tbody></table>
+    <!-- Priva BR -->
+    <div class="company-card" style="--company-color: #6366F1;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F512;</div>
+        <div class="card-info">
+          <h3>Priva BR</h3>
+          <span class="card-segment">Privacidade &amp; Dados</span>
         </div>
       </div>
-      <div>
-        <div class="section-title"><span>Semáforo por Empresa</span></div>
-        <div class="table-wrap">
-          <table><thead><tr>
-            <th>Empresa</th><th>At. Receita</th><th>At. Resultado</th><th>Status</th>
-          </tr></thead><tbody id="semaforo-empresa"></tbody></table>
+      <p class="card-desc">Seus dados pessoais estao espalhados por centenas de bases que voce nunca autorizou. A Priva BR mapeia, notifica e remove suas informacoes de onde elas nao deveriam estar. Privacidade nao e luxo — e direito.</p>
+      <a href="https://www.privabr.com.br/" target="_blank" rel="noopener" class="card-cta">Conhecer a Priva BR <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Festa Play -->
+    <div class="company-card" style="--company-color: #EC4899;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F389;</div>
+        <div class="card-info">
+          <h3>Festa Play</h3>
+          <span class="card-segment">Entretenimento &amp; Eventos</span>
         </div>
       </div>
+      <p class="card-desc">Encontrar o evento certo na hora certa ainda e um problema para milhoes de brasileiros. A Festa Play conecta voce aos melhores eventos, festas e experiencias da sua cidade com um toque. Sua proxima historia comeca aqui.</p>
+      <a href="https://festanoplay.com/" target="_blank" rel="noopener" class="card-cta">Conhecer a Festa Play <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
-    <div class="section-title"><span>Comparativo Mensal Consolidado — Todas as Empresas</span></div>
-    <div class="chart-wrap"><canvas id="chart-painel" height="100"></canvas></div>
-    <div class="section-title"><span>Receita por Empresa — YTD</span></div>
-    <div class="chart-wrap"><canvas id="chart-painel-empresas" height="120"></canvas></div>
-  </div>
 
-  <!-- DASHBOARD -->
-  <div id="tab-dashboard" class="tab-content">
-    <div class="page-title" id="pt-dashboard">Dashboard Executivo Consolidado</div>
-    <div class="kpi-grid" id="dash-kpis"></div>
-    <div class="section-title"><span>Consolidado Mensal</span></div>
-    <div class="table-wrap"><table><thead><tr id="dash-months-header"></tr></thead><tbody id="dash-table"></tbody></table></div>
-    <div class="section-title"><span>Visão por Empresa — YTD</span></div>
-    <div class="table-wrap">
-      <table><thead><tr>
-        <th>Empresa</th><th>Receita YTD</th><th>Custos Totais</th><th>Resultado YTD</th><th>Margem</th><th>Headcount Médio</th>
-      </tr></thead><tbody id="dash-empresa-table"></tbody></table>
-    </div>
-    <div class="section-title"><span>Evolução Receita vs Resultado</span></div>
-    <div class="chart-wrap"><canvas id="chart-dash" height="100"></canvas></div>
-  </div>
-
-  <!-- LANÇAMENTOS -->
-  <div id="tab-lancamentos" class="tab-content">
-    <div class="page-title" id="pt-lancamentos">Lançamentos Mensais <span class="saving" id="saving-lanc">💾 Salvando...</span></div>
-    <div class="page-sub" id="ps-lancamentos">Preencha os valores realizados por empresa e mês.</div>
-    <div class="btn-group" id="lanc-months"></div>
-    <div class="btn-group" id="lanc-companies"></div>
-    <div class="two-col">
-      <div>
-        <div class="table-wrap">
-          <div id="lanc-form-header" style="background:#0A1628;padding:12px 16px;">
-            <span style="color:#fff;font-weight:700;font-size:13px;font-family:'Sora',sans-serif;" id="lanc-form-title">—</span>
-          </div>
-          <div class="form-grid" id="lanc-form"></div>
+    <!-- Perrengue Aereo -->
+    <div class="company-card" style="--company-color: #0EA5E9;">
+      <div class="card-header">
+        <div class="card-icon">&#x2708;&#xFE0F;</div>
+        <div class="card-info">
+          <h3>Perrengue Aereo</h3>
+          <span class="card-segment">Viagens &amp; Aviacao</span>
         </div>
       </div>
-      <div>
-        <div id="lanc-result-card" class="result-card result-positive">
-          <div class="result-label">Resultado Operacional</div>
-          <div class="result-value" id="lanc-result-value">R$ 0</div>
-          <div style="color:#6B7280;font-size:12px;margin-top:4px;" id="lanc-result-margem">Margem: —</div>
-        </div>
-        <div class="table-wrap">
-          <div style="background:#0A1628;padding:10px 14px;">
-            <span style="color:#fff;font-weight:700;font-size:12px;" id="lanc-overview-title">Todas as Empresas</span>
-          </div>
-          <table><thead><tr><th>Empresa</th><th>Receita</th><th>Resultado</th><th>Margem</th></tr></thead>
-          <tbody id="lanc-overview-table"></tbody></table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PLANEJADO -->
-  <div id="tab-planejado" class="tab-content">
-    <div class="page-title" id="pt-planejado">Planejado <span class="saving" id="saving-plan">💾 Salvando...</span></div>
-    <div class="page-sub" id="ps-planejado">Preencha o planejado mensal por empresa.</div>
-    <div class="btn-group" id="plan-months"></div>
-    <div class="section-title"><span>Metas Globais de KPI</span></div>
-    <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:18px;margin-bottom:20px;display:flex;gap:20px;">
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Runway Mínimo (meses)</label>
-        <input class="inp" type="number" id="meta-runway" value="6" oninput="saveEstrutura()" />
-      </div>
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Margem Mínima (ex: 0.15 = 15%)</label>
-        <input class="inp" type="number" step="0.01" id="meta-margem" value="0.15" oninput="saveEstrutura()" />
-      </div>
-      <div style="flex:1;">
-        <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Burn Rate Máximo (R$)</label>
-        <input class="inp" type="number" id="meta-burnrate" value="0" oninput="saveEstrutura()" />
-      </div>
-    </div>
-    <div class="section-title"><span id="plan-section-title">Planejado por Empresa</span></div>
-    <div class="table-wrap" style="overflow-x:auto;">
-      <table style="min-width:900px;">
-        <thead><tr id="plan-header"></tr></thead>
-        <tbody id="plan-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- COMPARATIVO -->
-  <div id="tab-comparativo" class="tab-content">
-    <div class="page-title" id="pt-comparativo">Comparativo Realizado vs Planejado</div>
-    <div class="page-sub" id="ps-comparativo">Comparativo mensal consolidado e YTD por empresa.</div>
-    <div class="section-title"><span>Comparativo Mensal Consolidado</span></div>
-    <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
-      <table style="min-width:900px;"><thead><tr id="comp-header"></tr></thead><tbody id="comp-table"></tbody></table>
-    </div>
-    <div class="section-title"><span>Comparativo por Empresa (YTD)</span></div>
-    <div class="table-wrap">
-      <table><thead><tr>
-        <th>Empresa</th><th>Receita Real.</th><th>Receita Plan.</th><th>At. Receita</th>
-        <th>Resultado Real.</th><th>Resultado Plan.</th><th>At. Resultado</th><th>Status</th>
-      </tr></thead><tbody id="comp-empresa-table"></tbody></table>
-    </div>
-    <div class="section-title"><span>Receita: Realizado vs Planejado</span></div>
-    <div class="chart-wrap"><canvas id="chart-comp" height="100"></canvas></div>
-  </div>
-
-  <!-- ESTRUTURA DE CUSTOS (Arcade Hub Mae) -->
-  <div id="tab-estrutura" class="tab-content">
-    <div class="page-title" id="pt-estrutura">Estrutura de Custos — Arcade Hub <span class="saving" id="saving-estr">Salvando...</span></div>
-    <div class="page-sub" id="ps-estrutura">Custos gerais de manutencao da empresa mae Arcade Hub. Periodo operacional: <strong>01/04/2025</strong> em diante.</div>
-
-    <div class="caixa-block">
-      <div class="caixa-input-wrap">
-        <div class="caixa-label">Caixa Inicial do Grupo (R$)</div>
-        <div class="caixa-desc">Saldo em 01/04/2025 (capital proprio)</div>
-        <input class="caixa-inp" type="number" id="caixa-inicial" placeholder="Ex: 500000" oninput="saveEstrutura()" />
-      </div>
-      <div class="caixa-input-wrap">
-        <div class="caixa-label">Inicio da Operacao</div>
-        <div class="caixa-desc">Data de abertura do periodo</div>
-        <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);">01/04/2025</div>
-      </div>
-      <div class="caixa-cards" id="caixa-cards"></div>
-    </div>
-    <div class="info-box">Caixa Atual = Caixa Inicial + Aportes Acumulados + Resultado Acumulado - Custos de Estrutura Acumulados (Abr-Dez)</div>
-
-    <div class="section-title"><span>Aportes de Capital por Mes</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital externo. Meses Jan/Fev/Mar = pre-operacao (bloqueados).</p>
-    <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
-      <table style="min-width:900px;">
-        <thead><tr>
-          <th>Tipo</th>
-          <th style="color:rgba(255,255,255,0.4)">Jan</th><th style="color:rgba(255,255,255,0.4)">Fev</th><th style="color:rgba(255,255,255,0.4)">Mar</th>
-          <th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th>
-          <th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-          <th>Total</th>
-        </tr></thead>
-        <tbody id="aportes-table"></tbody>
-      </table>
+      <p class="card-desc">Voo cancelado. Mala extraviada. Horas no aeroporto sem resposta. O Perrengue Aereo transforma a sua dor de cabeca em indenizacao — sem burocracia, sem custo inicial. Voce teve o problema. A gente resolve.</p>
+      <a href="https://perrengue-aereo.vercel.app/" target="_blank" rel="noopener" class="card-cta">Conhecer o Perrengue Aereo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="section-title"><span>Gestao de Custos Mes a Mes</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrao. Preencha o mes para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados.</p>
-    <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
-      <table style="min-width:1200px;">
-        <thead><tr>
-          <th>Categoria</th>
-          <th style="background:#1E3A5F;color:#7DD3FC;min-width:100px;">Base Mensal</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Jan</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Fev</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Mar</th>
-          <th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th>
-          <th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-          <th>Total Acum.</th>
-        </tr></thead>
-        <tbody id="custo-mensal-table"></tbody>
-        <tfoot><tr id="custo-mensal-total"></tr></tfoot>
-      </table>
-    </div>
-
-    <div class="two-col">
-      <div>
-        <div class="section-title"><span>Investimento Inicial</span></div>
-        <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Gastos unicos de estruturacao (nao recorrentes).</p>
-        <div class="table-wrap">
-          <table><thead><tr><th>Categoria</th><th>Valor Gasto (R$)</th></tr></thead>
-          <tbody id="inv-table"></tbody></table>
-        </div>
-        <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:9px 14px;margin-top:10px;font-size:11px;color:#92400E;">
-          O investimento inicial e apenas um registro historico e nao e deduzido automaticamente do caixa.
+    <!-- Perrengue Saude -->
+    <div class="company-card" style="--company-color: #10B981;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F3E5;</div>
+        <div class="card-info">
+          <h3>Perrengue Saude</h3>
+          <span class="card-segment">Saude &amp; Bem-estar</span>
         </div>
       </div>
-      <div>
-        <div class="section-title"><span>Resumo Financeiro do Grupo</span></div>
-        <div class="kpi-grid" id="estr-summary-cards"></div>
-        <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:18px;margin-top:14px;">
-          <div style="font-family:sans-serif;font-weight:700;font-size:13px;margin-bottom:12px;color:#111827;">Metas Globais</div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Runway Minimo (meses)</label>
-              <input class="inp" type="number" id="meta-runway" value="6" oninput="saveEstrutura()" />
-            </div>
-            <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Margem Minima (ex: 0.15 = 15%)</label>
-              <input class="inp" type="number" step="0.01" id="meta-margem" value="0.15" oninput="saveEstrutura()" />
-            </div>
-            <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Burn Rate Maximo (R$)</label>
-              <input class="inp" type="number" id="meta-burnrate" value="0" oninput="saveEstrutura()" />
-            </div>
-          </div>
+      <p class="card-desc">Quando o plano de saude nega um procedimento ou um hospital erra, voce nao deveria lutar sozinho. O Perrengue Saude conecta pacientes a solucoes juridicas especializadas para garantir o atendimento que voce merece. Sua saude, seus direitos.</p>
+      <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Perrengue Consumidor -->
+    <div class="company-card" style="--company-color: #F59E0B;">
+      <div class="card-header">
+        <div class="card-icon">&#x2696;&#xFE0F;</div>
+        <div class="card-info">
+          <h3>Perrengue Consumidor</h3>
+          <span class="card-segment">Defesa do Consumidor</span>
         </div>
+      </div>
+      <p class="card-desc">Cobranca indevida, produto com defeito, servico nao entregue — todo brasileiro ja passou por isso. O Perrengue Consumidor e a plataforma que luta pelos seus direitos de consumo com tecnologia, agilidade e sem complicacao.</p>
+      <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Criativo Pronto -->
+    <div class="company-card" style="--company-color: #8B5CF6;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F3A8;</div>
+        <div class="card-info">
+          <h3>Criativo Pronto</h3>
+          <span class="card-segment">Marketing &amp; Criatividade</span>
+        </div>
+      </div>
+      <p class="card-desc">Criar conteudo profissional para redes sociais nao deveria exigir um designer, um redator e tres dias de espera. O Criativo Pronto entrega pecas prontas para uso, personalizadas para o seu negocio, em minutos. Seu marketing, finalmente no ritmo certo.</p>
+      <a href="https://criativopronto.com.br/" target="_blank" rel="noopener" class="card-cta">Conhecer o Criativo Pronto <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Liga da Rotina -->
+    <div class="company-card" style="--company-color: #EAB308;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4C5;</div>
+        <div class="card-info">
+          <h3>Liga da Rotina</h3>
+          <span class="card-segment">Produtividade &amp; Rotina</span>
+        </div>
+      </div>
+      <p class="card-desc">A maioria dos apps de produtividade complica o que deveria simplificar. A Liga da Rotina transforma sua rotina em um sistema visual e intuitivo que realmente funciona — sem curva de aprendizado, sem overload de funcionalidades.</p>
+      <a href="https://ligadarotina.vercel.app/" target="_blank" rel="noopener" class="card-cta">Conhecer a Liga da Rotina <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Axiom Laudos -->
+    <div class="company-card" style="--company-color: #06B6D4;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4CB;</div>
+        <div class="card-info">
+          <h3>Axiom Laudos</h3>
+          <span class="card-segment">Laudos &amp; Pericia</span>
+        </div>
+      </div>
+      <p class="card-desc">Laudos tecnicos exigem precisao, velocidade e credibilidade. A Axiom Laudos digitaliza e acelera o processo de emissao de laudos periciais com uma plataforma feita sob medida para profissionais que nao podem errar.</p>
+      <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Raio X do Lucro -->
+    <div class="company-card" style="--company-color: #EF4444;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F4A1;</div>
+        <div class="card-info">
+          <h3>Raio X do Lucro</h3>
+          <span class="card-segment">Analise Financeira</span>
+        </div>
+      </div>
+      <p class="card-desc">A maioria dos empreendedores brasileiros nao sabe exatamente quanto lucra — ou se lucra. O Raio X do Lucro e a ferramenta que mostra, com clareza cirurgica, para onde vai cada centavo do seu negocio. Clareza financeira nao e opcional.</p>
+      <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+    <!-- Nexus Horizon -->
+    <div class="company-card" style="--company-color: #14B8A6;">
+      <div class="card-header">
+        <div class="card-icon">&#x1F310;</div>
+        <div class="card-info">
+          <h3>Nexus Horizon</h3>
+          <span class="card-segment">Expansao &amp; Estrategia</span>
+        </div>
+      </div>
+      <p class="card-desc">Expandir operacoes exige visao estrategica e execucao precisa. A Nexus Horizon e o braco de expansao e estrategia do ecossistema Arcade Hub, conectando oportunidades de mercado a tecnologia de ponta.</p>
+      <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+
+  </div>
+</section>
+
+<!-- SOBRE -->
+<section id="sobre">
+  <div class="section-label">Quem somos</div>
+  <h2 class="section-title">Sobre a Arcade Hub</h2>
+  <div class="about-content">
+    <div class="about-text">
+      <p>A Arcade Hub nasceu de uma conviccao: <strong>tecnologia so tem valor quando resolve problemas reais de pessoas reais.</strong></p>
+      <p>Somos uma holding de tecnologia brasileira que desenvolve, gerencia e escala um portfolio de empresas focadas nos setores mais criticos da vida moderna — privacidade de dados, saude, direitos do consumidor, produtividade, entretenimento e inteligencia financeira.</p>
+      <p>Cada empresa do nosso ecossistema opera com autonomia, mas compartilha a mesma infraestrutura tecnologica, os mesmos padroes de excelencia e a mesma obsessao por entregar resultados concretos.</p>
+      <p><strong>Nao somos uma incubadora. Nao somos um fundo de investimento. Somos os construtores.</strong> Cada empresa foi concebida, desenvolvida e lancada pelo nosso time — do codigo a estrategia de mercado.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar">
+        <h4>Construcao</h4>
+        <p>Nos construimos. Cada linha de codigo, cada decisao de produto — e nosso.</p>
+      </div>
+      <div class="pillar">
+        <h4>Impacto</h4>
+        <p>Nao criamos tecnologia por criar. Cada empresa existe para resolver um problema real.</p>
+      </div>
+      <div class="pillar">
+        <h4>Transparencia</h4>
+        <p>Dados abertos, comunicacao direta, resultados visiveis.</p>
+      </div>
+      <div class="pillar">
+        <h4>Velocidade</h4>
+        <p>Do conceito ao mercado com a agilidade de quem nao espera permissao.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- VISÃO GERAL EMPRESAS FILHAS -->
-  <div id="tab-empresas" class="tab-content">
-    <div class="page-title" id="pt-empresas">Empresas Filhas</div>
-    <div class="page-sub" id="ps-empresas">Visão consolidada de todas as empresas do portfólio. Clique em uma empresa para ver os custos detalhados.</div>
-    <div class="empresa-cards-grid" id="empresas-cards-grid"></div>
-    <div class="section-title"><span>Ranking de Receita — YTD</span></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>Empresa</th><th>Receita YTD</th><th>Custos YTD</th><th>Resultado YTD</th><th>Margem</th><th>Status</th>
-        </tr></thead>
-        <tbody id="empresas-ranking-table"></tbody>
-      </table>
+<!-- CTA FINAL -->
+<section class="cta-section" id="contato">
+  <h2>Quer conhecer o ecossistema por dentro?</h2>
+  <p>Seja para parcerias, investimentos ou curiosidade — estamos abertos a conversas que fazem sentido.</p>
+  <div class="hero-ctas">
+    <a href="mailto:contato@arcadehub.tech" class="btn-primary">Entre em contato</a>
+    <a href="#empresas" class="btn-secondary">Veja nossas empresas</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">ARCADE <span>HUB</span></div>
+      <p class="footer-desc">Ecossistema de tecnologia brasileira.</p>
+    </div>
+    <div>
+      <div class="footer-title">Empresas</div>
+      <ul class="footer-links">
+        <li><a href="https://www.privabr.com.br/" target="_blank" rel="noopener">Priva BR</a></li>
+        <li><a href="https://festanoplay.com/" target="_blank" rel="noopener">Festa Play</a></li>
+        <li><a href="https://perrengue-aereo.vercel.app/" target="_blank" rel="noopener">Perrengue Aereo</a></li>
+        <li><a href="#">Perrengue Saude</a></li>
+        <li><a href="#">Perrengue Consumidor</a></li>
+        <li><a href="https://criativopronto.com.br/" target="_blank" rel="noopener">Criativo Pronto</a></li>
+        <li><a href="https://ligadarotina.vercel.app/" target="_blank" rel="noopener">Liga da Rotina</a></li>
+        <li><a href="#">Axiom Laudos</a></li>
+        <li><a href="#">Raio X do Lucro</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-title">Contato</div>
+      <ul class="footer-links">
+        <li><a href="mailto:contato@arcadehub.tech">contato@arcadehub.tech</a></li>
+        <li><a href="/admin/">Painel Administrativo</a></li>
+      </ul>
     </div>
   </div>
-
-  <!-- PÁGINAS INDIVIDUAIS DAS EMPRESAS (geradas dinamicamente) -->
-  <div id="tab-empresa-individual" class="tab-content">
-    <div id="empresa-individual-content"></div>
-  </div>
-
-</div><!-- /main -->
+  <div class="footer-bottom">&copy; 2026 Arcade Hub. Todos os direitos reservados.</div>
+</footer>
 
 <script>
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://zdwgwpvlwqtsdgervcof.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkd2d3cHZsd3F0c2RnZXJ2Y29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MjA5NzQsImV4cCI6MjA4ODM5Njk3NH0.t5dY0bFyfGh4dSeNRuy6XsmSWDUXN0Z3EMeRGGJMh98';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Nav scroll effect
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 50);
+});
 
-const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-// Período operacional: início em 01/04/2025
-const DATA_INICIO = { mes: 'Abr', idx: 3 };
-const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Abr..Dez
-const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev, Mar
-function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
+// Mobile menu
+const hamburger = document.getElementById('hamburger');
+const navLinks = document.getElementById('navLinks');
+hamburger.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => navLinks.classList.remove('open'));
+});
 
-// ─── EMPRESAS ─────────────────────────────────────────────────────────────────
-// ARCADE HUB é a empresa mãe (holding) — custos na aba "Estrutura de Custos"
-// Empresas filhas: todas as demais
-const COMPANIES = [
-  { id:'arcade_hub',           name:'Arcade Hub',             color:'#1E6FFF', emoji:'🏦', segmento:'Holding / Fintech',       isMae: true,  website:'' },
-  { id:'priva_br',             name:'Priva BR',               color:'#6366F1', emoji:'🔒', segmento:'Privacidade & Dados',      isMae: false, website:'https://www.privabr.com.br/' },
-  { id:'festa_play',           name:'Festa Play',             color:'#EC4899', emoji:'🎉', segmento:'Entretenimento & Eventos', isMae: false, website:'https://festanoplay.com/' },
-  { id:'perrengue_aereo',      name:'Perrengue Aéreo',        color:'#0EA5E9', emoji:'✈️', segmento:'Viagens & Aviação',        isMae: false, website:'https://perrengue-aereo.vercel.app/' },
-  { id:'perrengue_saude',      name:'Perrengue Saúde',        color:'#10B981', emoji:'🏥', segmento:'Saúde & Bem-estar',        isMae: false, website:'' },
-  { id:'perrengue_consumidor', name:'Perrengue Consumidor',   color:'#F59E0B', emoji:'⚖️', segmento:'Defesa do Consumidor',     isMae: false, website:'' },
-  { id:'criativo_pronto',      name:'Criativo Pronto',        color:'#8B5CF6', emoji:'🎨', segmento:'Marketing & Criatividade', isMae: false, website:'https://criativopronto.com.br/' },
-  { id:'liga_da_rotina',       name:'Liga da Rotina',         color:'#EAB308', emoji:'📅', segmento:'Produtividade & Rotina',   isMae: false, website:'https://ligadarotina.vercel.app/' },
-  { id:'axiom_laudos',         name:'Axiom Laudos',           color:'#06B6D4', emoji:'📋', segmento:'Laudos & Perícia',         isMae: false, website:'' },
-  { id:'raio_x_do_lucro',      name:'Raio X do Lucro',        color:'#EF4444', emoji:'💡', segmento:'Análise Financeira',       isMae: false, website:'' },
-  { id:'nexus_horizon',        name:'Nexus Horizon',          color:'#14B8A6', emoji:'🌐', segmento:'Expansão & Estratégia',    isMae: false, website:'https://asxhorizon-qsmnmbit.manus.space/' },
-];
-
-const FILHAS = COMPANIES.filter(c => !c.isMae);
-
-const INV_CATS = ['Desenvolvimento','Branding','Legal e Contábil','Tecnologia','Infraestrutura','Marketing','Reserva','Outros'];
-const CUSTO_CATS = ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'];
-
-// Categorias de custo individuais por empresa filha
-const EMPRESA_CUSTO_CATS = [
-  'Receita Bruta',
-  'Custos Diretos do Produto/Serviço',
-  'Folha de Pagamento',
-  'Impostos e Taxas',
-  'Despesas Administrativas',
-  'Marketing e Publicidade',
-  'Tecnologia e Ferramentas',
-  'Outras Despesas',
-];
-
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let lancamentos = {};
-let planejado = {};
-let estrutura = {
-  caixa_inicial: 0,
-  data_inicio: '01/04/2025',
-  investimento: Object.fromEntries(INV_CATS.map(k => [k, 0])),
-  custos_mensais: Object.fromEntries(CUSTO_CATS.map(k => [k, 0])),
-  custos_por_mes: {},
-  aportes: Object.fromEntries(['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map(m => [m, 0])),
-  metas: { runway: 6, margem: 0.15, burnRateMax: 0 }
-};
-let estrutura_id = null;
-let selMonth = 'Abr';
-let selCompany = 'arcade_hub';
-let selPlanMonth = 'Abr';
-let saveTimer = null;
-let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp = null;
-let currentEmpresaId = null;
-
-// ─── UTILS ───────────────────────────────────────────────────────────────────
-const fmt = v => isNaN(v)||v==null ? 'R$ 0' : new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
-const fmtPct = v => isNaN(v)||v==null ? '0,0%' : `${(v*100).toFixed(1).replace('.',',')}%`;
-const fmtNum = v => isNaN(v)||v==null ? '0' : Number(v).toFixed(1).replace('.',',');
-
-// ─── INLINE EDIT SYSTEM ──────────────────────────────────────────────────────
-// editable(value, onSaveCallbackExpr, options) — returns HTML string
-// callbackExpr is a JS expression that returns a function, e.g. 'onEditCompanyName("id")'
-// options: { type:'text'|'number'|'url', light:bool, style:'', inputStyle:'', id:'' }
-function editable(value, callbackExpr, opts={}) {
-  const t = opts.type || 'text';
-  const light = opts.light ? ' editable-light' : '';
-  const style = opts.style || '';
-  const inputStyle = opts.inputStyle || '';
-  const id = opts.id || ('ed-'+Math.random().toString(36).substr(2,6));
-  const displayVal = value || (t==='url'?'Adicionar...':'—');
-  const escaped = String(value||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
-  return `<span class="editable${light}" id="${id}" style="${style}">
-    <span class="editable-value">${displayVal}</span>
-    <input class="editable-input" type="${t}" value="${escaped}" style="${inputStyle}"
-      onkeydown="if(event.key==='Enter'){confirmEdit('${id}',${callbackExpr});}" />
-    <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar">✏️</button>
-    <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',${callbackExpr})" title="Confirmar">✔</button>
-    <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar">✕</button>
-  </span>`;
-}
-
-function startEdit(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('editing');
-  const inp = el.querySelector('.editable-input');
-  inp.focus();
-  inp.select();
-}
-
-function confirmEdit(id, callback) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const inp = el.querySelector('.editable-input');
-  const newVal = inp.value;
-  el.classList.remove('editing');
-  if (typeof callback === 'function') {
-    callback(newVal, id);
-  }
-}
-
-function cancelEdit(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  // Restore input to original display value
-  const valEl = el.querySelector('.editable-value');
-  const inp = el.querySelector('.editable-input');
-  // Don't change input value — just close edit mode
-  el.classList.remove('editing');
-}
-
-// Callbacks for company property edits
-function onEditCompanyName(cid) {
-  return function(val) {
-    const c = COMPANIES.find(x=>x.id===cid);
-    if (c && val.trim()) { c.name = val.trim(); renderAll(); if(currentEmpresaId===cid) renderEmpresaIndividual(cid); }
-  };
-}
-function onEditCompanySegmento(cid) {
-  return function(val) {
-    const c = COMPANIES.find(x=>x.id===cid);
-    if (c && val.trim()) { c.segmento = val.trim(); renderAll(); if(currentEmpresaId===cid) renderEmpresaIndividual(cid); }
-  };
-}
-function onEditCompanyWebsite(cid) {
-  return function(val) {
-    const c = COMPANIES.find(x=>x.id===cid);
-    if (c) { c.website = val.trim(); renderAll(); if(currentEmpresaId===cid) renderEmpresaIndividual(cid); }
-  };
-}
-function onEditCompanyEmoji(cid) {
-  return function(val) {
-    const c = COMPANIES.find(x=>x.id===cid);
-    if (c && val.trim()) { c.emoji = val.trim(); renderAll(); if(currentEmpresaId===cid) renderEmpresaIndividual(cid); }
-  };
-}
-function onEditCompanyColor(cid) {
-  return function(val) {
-    const c = COMPANIES.find(x=>x.id===cid);
-    if (c && val.trim()) { c.color = val.trim(); renderAll(); if(currentEmpresaId===cid) renderEmpresaIndividual(cid); }
-  };
-}
-// Generic page text edit (stored in a global overrides object)
-let textOverrides = {};
-function onEditText(key) {
-  return function(val) {
-    textOverrides[key] = val;
-    const el = document.getElementById(key);
-    if (el) {
-      const valSpan = el.querySelector('.editable-value');
-      if (valSpan) valSpan.textContent = val;
-      const inp = el.querySelector('.editable-input');
-      if (inp) inp.value = val;
-    }
-  };
-}
-
-function getLanc(m, cid) {
-  return lancamentos[`${m}:${cid}`] || { receita:0,custos_diretos:0,folha:0,impostos:0,despesas_adm:0,outras_despesas:0,headcount:0,obs:'' };
-}
-function getPlan(m, cid) {
-  return planejado[`${m}:${cid}`] || { receita_p:0,custos_diretos_p:0,folha_p:0,impostos_p:0,despesas_adm_p:0,outras_despesas_p:0,headcount_p:0 };
-}
-function calcRes(e) {
-  return (e.receita||0)-(e.custos_diretos||0)-(e.folha||0)-(e.impostos||0)-(e.despesas_adm||0)-(e.outras_despesas||0);
-}
-function calcResP(p) {
-  return (p.receita_p||0)-(p.custos_diretos_p||0)-(p.folha_p||0)-(p.impostos_p||0)-(p.despesas_adm_p||0)-(p.outras_despesas_p||0);
-}
-function calcCustos(e) {
-  return (e.custos_diretos||0)+(e.folha||0)+(e.impostos||0)+(e.despesas_adm||0)+(e.outras_despesas||0);
-}
-function getCustoMes(mes, cat) {
-  const override = estrutura.custos_por_mes?.[mes]?.[cat];
-  if (override !== undefined && override !== null && override !== '') return parseFloat(override)||0;
-  return estrutura.custos_mensais[cat]||0;
-}
-function getTotalCustoMes(mes) {
-  return ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'].reduce((a,k)=>a+getCustoMes(mes,k),0);
-}
-function getTotalAportes() {
-  return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].reduce((a,m)=>a+(estrutura.aportes?.[m]||0),0);
-}
-function getStatus(real, plan, invert=false) {
-  if (!plan || plan===0) return 'SEM DADOS';
-  const r = real/plan;
-  if (!invert) return r>=1?'VERDE':r>=0.9?'AMARELO':'VERMELHO';
-  return r<=1?'VERDE':r<=1.1?'AMARELO':'VERMELHO';
-}
-function badgeHtml(s) {
-  const cls = s==='VERDE'?'verde':s==='AMARELO'?'amarelo':s==='VERMELHO'?'vermelho':'sem-dados';
-  return `<span class="badge ${cls}">● ${s}</span>`;
-}
-
-// ─── COMPUTED ────────────────────────────────────────────────────────────────
-function getConsolidado() {
-  return MONTHS.map(m => {
-    let receita=0,custos=0,resultado=0,headcount=0,receitaP=0,resultadoP=0;
-    COMPANIES.forEach(c => {
-      const e = getLanc(m, c.id), p = getPlan(m, c.id);
-      receita += e.receita||0; custos += calcCustos(e);
-      resultado += calcRes(e); headcount += e.headcount||0;
-      receitaP += p.receita_p||0; resultadoP += calcResP(p);
-    });
-    return {mes:m, receita, custos, resultado, headcount, receitaP, resultadoP};
-  });
-}
-function getYTD(cons) {
-  return {
-    receita: cons.reduce((a,c)=>a+c.receita,0),
-    resultado: cons.reduce((a,c)=>a+c.resultado,0),
-    receitaP: cons.reduce((a,c)=>a+c.receitaP,0),
-    resultadoP: cons.reduce((a,c)=>a+c.resultadoP,0),
-  };
-}
-function getCompaniesYTD() {
-  return COMPANIES.map(c => {
-    let receita=0,custos=0,resultado=0,receitaP=0,resultadoP=0,hc=0;
-    MONTHS.forEach(m => {
-      const e=getLanc(m,c.id),p=getPlan(m,c.id);
-      receita+=e.receita||0; custos+=calcCustos(e); resultado+=calcRes(e);
-      receitaP+=p.receita_p||0; resultadoP+=calcResP(p); hc+=e.headcount||0;
-    });
-    const atR=receitaP>0?receita/receitaP:0, atRe=resultadoP!==0?resultado/resultadoP:0;
-    const status=receitaP===0&&resultadoP===0?'SEM DADOS':(atR>=1&&atRe>=1)?'VERDE':(atR>=0.9&&atRe>=0.85)?'AMARELO':'VERMELHO';
-    return {...c,receita,custos,resultado,receitaP,resultadoP,atR,atRe,status,hcAvg:hc/12};
-  });
-}
-function getEmpresaYTD(cid) {
-  let receita=0,custos=0,resultado=0,hc=0;
-  MONTHS.forEach(m => {
-    const e=getLanc(m,cid);
-    receita+=e.receita||0; custos+=calcCustos(e); resultado+=calcRes(e); hc+=e.headcount||0;
-  });
-  return {receita,custos,resultado,hcAvg:hc/12};
-}
-function getTotals() {
-  const totalCusto = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0);
-  const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const totalCustoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalCustoMes(m),0);
-  const totalInv = INV_CATS.reduce((a,k)=>a+(estrutura.investimento[k]||0),0);
-  const cons = getConsolidado();
-  const resultadoAcum = cons.reduce((a,c)=>a+c.resultado,0);
-  const totalAportes = getTotalAportes();
-  const caixaInicial = estrutura.caixa_inicial||0;
-  const caixaAtual = caixaInicial + totalAportes + resultadoAcum - totalCustoAcum;
-  const burnRate = cons.reduce((a,c)=>c.resultado<0?a+Math.abs(c.resultado):a,0)/MONTHS_OP.length;
-  const runway = burnRate>0?caixaAtual/burnRate:0;
-  const ytd = getYTD(cons);
-  const margem = ytd.receita>0?ytd.resultado/ytd.receita:0;
-  return {totalCusto,totalCustoAcum,totalInv,resultadoAcum,caixaInicial,caixaAtual,burnRate,runway,ytd,margem,totalAportes};
-}
-
-// ─── TOAST ───────────────────────────────────────────────────────────────────
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-function showSaving(id) {
-  const el = document.getElementById(id);
-  if (el) { el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500); }
-}
-
-// ─── SUPABASE OPS ─────────────────────────────────────────────────────────────
-async function saveLanc(mes, empresa_id) {
-  const e = getLanc(mes, empresa_id);
-  await sb.from('lancamentos').upsert({
-    mes, empresa_id,
-    receita: e.receita||0, custos_diretos: e.custos_diretos||0,
-    folha: e.folha||0, impostos: e.impostos||0,
-    despesas_adm: e.despesas_adm||0, outras_despesas: e.outras_despesas||0,
-    headcount: e.headcount||0, obs: e.obs||'',
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' });
-  showSaving('saving-lanc');
-}
-async function savePlan(mes, empresa_id) {
-  const p = getPlan(mes, empresa_id);
-  await sb.from('planejado').upsert({
-    mes, empresa_id,
-    receita_p: p.receita_p||0, custos_diretos_p: p.custos_diretos_p||0,
-    folha_p: p.folha_p||0, impostos_p: p.impostos_p||0,
-    despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
-    headcount_p: p.headcount_p||0,
-    updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' });
-  showSaving('saving-plan');
-}
-async function saveEstrutura() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    const metas = {
-      runway: parseFloat(document.getElementById('meta-runway')?.value)||6,
-      margem: parseFloat(document.getElementById('meta-margem')?.value)||0.15,
-      burnRateMax: parseFloat(document.getElementById('meta-burnrate')?.value)||0,
-    };
-    const caixa_inicial = parseFloat(document.getElementById('caixa-inicial')?.value)||0;
-    estrutura.metas = metas;
-    estrutura.caixa_inicial = caixa_inicial;
-    const payload = {
-      caixa_inicial,
-      data_inicio: '01/04/2025',
-      investimento: estrutura.investimento,
-      custos_mensais: estrutura.custos_mensais,
-      custos_por_mes: estrutura.custos_por_mes,
-      aportes: estrutura.aportes,
-      metas,
-      updated_at: new Date().toISOString()
-    };
-    if (estrutura_id) {
-      await sb.from('estrutura').update(payload).eq('id', estrutura_id);
-    } else {
-      const { data } = await sb.from('estrutura').insert(payload).select().single();
-      if (data) estrutura_id = data.id;
-    }
-    showSaving('saving-estr');
-    renderAll();
-  }, 600);
-}
-
-// ─── LOAD DATA ───────────────────────────────────────────────────────────────
-async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }] = await Promise.all([
-    sb.from('lancamentos').select('*'),
-    sb.from('planejado').select('*'),
-    sb.from('estrutura').select('*').limit(1).single(),
-  ]);
-  if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
-  if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
-  if (eData) {
-    estrutura_id = eData.id;
-    estrutura.caixa_inicial = eData.caixa_inicial||0;
-    estrutura.investimento = eData.investimento||estrutura.investimento;
-    estrutura.custos_mensais = eData.custos_mensais||estrutura.custos_mensais;
-    estrutura.metas = eData.metas||estrutura.metas;
-    if (eData.custos_por_mes) {
-      estrutura.custos_por_mes = eData.custos_por_mes;
-    }
-    if (eData.aportes) {
-      estrutura.aportes = eData.aportes;
-    }
-  }
-}
-
-// ─── RENDER ALL ──────────────────────────────────────────────────────────────
-function renderAll() {
-  const cons = getConsolidado();
-  const ytd = getYTD(cons);
-  const totals = getTotals();
-  const companiesYTD = getCompaniesYTD();
-
-  renderPainel(cons, ytd, totals, companiesYTD);
-  renderDashboard(cons, ytd, totals, companiesYTD);
-  renderLancamentos();
-  renderPlanejado();
-  renderComparativo(cons, ytd, companiesYTD);
-  renderEstrutura(totals);
-  renderEmpresasGeral(companiesYTD);
-  renderNavEmpresas();
-  setTimeout(makeAllEditable, 50);
-}
-
-function kpiCard(label, value, sub, color) {
-  const kid = 'ed-kc-'+Math.random().toString(36).substr(2,6);
-  return `<div class="kpi-card" style="border-top-color:${color||'#1E6FFF'}">
-    <div class="kpi-label">${label}</div>
-    <div class="kpi-value">${value}</div>
-    ${sub?`<div class="kpi-sub">${sub}</div>`:''}
-  </div>`;
-}
-
-// ─── NAV EMPRESAS ─────────────────────────────────────────────────────────────
-function renderNavEmpresas() {
-  document.getElementById('nav-empresas-list').innerHTML = FILHAS.map(c => `
-    <button class="nav-item" id="nav-emp-${c.id}" onclick="showEmpresaIndividual('${c.id}',this)" style="padding-left:28px;font-size:12px;">
-      <span class="nav-dot" style="background:${c.color}"></span>${c.name}
-    </button>`).join('');
-}
-
-// ─── PAINEL FINTECH ───────────────────────────────────────────────────────────
-function renderPainel(cons, ytd, totals, companiesYTD) {
-  const { caixaAtual, burnRate, runway, margem, totalCusto } = totals;
-  const m = estrutura.metas;
-
-  // KPIs consolidados de TODAS as empresas
-  document.getElementById('painel-kpis').innerHTML = [
-    kpiCard('Receita Total YTD', fmt(ytd.receita), `Meta: ${fmt(ytd.receitaP)}`, '#1E6FFF'),
-    kpiCard('Resultado YTD', fmt(ytd.resultado), `Meta: ${fmt(ytd.resultadoP)}`, ytd.resultado>=0?'#10B981':'#EF4444'),
-    kpiCard('Margem Grupo', fmtPct(margem), `Meta: ${fmtPct(m.margem)}`, margem>=(m.margem||0)?'#10B981':'#EF4444'),
-    kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
-    kpiCard('Runway', `${fmtNum(runway)} meses`, `Meta: ${fmtNum(m.runway)} meses`, runway>=(m.runway||6)?'#10B981':'#EF4444'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
-    kpiCard('Custo Mensal Hub', fmt(totalCusto), 'Estrutura central', '#F59E0B'),
-    kpiCard('Empresas Ativas', `${FILHAS.length}`, 'Empresas filhas', '#1E6FFF'),
-  ].join('');
-
-  // Semáforo KPI
-  const kpis = [
-    ['Receita YTD', ytd.receita, ytd.receitaP, fmt, false],
-    ['Resultado YTD', ytd.resultado, ytd.resultadoP, fmt, false],
-    ['Burn Rate', burnRate, m.burnRateMax||0, fmt, true],
-    ['Runway', runway, m.runway, v=>`${fmtNum(v)} meses`, false],
-    ['Margem Grupo', margem, m.margem, fmtPct, false],
-    ['Custo Mensal Hub', totalCusto, m.burnRateMax||totalCusto||1, fmt, true],
-  ];
-  document.getElementById('semaforo-kpi').innerHTML = kpis.map(([label,real,plan,f,inv])=>{
-    const s = getStatus(real, plan, inv);
-    return `<tr><td><strong>${label}</strong></td><td>${f(real)}</td><td style="color:#6B7280">${f(plan)}</td>
-      <td>${plan>0?fmtPct(real/plan):'—'}</td><td>${badgeHtml(s)}</td></tr>`;
-  }).join('');
-
-  // Semáforo por empresa (TODAS as empresas, incluindo novas)
-  document.getElementById('semaforo-empresa').innerHTML = companiesYTD.map(c=>`
-    <tr style="cursor:pointer" onclick="${c.isMae?'':` showEmpresaIndividual('${c.id}')`}">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-sem-'+c.id})}${c.isMae?' <span style="font-size:10px;color:#6B7280">(Hub)</span>':''}</td>
-      <td>${fmtPct(c.atR)}</td><td>${fmtPct(c.atRe)}</td><td>${badgeHtml(c.status)}</td>
-    </tr>`).join('');
-
-  // Gráfico consolidado
-  const labels = cons.map(c=>c.mes);
-  if (chartPainel) chartPainel.destroy();
-  chartPainel = new Chart(document.getElementById('chart-painel'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label:'Receita Realizada', data:cons.map(c=>c.receita), backgroundColor:'#1E6FFF', borderRadius:4 },
-        { label:'Receita Planejada', data:cons.map(c=>c.receitaP), backgroundColor:'#BFDBFE', borderRadius:4 },
-        { label:'Resultado', data:cons.map(c=>c.resultado), backgroundColor:'#10B981', borderRadius:4 },
-      ]
-    },
-    options: { responsive:true, plugins:{legend:{labels:{font:{size:12}}}}, scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}} }
-  });
-
-  // Gráfico por empresa (barras horizontais YTD)
-  const sortedEmpresas = [...companiesYTD].sort((a,b)=>b.receita-a.receita);
-  if (chartPainelEmpresas) chartPainelEmpresas.destroy();
-  chartPainelEmpresas = new Chart(document.getElementById('chart-painel-empresas'), {
-    type: 'bar',
-    data: {
-      labels: sortedEmpresas.map(c=>c.name),
-      datasets: [
-        { label:'Receita YTD', data:sortedEmpresas.map(c=>c.receita), backgroundColor:sortedEmpresas.map(c=>c.color), borderRadius:4 },
-        { label:'Resultado YTD', data:sortedEmpresas.map(c=>c.resultado), backgroundColor:sortedEmpresas.map(c=>c.resultado>=0?'#10B98166':'#EF444466'), borderRadius:4 },
-      ]
-    },
-    options: {
-      indexAxis:'y', responsive:true,
-      plugins:{legend:{labels:{font:{size:12}}}},
-      scales:{x:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}
+// Scroll reveal for company cards
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+      observer.unobserve(e.target);
     }
   });
-}
+}, { threshold: 0.1 });
+document.querySelectorAll('.company-card').forEach(el => observer.observe(el));
 
-// ─── DASHBOARD ───────────────────────────────────────────────────────────────
-function renderDashboard(cons, ytd, totals, companiesYTD) {
-  const { caixaAtual, burnRate, runway, margem, totalInv, totalCusto } = totals;
-
-  document.getElementById('dash-kpis').innerHTML = [
-    kpiCard('Receita Total YTD', fmt(ytd.receita), '', '#1E6FFF'),
-    kpiCard('Resultado Operacional YTD', fmt(ytd.resultado), '', ytd.resultado>=0?'#10B981':'#EF4444'),
-    kpiCard('Margem Operacional YTD', fmtPct(margem), '', '#1E6FFF'),
-    kpiCard('Investimento Inicial', fmt(totalInv), '', '#8B5CF6'),
-    kpiCard('Custo Mensal Geral', fmt(totalCusto), '', '#F59E0B'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
-    kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
-    kpiCard('Runway', `${fmtNum(runway)} meses`, '', runway>=6?'#10B981':'#EF4444'),
-  ].join('');
-
-  document.getElementById('dash-months-header').innerHTML =
-    `<th>Indicador</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}`;
-
-  const rows = [
-    {label:'Receita Bruta', fn:c=>c.receita},
-    {label:'Resultado Operacional', fn:c=>c.resultado},
-    {label:'Margem Operacional', fn:c=>c.receita>0?fmtPct(c.resultado/c.receita):'—', noFmt:true},
-  ];
-  document.getElementById('dash-table').innerHTML = rows.map((r,ri)=>`
-    <tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
-      <td><strong>${r.label}</strong></td>
-      ${cons.map(c=>{
-        const v=r.fn(c);
-        const disp=r.noFmt?v:fmt(v);
-        const neg=!r.noFmt&&v<0;
-        return `<td style="${neg?'color:#DC2626':''}">${disp}</td>`;
-      }).join('')}
-    </tr>`).join('');
-
-  document.getElementById('dash-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
-    <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-dash-'+c.id})}</strong></td>
-      <td>${fmt(c.receita)}</td><td>${fmt(c.custos)}</td>
-      <td style="${c.resultado<0?'color:#DC2626;font-weight:600':'color:#059669;font-weight:600'}">${fmt(c.resultado)}</td>
-      <td>${c.receita>0?fmtPct(c.resultado/c.receita):'—'}</td>
-      <td>${fmtNum(c.hcAvg)}</td>
-    </tr>`).join('');
-
-  if (chartDash) chartDash.destroy();
-  chartDash = new Chart(document.getElementById('chart-dash'), {
-    type:'line',
-    data:{
-      labels:cons.map(c=>c.mes),
-      datasets:[
-        {label:'Receita',data:cons.map(c=>c.receita),borderColor:'#1E6FFF',tension:0.3,pointRadius:4,fill:false,borderWidth:2.5},
-        {label:'Resultado',data:cons.map(c=>c.resultado),borderColor:'#10B981',tension:0.3,pointRadius:4,fill:false,borderWidth:2.5},
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}}
+// Animated counters
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const target = parseInt(el.dataset.count);
+      if (!target) return;
+      let current = 0;
+      const step = Math.ceil(target / 30);
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(timer); }
+        el.textContent = current;
+      }, 40);
+      counterObserver.unobserve(el);
+    }
   });
-}
-
-// ─── LANÇAMENTOS ─────────────────────────────────────────────────────────────
-function renderLancamentos() {
-  document.getElementById('lanc-months').innerHTML = MONTHS.map(m=>
-    `<button class="btn-month${m===selMonth?' active':''}" onclick="selMonth='${m}';renderLancamentos()">${m}</button>`
-  ).join('');
-
-  document.getElementById('lanc-companies').innerHTML = COMPANIES.map(c=>
-    `<button class="btn-company" onclick="selCompany='${c.id}';renderLancamentos()"
-      style="${c.id===selCompany?`background:${c.color};color:#fff;border-color:${c.color}`:''}">
-      ${c.emoji} ${c.name}</button>`
-  ).join('');
-
-  const comp = COMPANIES.find(c=>c.id===selCompany);
-  document.getElementById('lanc-form-header').style.background = comp.color;
-  document.getElementById('lanc-form-title').textContent = `${comp.emoji} ${comp.name} · ${selMonth}`;
-  document.getElementById('lanc-overview-title').textContent = `Todas as Empresas · ${selMonth}`;
-
-  const e = getLanc(selMonth, selCompany);
-  const fields = [
-    {key:'receita',label:'Receita Bruta (R$)'},
-    {key:'custos_diretos',label:'Custos Diretos (R$)'},
-    {key:'folha',label:'Folha de Pagamento (R$)'},
-    {key:'impostos',label:'Impostos (R$)'},
-    {key:'despesas_adm',label:'Despesas Administrativas (R$)'},
-    {key:'outras_despesas',label:'Outras Despesas (R$)'},
-    {key:'headcount',label:'Headcount'},
-    {key:'obs',label:'Observações',text:true},
-  ];
-
-  document.getElementById('lanc-form').innerHTML = fields.map(f=>{
-    const lid = 'ed-lfl-'+f.key;
-    return `
-    <div class="form-field">
-      <label>${editable(f.label, 'onEditText("'+lid+'")', {id:lid, style:'font-size:11px'})}</label>
-      <input class="inp" type="${f.text?'text':'number'}" id="lanc-${f.key}"
-        value="${e[f.key]||''}"
-        oninput="updateLanc('${f.key}',this.value)"
-      />
-    </div>`;
-  }).join('');
-
-  updateLancResult();
-
-  document.getElementById('lanc-overview-table').innerHTML = COMPANIES.map((c,i)=>{
-    const ec=getLanc(selMonth,c.id), rc=calcRes(ec);
-    const isSelected=c.id===selCompany;
-    return `<tr style="background:${isSelected?c.color+'15':i%2===0?'#FAFAFA':'#fff'};cursor:pointer"
-      onclick="selCompany='${c.id}';renderLancamentos()">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lanc-'+c.id})}</td>
-      <td>${fmt(ec.receita||0)}</td>
-      <td style="${rc<0?'color:#DC2626':'color:#059669'}">${fmt(rc)}</td>
-      <td>${(ec.receita||0)>0?fmtPct(rc/(ec.receita||1)):'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-function updateLanc(key, val) {
-  const k = `${selMonth}:${selCompany}`;
-  if (!lancamentos[k]) lancamentos[k] = {};
-  lancamentos[k][key] = key==='obs'||key==='headcount' ? (key==='headcount'?parseInt(val)||0:val) : parseFloat(val)||0;
-  lancamentos[k].mes = selMonth; lancamentos[k].empresa_id = selCompany;
-  updateLancResult();
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>saveLanc(selMonth, selCompany).then(()=>renderAll()), 700);
-}
-
-function updateLancResult() {
-  const e = getLanc(selMonth, selCompany);
-  const res = calcRes(e);
-  const card = document.getElementById('lanc-result-card');
-  card.className = `result-card ${res>=0?'result-positive':'result-negative'}`;
-  document.getElementById('lanc-result-value').textContent = fmt(res);
-  document.getElementById('lanc-result-margem').textContent =
-    `Margem: ${(e.receita||0)>0?fmtPct(res/(e.receita||1)):'—'}`;
-  document.getElementById('lanc-overview-table').innerHTML = COMPANIES.map((c,i)=>{
-    const ec=getLanc(selMonth,c.id), rc=calcRes(ec);
-    const isSelected=c.id===selCompany;
-    return `<tr style="background:${isSelected?c.color+'15':i%2===0?'#FAFAFA':'#fff'};cursor:pointer"
-      onclick="selCompany='${c.id}';renderLancamentos()">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lancr-'+c.id})}</td>
-      <td>${fmt(ec.receita||0)}</td>
-      <td style="${rc<0?'color:#DC2626':'color:#059669'}">${fmt(rc)}</td>
-      <td>${(ec.receita||0)>0?fmtPct(rc/(ec.receita||1)):'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ─── PLANEJADO ───────────────────────────────────────────────────────────────
-function renderPlanejado() {
-  document.getElementById('plan-months').innerHTML = MONTHS.map(m=>
-    `<button class="btn-month${m===selPlanMonth?' active':''}" onclick="selPlanMonth='${m}';renderPlanejado()">${m}</button>`
-  ).join('');
-  document.getElementById('plan-section-title').textContent = `Planejado por Empresa · ${selPlanMonth}`;
-
-  const m = estrutura.metas;
-  const ri=document.getElementById('meta-runway');
-  const mi=document.getElementById('meta-margem');
-  const bi=document.getElementById('meta-burnrate');
-  if(ri&&document.activeElement!==ri) ri.value=m.runway||6;
-  if(mi&&document.activeElement!==mi) mi.value=m.margem||0.15;
-  if(bi&&document.activeElement!==bi) bi.value=m.burnRateMax||0;
-
-  const cols = ['Empresa','Receita Plan.','Custos Dir. Plan.','Folha Plan.','Impostos Plan.','Desp.Adm Plan.','Outras Desp. Plan.','Resultado Plan.','Margem Plan.','Headcount Plan.'];
-  document.getElementById('plan-header').innerHTML = cols.map(c=>`<th>${c}</th>`).join('');
-
-  document.getElementById('plan-table').innerHTML = COMPANIES.map((c,i)=>{
-    const p = getPlan(selPlanMonth, c.id);
-    const rp = calcResP(p);
-    const planFields = ['receita_p','custos_diretos_p','folha_p','impostos_p','despesas_adm_p','outras_despesas_p'];
-    return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.emoji+' '+c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-plan-'+c.id})}</strong></td>
-      ${planFields.map(k=>`<td style="padding:5px 6px">
-        <input class="inp" type="number" value="${p[k]||''}" style="width:100px"
-          oninput="updatePlan('${c.id}','${k}',this.value)" />
-      </td>`).join('')}
-      <td style="${rp<0?'color:#DC2626':'color:#059669'};font-weight:700">${fmt(rp)}</td>
-      <td>${(p.receita_p||0)>0?fmtPct(rp/(p.receita_p||1)):'—'}</td>
-      <td style="padding:5px 6px"><input class="inp" type="number" value="${p.headcount_p||''}" style="width:70px"
-        oninput="updatePlan('${c.id}','headcount_p',this.value)" /></td>
-    </tr>`;
-  }).join('');
-}
-
-function updatePlan(cid, key, val) {
-  const k = `${selPlanMonth}:${cid}`;
-  if (!planejado[k]) planejado[k] = {};
-  planejado[k][key] = parseFloat(val)||0;
-  planejado[k].mes = selPlanMonth; planejado[k].empresa_id = cid;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>savePlan(selPlanMonth, cid).then(()=>renderPlanejado()), 700);
-}
-
-// ─── COMPARATIVO ─────────────────────────────────────────────────────────────
-function renderComparativo(cons, ytd, companiesYTD) {
-  document.getElementById('comp-header').innerHTML =
-    `<th>Indicador</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>YTD</th>`;
-
-  const compRows = [
-    {label:'Receita Realizada', fn:c=>c.receita},
-    {label:'Receita Planejada', fn:c=>c.receitaP, gray:true},
-    {label:'Atingimento Receita', fn:c=>c.receitaP>0?c.receita/c.receitaP:0, pct:true},
-    {label:'Resultado Realizado', fn:c=>c.resultado},
-    {label:'Resultado Planejado', fn:c=>c.resultadoP, gray:true},
-    {label:'Atingimento Resultado', fn:c=>c.resultadoP!==0?c.resultado/c.resultadoP:0, pct:true},
-  ];
-
-  document.getElementById('comp-table').innerHTML = compRows.map((r,ri)=>{
-    const vals = cons.map(c=>r.fn(c));
-    const ytdv = r.pct
-      ? (r.label.includes('Receita')?ytd.receitaP>0?ytd.receita/ytd.receitaP:0:ytd.resultadoP!==0?ytd.resultado/ytd.resultadoP:0)
-      : vals.reduce((a,b)=>a+b,0);
-    return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
-      <td><strong>${r.label}</strong></td>
-      ${vals.map(v=>{
-        if(r.pct) return `<td style="color:${v>=1?'#059669':v>=0.9?'#D97706':'#DC2626'}">${fmtPct(v)}</td>`;
-        return `<td style="${v<0?'color:#DC2626':r.gray?'color:#6B7280':''}">${fmt(v)}</td>`;
-      }).join('')}
-      <td style="font-weight:700;${r.pct?(ytdv>=1?'color:#059669':ytdv>=0.9?'color:#D97706':'color:#DC2626'):(ytdv<0?'color:#DC2626':r.gray?'color:#6B7280':'')}">
-        ${r.pct?fmtPct(ytdv):fmt(ytdv)}
-      </td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('comp-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
-    <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-comp-'+c.id})}</strong></td>
-      <td>${fmt(c.receita)}</td><td style="color:#6B7280">${fmt(c.receitaP)}</td>
-      <td style="font-weight:600;color:${c.atR>=1?'#059669':c.atR>=0.9?'#D97706':'#DC2626'}">${fmtPct(c.atR)}</td>
-      <td style="${c.resultado<0?'color:#DC2626':''}">${fmt(c.resultado)}</td>
-      <td style="color:#6B7280">${fmt(c.resultadoP)}</td>
-      <td style="font-weight:600;color:${c.atRe>=1?'#059669':c.atRe>=0.85?'#D97706':'#DC2626'}">${fmtPct(c.atRe)}</td>
-      <td>${badgeHtml(c.status)}</td>
-    </tr>`).join('');
-
-  if (chartComp) chartComp.destroy();
-  chartComp = new Chart(document.getElementById('chart-comp'), {
-    type:'line',
-    data:{
-      labels:cons.map(c=>c.mes),
-      datasets:[
-        {label:'Receita Realizada',data:cons.map(c=>c.receita),borderColor:'#1E6FFF',borderWidth:2.5,tension:0.3,pointRadius:4},
-        {label:'Receita Planejada',data:cons.map(c=>c.receitaP),borderColor:'#1E6FFF',borderDash:[6,3],borderWidth:2,tension:0.3,pointRadius:3},
-        {label:'Resultado Realizado',data:cons.map(c=>c.resultado),borderColor:'#10B981',borderWidth:2.5,tension:0.3,pointRadius:4},
-        {label:'Resultado Planejado',data:cons.map(c=>c.resultadoP),borderColor:'#10B981',borderDash:[6,3],borderWidth:2,tension:0.3,pointRadius:3},
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}}
-  });
-}
-
-// ─── ESTRUTURA ───────────────────────────────────────────────────────────────
-function renderEstrutura(totals) {
-  const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalInv, totalAportes } = totals;
-  const ci = estrutura.caixa_inicial||0;
-  const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-
-  const ciEl = document.getElementById('caixa-inicial');
-  if (ciEl && document.activeElement!==ciEl) ciEl.value = ci||'';
-
-  const mt = estrutura.metas;
-  const ri=document.getElementById('meta-runway'), mi=document.getElementById('meta-margem'), bi=document.getElementById('meta-burnrate');
-  if(ri&&document.activeElement!==ri) ri.value=mt.runway||6;
-  if(mi&&document.activeElement!==mi) mi.value=mt.margem||0.15;
-  if(bi&&document.activeElement!==bi) bi.value=mt.burnRateMax||0;
-
-  document.getElementById('caixa-cards').innerHTML = [
-    {label:'Caixa Inicial (01/04)', val:fmt(ci), color:'#1E6FFF'},
-    {label:'Aportes Acumulados', val:fmt(totalAportes), color:'#8B5CF6'},
-    {label:'Resultado Acumulado', val:fmt(resultadoAcum), color:resultadoAcum>=0?'#10B981':'#EF4444'},
-    {label:'Custos Estrutura Acum.', val:fmt(totalCustoAcum), color:'#F59E0B'},
-    {label:'Caixa Atual Estimado', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444'},
-  ].map(({label,val,color})=>`
-    <div class="caixa-mini" style="border-left:3px solid ${color}">
-      <div class="caixa-mini-label">${label}</div>
-      <div class="caixa-mini-val" style="color:${color}">${val}</div>
-    </div>`).join('');
-
-  // Tabela de aportes
-  let aportesAccum = 0;
-  document.getElementById('aportes-table').innerHTML =
-    `<tr><td><strong>Aporte (R$)</strong></td>` +
-    MONTHS_ALL.map(mm=>{
-      const isOp = MONTHS_OP.includes(mm);
-      const val = estrutura.aportes?.[mm]||'';
-      return `<td style="padding:4px 6px;background:${isOp?'':'#F9FAFB'}">
-        <input class="inp" type="number" value="${val}" style="width:80px;${isOp?'':'background:#F3F4F6;color:#9CA3AF;'}"
-          ${isOp?`oninput="estrutura.aportes['${mm}']=parseFloat(this.value)||0;saveEstrutura()"`:' disabled'}
-        /></td>`;
-    }).join('') +
-    `<td style="font-weight:700;color:#8B5CF6">${fmt(MONTHS_ALL.reduce((a,mm)=>a+(estrutura.aportes?.[mm]||0),0))}</td></tr>` +
-    `<tr style="background:#F0FDF4"><td style="color:#059669;font-weight:600">Acumulado</td>` +
-    MONTHS_ALL.map(mm=>{
-      aportesAccum += (estrutura.aportes?.[mm]||0);
-      const isOp = MONTHS_OP.includes(mm);
-      return `<td style="color:${isOp?'#059669':'#9CA3AF'};font-weight:600">${fmt(aportesAccum)}</td>`;
-    }).join('') +
-    `<td></td></tr>`;
-
-  // Tabela de custos mes a mes
-  const custosRows = CUSTO_CATS.map((cat,rIdx)=>{
-    const base = estrutura.custos_mensais[cat]||0;
-    const totalAcumCat = MONTHS_OP.reduce((a,mm)=>a+getCustoMes(mm,cat),0);
-    return `<tr style="background:${rIdx%2===0?'#FAFAFA':'#fff'}">
-      <td style="font-weight:500">${cat}</td>
-      <td style="padding:4px 8px;background:#EFF6FF;">
-        <input class="inp" type="number" value="${base||''}" style="width:90px;background:#EFF6FF;"
-          oninput="estrutura.custos_mensais['${cat}']=parseFloat(this.value)||0;saveEstrutura()" />
-      </td>` +
-      MONTHS_ALL.map(mm=>{
-        const isOp = MONTHS_OP.includes(mm);
-        const override = estrutura.custos_por_mes?.[mm]?.[cat];
-        const hasOverride = override !== undefined && override !== null && override !== '';
-        const displayVal = hasOverride ? override : '';
-        return `<td style="padding:4px 6px;background:${!isOp?'#F3F4F6':(hasOverride?'#FFFBEB':'')}">
-          <input class="inp" type="number" value="${displayVal}" placeholder="${isOp?base:''}"
-            style="width:80px;${!isOp?'background:#F3F4F6;color:#9CA3AF;':(hasOverride?'background:#FFFBEB;border-color:#F59E0B;':'')}"
-            ${isOp?`oninput="updateCustoMes('${mm}','${cat}',this.value)"`:' disabled'}
-          /></td>`;
-      }).join('') +
-      `<td style="font-weight:700;color:#F59E0B">${fmt(totalAcumCat)}</td>
-    </tr>`;
-  }).join('');
-
-  const totalBase = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0);
-  const totalPorMes = MONTHS_ALL.map(mm=>MONTHS_OP.includes(mm)?getTotalCustoMes(mm):0);
-  const totalAcumGeral = totalPorMes.reduce((a,v)=>a+v,0);
-
-  document.getElementById('custo-mensal-table').innerHTML = custosRows;
-  document.getElementById('custo-mensal-total').innerHTML =
-    `<td style="background:#0A1628;color:#fff;font-weight:700;padding:8px 12px;">TOTAL</td>` +
-    `<td style="background:#1E3A5F;color:#7DD3FC;font-weight:700;padding:8px 12px;">${fmt(totalBase)}</td>` +
-    MONTHS_ALL.map((mm,i)=>{
-      const isOp = MONTHS_OP.includes(mm);
-      const v = totalPorMes[i];
-      return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?'#1E6FFF':'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;">${isOp?fmt(v):'—'}</td>`;
-    }).join('') +
-    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;">${fmt(totalAcumGeral)}</td>`;
-
-  document.getElementById('inv-table').innerHTML = INV_CATS.map((k,i)=>`
-    <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td>${k}</td>
-      <td style="padding:5px 8px"><input class="inp" type="number" value="${estrutura.investimento[k]||''}"
-        oninput="estrutura.investimento['${k}']=parseFloat(this.value)||0;saveEstrutura()" /></td>
-    </tr>`).join('') +
-    `<tr class="table-total"><td>TOTAL INVESTIDO</td><td>${fmt(totalInv)}</td></tr>`;
-
-  const rwSemReceita = totalBase>0?`${fmtNum(ci/totalBase)} m`:'∞';
-  document.getElementById('estr-summary-cards').innerHTML = [
-    kpiCard('Caixa Inicial', fmt(ci), '01/04/2025', '#1E6FFF'),
-    kpiCard('Aportes Acumulados', fmt(totalAportes), 'capital externo', '#8B5CF6'),
-    kpiCard('Custo Base Mensal', fmt(totalBase), 'estrutura central', '#F59E0B'),
-    kpiCard('Custo Acumulado', fmt(totalCustoAcum), 'Abr-Dez', '#EF4444'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
-    kpiCard('Runway', `${fmtNum(totals.runway)} m`, 'so custo fixo', '#1E6FFF'),
-  ].join('');
-}
-
-function updateCustoMes(mes, cat, val) {
-  if (!estrutura.custos_por_mes) estrutura.custos_por_mes = {};
-  if (!estrutura.custos_por_mes[mes]) estrutura.custos_por_mes[mes] = {};
-  if (val === '' || val === null || val === undefined) {
-    delete estrutura.custos_por_mes[mes][cat];
-  } else {
-    estrutura.custos_por_mes[mes][cat] = parseFloat(val)||0;
-  }
-  saveEstrutura();
-}
-
-// ─── VISÃO GERAL EMPRESAS FILHAS ─────────────────────────────────────────────
-function renderEmpresasGeral(companiesYTD) {
-  const filhasYTD = companiesYTD.filter(c => !c.isMae);
-
-  // Cards
-  document.getElementById('empresas-cards-grid').innerHTML = filhasYTD.map(c => {
-    const margem = c.receita > 0 ? c.resultado / c.receita : 0;
-    const comp = COMPANIES.find(x => x.id === c.id);
-    return `<div class="empresa-card" style="border-left-color:${c.color}; cursor:pointer" onclick="showEmpresaIndividual('${c.id}')">
-      <div class="empresa-card-header">
-        <div class="empresa-card-icon" style="background:${c.color}22;color:${c.color}">${editable(c.emoji, 'onEditCompanyEmoji("'+c.id+'")', {id:'ed-card-emoji-'+c.id})}</div>
-        <div>
-          <div class="empresa-card-name">${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-card-name-'+c.id})}</div>
-          <div class="empresa-card-seg">${editable(c.segmento, 'onEditCompanySegmento("'+c.id+'")', {id:'ed-card-seg-'+c.id})}</div>
-        </div>
-      </div>
-      <div class="empresa-card-metrics">
-        <div>
-          <div class="empresa-card-metric-label">Receita YTD</div>
-          <div class="empresa-card-metric-val" style="color:#1E6FFF">${fmt(c.receita)}</div>
-        </div>
-        <div>
-          <div class="empresa-card-metric-label">Resultado YTD</div>
-          <div class="empresa-card-metric-val" style="color:${c.resultado>=0?'#059669':'#DC2626'}">${fmt(c.resultado)}</div>
-        </div>
-        <div>
-          <div class="empresa-card-metric-label">Margem</div>
-          <div class="empresa-card-metric-val">${fmtPct(margem)}</div>
-        </div>
-        <div>
-          <div class="empresa-card-metric-label">Status</div>
-          <div>${badgeHtml(c.status)}</div>
-        </div>
-      </div>
-      ${comp && comp.website ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;">
-        <a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
-          style="display:inline-flex;align-items:center;gap:5px;color:${c.color};font-size:11px;font-weight:600;
-          text-decoration:none;background:${c.color}11;border:1px solid ${c.color}33;border-radius:20px;padding:4px 12px;
-          max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-          onmouseover="this.style.background='${c.color}22'" onmouseout="this.style.background='${c.color}11'">
-          🌐 ${comp.website.replace('https://','').replace('http://','').replace(/\/$/,'')}
-        </a>
-      </div>` : ''}
-    </div>`;
-  }).join('');
-
-  // Ranking table
-  const sorted = [...filhasYTD].sort((a,b)=>b.receita-a.receita);
-  document.getElementById('empresas-ranking-table').innerHTML = sorted.map((c,i)=>`
-    <tr style="background:${i%2===0?'#FAFAFA':'#fff'};cursor:pointer" onclick="showEmpresaIndividual('${c.id}')">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.emoji+' '+c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-rank-name-'+c.id})}</strong><br><span style="color:#6B7280;font-size:11px">${editable(c.segmento, 'onEditCompanySegmento("'+c.id+'")', {id:'ed-rank-seg-'+c.id})}</span></td>
-      <td style="color:#1E6FFF;font-weight:700">${fmt(c.receita)}</td>
-      <td>${fmt(c.custos)}</td>
-      <td style="${c.resultado<0?'color:#DC2626':'color:#059669'};font-weight:700">${fmt(c.resultado)}</td>
-      <td>${c.receita>0?fmtPct(c.resultado/c.receita):'—'}</td>
-      <td>${badgeHtml(c.status)}</td>
-    </tr>`).join('');
-}
-
-// ─── PÁGINA INDIVIDUAL DA EMPRESA ────────────────────────────────────────────
-let selEmpresaMonth = 'Jan';
-let empresaCharts = {};
-
-function showEmpresaIndividual(cid, navBtn) {
-  currentEmpresaId = cid;
-  selEmpresaMonth = selEmpresaMonth || 'Jan';
-
-  // Ativar tab
-  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-empresa-individual').classList.add('active');
-  if (navBtn) navBtn.classList.add('active');
-  else {
-    const nb = document.getElementById(`nav-emp-${cid}`);
-    if (nb) nb.classList.add('active');
-  }
-
-  renderEmpresaIndividual(cid);
-}
-
-function renderEmpresaIndividual(cid) {
-  const comp = COMPANIES.find(c=>c.id===cid);
-  if (!comp) return;
-
-  const ytd = getEmpresaYTD(cid);
-  const margem = ytd.receita > 0 ? ytd.resultado / ytd.receita : 0;
-
-  const e = getLanc(selEmpresaMonth, cid);
-  const mesRes = calcRes(e);
-  const mesMargem = (e.receita||0) > 0 ? mesRes / e.receita : 0;
-
-  // Dados mensais para o gráfico
-  const dadosMensais = MONTHS.map(m => {
-    const em = getLanc(m, cid);
-    return { mes: m, receita: em.receita||0, custos: calcCustos(em), resultado: calcRes(em) };
-  });
-
-  const content = `
-    <!-- Header da empresa -->
-    <div class="empresa-header" style="background:${comp.color}">
-      <div class="empresa-header-icon">${editable(comp.emoji, 'onEditCompanyEmoji("'+cid+'")', {light:true, id:'ed-emoji-'+cid, style:'font-size:22px'})}</div>
-      <div class="empresa-header-info">
-        <div class="empresa-header-name">${editable(comp.name, 'onEditCompanyName("'+cid+'")', {light:true, id:'ed-name-'+cid})}</div>
-        <div class="empresa-header-sub">${editable(comp.segmento, 'onEditCompanySegmento("'+cid+'")', {light:true, id:'ed-seg-'+cid})} · Empresa Filha da Arcade Hub</div>
-        <div style="margin-top:5px;display:flex;align-items:center;gap:8px;">
-          ${comp.website ? `<a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
-            style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.9);
-            background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;
-            padding:3px 10px;font-size:11px;font-weight:600;text-decoration:none;transition:all 0.2s;"
-            onmouseover="this.style.background='rgba(255,255,255,0.25)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-            🌐 ${comp.website.replace('https://','').replace('http://','').replace(/\/$/,'')}
-          </a>` : ''}
-          ${editable(comp.website||'', 'onEditCompanyWebsite("'+cid+'")', {light:true, type:'url', id:'ed-web-'+cid, inputStyle:'min-width:220px'})}
-        </div>
-      </div>
-      <div class="empresa-header-kpis">
-        <div class="empresa-header-kpi">
-          <div class="empresa-header-kpi-label">Receita YTD</div>
-          <div class="empresa-header-kpi-val">${fmt(ytd.receita)}</div>
-        </div>
-        <div class="empresa-header-kpi">
-          <div class="empresa-header-kpi-label">Resultado YTD</div>
-          <div class="empresa-header-kpi-val">${fmt(ytd.resultado)}</div>
-        </div>
-        <div class="empresa-header-kpi">
-          <div class="empresa-header-kpi-label">Margem YTD</div>
-          <div class="empresa-header-kpi-val">${fmtPct(margem)}</div>
-        </div>
-        <div class="empresa-header-kpi">
-          <div class="empresa-header-kpi-label">Custos YTD</div>
-          <div class="empresa-header-kpi-val">${fmt(ytd.custos)}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seletor de mês -->
-    <div class="section-title"><span>${editable('Lançamento de Custos Mensais — '+comp.name, 'onEditText("ed-sec-lanc-'+cid+'")', {id:'ed-sec-lanc-'+cid})}</span></div>
-    <div class="btn-group" id="emp-months-${cid}">
-      ${MONTHS.map(m=>`<button class="btn-month${m===selEmpresaMonth?' active':''}"
-        onclick="selEmpresaMonth='${m}';renderEmpresaIndividual('${cid}')">${m}</button>`).join('')}
-    </div>
-
-    <!-- Formulário de lançamento -->
-    <div class="two-col" style="margin-bottom:20px;">
-      <div>
-        <div class="table-wrap">
-          <div style="background:${comp.color};padding:12px 16px;display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px">${comp.emoji}</span>
-            <span style="color:#fff;font-weight:700;font-size:13px;font-family:'Sora',sans-serif;">${comp.name} · ${selEmpresaMonth}</span>
-            <span class="saving" id="saving-emp-${cid}" style="color:rgba(255,255,255,0.7)">💾 Salvando...</span>
-          </div>
-          <div class="form-grid" id="emp-form-${cid}">
-            ${buildEmpresaForm(cid, selEmpresaMonth)}
-          </div>
-        </div>
-      </div>
-      <div>
-        <!-- Resultado do mês -->
-        <div class="result-card ${mesRes>=0?'result-positive':'result-negative'}" id="emp-result-card-${cid}">
-          <div class="result-label">Resultado Operacional — ${selEmpresaMonth}</div>
-          <div class="result-value">${fmt(mesRes)}</div>
-          <div style="color:#6B7280;font-size:12px;margin-top:4px;">Margem: ${fmtPct(mesMargem)}</div>
-        </div>
-
-        <!-- KPIs do mês -->
-        <div class="kpi-grid">
-          ${kpiCard('Receita '+selEmpresaMonth, fmt(e.receita||0), '', comp.color)}
-          ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)), '', '#F59E0B')}
-          ${kpiCard('Headcount', fmtNum(e.headcount||0), 'pessoas', '#8B5CF6')}
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabela mensal anual -->
-    <div class="section-title"><span>${editable('Resumo Anual — '+comp.name, 'onEditText("ed-sec-anual-'+cid+'")', {id:'ed-sec-anual-'+cid})}</span></div>
-    <div class="table-wrap" style="overflow-x:auto;margin-bottom:20px;">
-      <table style="min-width:800px;">
-        <thead><tr>
-          <th>Categoria</th>
-          ${MONTHS.map(m=>`<th>${m}</th>`).join('')}
-          <th>YTD</th>
-        </tr></thead>
-        <tbody>
-          ${buildEmpresaAnualTable(cid)}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Gráfico evolução -->
-    <div class="section-title"><span>${editable('Evolução Mensal — '+comp.name, 'onEditText("ed-sec-evol-'+cid+'")', {id:'ed-sec-evol-'+cid})}</span></div>
-    <div class="chart-wrap">
-      <canvas id="chart-emp-${cid}" height="100"></canvas>
-    </div>
-  `;
-
-  document.getElementById('empresa-individual-content').innerHTML = content;
-
-  // Make all elements editable
-  setTimeout(makeAllEditable, 30);
-
-  // Renderizar gráfico
-  setTimeout(() => {
-    const ctx = document.getElementById(`chart-emp-${cid}`);
-    if (!ctx) return;
-    if (empresaCharts[cid]) empresaCharts[cid].destroy();
-    empresaCharts[cid] = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: dadosMensais.map(d=>d.mes),
-        datasets: [
-          { label:'Receita', data:dadosMensais.map(d=>d.receita), backgroundColor:comp.color+'CC', borderRadius:4 },
-          { label:'Custos', data:dadosMensais.map(d=>d.custos), backgroundColor:'#F59E0B66', borderRadius:4 },
-          { label:'Resultado', data:dadosMensais.map(d=>d.resultado),
-            backgroundColor:dadosMensais.map(d=>d.resultado>=0?'#10B98166':'#EF444466'), borderRadius:4 },
-        ]
-      },
-      options: {
-        responsive:true,
-        plugins:{legend:{labels:{font:{size:12}}}},
-        scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}
-      }
-    });
-  }, 50);
-}
-
-function buildEmpresaForm(cid, mes) {
-  const e = getLanc(mes, cid);
-  const fields = [
-    {key:'receita',label:'Receita Bruta (R$)'},
-    {key:'custos_diretos',label:'Custos Diretos (R$)'},
-    {key:'folha',label:'Folha de Pagamento (R$)'},
-    {key:'impostos',label:'Impostos e Taxas (R$)'},
-    {key:'despesas_adm',label:'Despesas Administrativas (R$)'},
-    {key:'outras_despesas',label:'Outras Despesas (R$)'},
-    {key:'headcount',label:'Headcount (pessoas)'},
-    {key:'obs',label:'Observações',text:true},
-  ];
-  return fields.map(f=>{
-    const lid = 'ed-fl-'+cid+'-'+f.key;
-    return `
-    <div class="form-field">
-      <label>${editable(f.label, 'onEditText("'+lid+'")', {id:lid, style:'font-size:11px'})}</label>
-      <input class="inp" type="${f.text?'text':'number'}" id="emp-${cid}-${f.key}"
-        value="${e[f.key]||''}"
-        oninput="updateEmpresaLanc('${cid}','${f.key}',this.value)"
-      />
-    </div>`;
-  }).join('');
-}
-
-function buildEmpresaAnualTable(cid) {
-  const rows = [
-    {label:'Receita Bruta', fn:e=>e.receita||0, bold:true, color:'#1E6FFF'},
-    {label:'Custos Diretos', fn:e=>e.custos_diretos||0},
-    {label:'Folha de Pagamento', fn:e=>e.folha||0},
-    {label:'Impostos', fn:e=>e.impostos||0},
-    {label:'Despesas Adm.', fn:e=>e.despesas_adm||0},
-    {label:'Outras Despesas', fn:e=>e.outras_despesas||0},
-    {label:'Total Custos', fn:e=>calcCustos(e), bold:true, color:'#F59E0B'},
-    {label:'Resultado Operacional', fn:e=>calcRes(e), bold:true, isResult:true},
-    {label:'Margem (%)', fn:e=>(e.receita||0)>0?fmtPct(calcRes(e)/e.receita):'—', noFmt:true},
-  ];
-
-  return rows.map((r,ri)=>{
-    const vals = MONTHS.map(m => r.fn(getLanc(m, cid)));
-    const ytdv = r.noFmt ? '—' : vals.reduce((a,b)=>a+b,0);
-    return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
-      <td style="${r.bold?'font-weight:700;':''}${r.color?`color:${r.color}`:''}">${r.label}</td>
-      ${vals.map(v=>{
-        if (r.noFmt) return `<td>${v}</td>`;
-        const neg = v < 0;
-        const pos = r.isResult && v > 0;
-        return `<td style="${neg?'color:#DC2626;font-weight:600':pos?'color:#059669;font-weight:600':''}">${fmt(v)}</td>`;
-      }).join('')}
-      <td style="font-weight:700;${r.noFmt?'':(ytdv<0?'color:#DC2626':(r.isResult&&ytdv>0)?'color:#059669':r.color?`color:${r.color}`:'')}">${r.noFmt?ytdv:fmt(ytdv)}</td>
-    </tr>`;
-  }).join('');
-}
-
-function updateEmpresaLanc(cid, key, val) {
-  const k = `${selEmpresaMonth}:${cid}`;
-  if (!lancamentos[k]) lancamentos[k] = {};
-  lancamentos[k][key] = key==='obs'||key==='headcount' ? (key==='headcount'?parseInt(val)||0:val) : parseFloat(val)||0;
-  lancamentos[k].mes = selEmpresaMonth;
-  lancamentos[k].empresa_id = cid;
-
-  // Atualizar resultado em tempo real
-  const e = getLanc(selEmpresaMonth, cid);
-  const res = calcRes(e);
-  const card = document.getElementById(`emp-result-card-${cid}`);
-  if (card) {
-    card.className = `result-card ${res>=0?'result-positive':'result-negative'}`;
-    card.innerHTML = `
-      <div class="result-label">Resultado Operacional — ${selEmpresaMonth}</div>
-      <div class="result-value">${fmt(res)}</div>
-      <div style="color:#6B7280;font-size:12px;margin-top:4px;">Margem: ${(e.receita||0)>0?fmtPct(res/e.receita):'—'}</div>
-    `;
-  }
-
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async ()=>{
-    await saveLanc(selEmpresaMonth, cid);
-    showSaving(`saving-emp-${cid}`);
-    renderAll();
-    // Re-render tabela anual sem perder foco
-    const tbody = document.querySelector(`#empresa-individual-content table tbody`);
-    if (tbody) tbody.innerHTML = buildEmpresaAnualTable(cid);
-  }, 700);
-}
-
-// ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
-function showTab(name, btn) {
-  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  document.getElementById(`tab-${name}`).classList.add('active');
-  if (btn) btn.classList.add('active');
-  else if (event && event.target) event.target.classList.add('active');
-}
-
-// ─── WEBSITE EMPRESA ─────────────────────────────────────────────────────────
-function updateCompanyWebsite(cid, url) {
-  const comp = COMPANIES.find(c => c.id === cid);
-  if (!comp) return;
-  comp.website = url.trim();
-  renderEmpresaIndividual(cid);
-}
-
-// ─── MAKE ALL STATIC TEXT EDITABLE ──────────────────────────────────────────
-function makeAllEditable() {
-  // Section titles
-  document.querySelectorAll('.section-title span:not(.editable):not([data-editable-done])').forEach(el => {
-    if (el.closest('.editable')) return; // already inside an editable
-    el.setAttribute('data-editable-done','1');
-    const original = el.textContent;
-    const id = 'ed-st-'+Math.random().toString(36).substr(2,6);
-    el.innerHTML = `<span class="editable" id="${id}">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}',onEditText('${id}'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',onEditText('${id}'))" title="Confirmar">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar">✕</button>
-    </span>`;
-  });
-  // Page titles (skip ones with saving indicators)
-  document.querySelectorAll('.page-title:not([data-editable-done])').forEach(el => {
-    el.setAttribute('data-editable-done','1');
-    const savingEl = el.querySelector('.saving');
-    const savingHtml = savingEl ? savingEl.outerHTML : '';
-    const textNodes = [];
-    el.childNodes.forEach(n => { if(n.nodeType===3 && n.textContent.trim()) textNodes.push(n); });
-    if (textNodes.length === 0) return;
-    const original = textNodes[0].textContent.trim();
-    const id = el.id || 'ed-pt-'+Math.random().toString(36).substr(2,6);
-    textNodes[0].textContent = '';
-    const wrapper = document.createElement('span');
-    wrapper.innerHTML = `<span class="editable" id="${id}-edit">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}-edit',onEditText('${id}-edit'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}-edit')" title="Editar">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}-edit',onEditText('${id}-edit'))" title="Confirmar">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}-edit')" title="Cancelar">✕</button>
-    </span>`;
-    el.insertBefore(wrapper, el.firstChild);
-  });
-  // Page subtitles
-  document.querySelectorAll('.page-sub:not([data-editable-done])').forEach(el => {
-    el.setAttribute('data-editable-done','1');
-    const original = el.textContent.trim();
-    const id = el.id || 'ed-ps-'+Math.random().toString(36).substr(2,6);
-    el.innerHTML = `<span class="editable" id="${id}-edit">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}" style="min-width:300px"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}-edit',onEditText('${id}-edit'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}-edit')" title="Editar">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}-edit',onEditText('${id}-edit'))" title="Confirmar">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}-edit')" title="Cancelar">✕</button>
-    </span>`;
-  });
-  // KPI labels
-  document.querySelectorAll('.kpi-label:not([data-editable-done])').forEach(el => {
-    el.setAttribute('data-editable-done','1');
-    const original = el.textContent.trim();
-    const id = 'ed-kpi-'+Math.random().toString(36).substr(2,6);
-    el.innerHTML = `<span class="editable" id="${id}">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}" style="min-width:80px;font-size:10px"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}',onEditText('${id}'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar" style="width:18px;height:18px;font-size:10px">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',onEditText('${id}'))" title="Confirmar" style="width:18px;height:18px;font-size:10px">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar" style="width:18px;height:18px;font-size:10px">✕</button>
-    </span>`;
-  });
-  // Table header cells
-  document.querySelectorAll('thead th:not([data-editable-done])').forEach(el => {
-    if (el.querySelector('input')) return; // skip if has input
-    el.setAttribute('data-editable-done','1');
-    const original = el.textContent.trim();
-    if (!original) return;
-    const id = 'ed-th-'+Math.random().toString(36).substr(2,6);
-    el.innerHTML = `<span class="editable editable-light" id="${id}">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}" style="min-width:60px;font-size:11px"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}',onEditText('${id}'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar" style="width:18px;height:18px;font-size:10px">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',onEditText('${id}'))" title="Confirmar" style="width:18px;height:18px;font-size:10px">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar" style="width:18px;height:18px;font-size:10px">✕</button>
-    </span>`;
-  });
-  // Nav items text
-  document.querySelectorAll('.nav-footer:not([data-editable-done])').forEach(el => {
-    el.setAttribute('data-editable-done','1');
-    const original = el.textContent.trim();
-    const id = 'ed-footer';
-    el.innerHTML = `<span class="editable editable-light" id="${id}">
-      <span class="editable-value">${original}</span>
-      <input class="editable-input" type="text" value="${original.replace(/"/g,'&quot;')}" style="min-width:100px;font-size:10px"
-        onkeydown="if(event.key==='Enter'){confirmEdit('${id}',onEditText('${id}'))}" />
-      <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar" style="width:16px;height:16px;font-size:9px">✏️</button>
-      <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',onEditText('${id}'))" title="Confirmar" style="width:16px;height:16px;font-size:9px">✔</button>
-      <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar" style="width:16px;height:16px;font-size:9px">✕</button>
-    </span>`;
-  });
-}
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
-(async () => {
-  await loadAll();
-  document.getElementById('loading-overlay').style.display = 'none';
-  renderAll();
-  toast('✅ Arcade Hub v2.0 carregado — 11 empresas ativas!');
-})();
+}, { threshold: 0.5 });
+document.querySelectorAll('.stat-number[data-count]').forEach(el => counterObserver.observe(el));
 </script>
+
 </body>
 </html>
