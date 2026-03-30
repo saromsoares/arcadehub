@@ -450,6 +450,42 @@
           </div>
           <div class="form-grid" id="lanc-form"></div>
         </div>
+        <!-- CUSTOS EXTRAS -->
+        <div class="table-wrap" style="margin-top:16px;">
+          <div style="background:#0A1628;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#fff;font-weight:700;font-size:12px;">Custos Extras</span>
+            <button onclick="abrirFormCustoExtra()" style="background:#10B981;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">+ Novo Custo</button>
+          </div>
+          <div id="lanc-custo-extra-form" style="display:none;padding:14px;border-bottom:1px solid #E5E7EB;background:#F9FAFB;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Descrição</label>
+                <input class="inp" type="text" id="ce-descricao" placeholder="Ex: VPS Europa, Domínio...">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Valor (R$)</label>
+                <input class="inp" type="number" id="ce-valor" placeholder="0">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Quem Pagou</label>
+                <select class="inp" id="ce-pagador" style="text-align:left;"></select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Meio de Pagamento</label>
+                <select class="inp" id="ce-meio" style="text-align:left;"></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+              <button onclick="fecharFormCustoExtra()" style="background:#E5E7EB;color:#374151;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+              <button onclick="salvarCustoExtra()" style="background:#1E6FFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar Custo</button>
+              <button onclick="salvarELancarOutro()" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar e Lançar Outro</button>
+            </div>
+          </div>
+          <table id="lanc-custos-extras-table" style="width:100%;">
+            <thead><tr><th>Descrição</th><th>Valor</th><th>Pagador</th><th>Meio</th><th style="width:40px;"></th></tr></thead>
+            <tbody id="lanc-custos-extras-body"></tbody>
+          </table>
+        </div>
       </div>
       <div>
         <div id="lanc-result-card" class="result-card result-positive">
@@ -626,7 +662,7 @@
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Mês</th><th>Empresa</th><th>Tipo Despesa</th><th>Valor</th><th>Pagador</th><th>Meio</th>
+          <th>Mês</th><th>Empresa</th><th>Tipo Despesa</th><th>Valor</th><th>Pagador</th><th>Meio</th><th>Origem</th>
         </tr></thead>
         <tbody id="balanco-detalhe-table"></tbody>
       </table>
@@ -753,16 +789,17 @@ function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 const COMPANIES = [
   { id:'arcade_hub',           name:'Arcade Hub',             color:'#1E6FFF', emoji:'🏦', segmento:'Holding / Fintech',       isMae: true,  website:'' },
   { id:'priva_br',             name:'Priva BR',               color:'#6366F1', emoji:'🔒', segmento:'Privacidade & Dados',      isMae: false, website:'https://www.privabr.com.br/' },
-  { id:'festa_play',           name:'Festa Play',             color:'#EC4899', emoji:'🎉', segmento:'Entretenimento & Eventos', isMae: false, website:'https://festanoplay.com/' },
+  { id:'festa_play',           name:'Festa no Play',          color:'#EC4899', emoji:'🎉', segmento:'Entretenimento & Eventos', isMae: false, website:'https://festanoplay.com/' },
   { id:'perrengue_aereo',      name:'Perrengue Aéreo',        color:'#0EA5E9', emoji:'✈️', segmento:'Viagens & Aviação',        isMae: false, website:'https://perrengue-aereo.vercel.app/' },
   { id:'perrengue_saude',      name:'Perrengue Saúde',        color:'#10B981', emoji:'🏥', segmento:'Saúde & Bem-estar',        isMae: false, website:'' },
   { id:'perrengue_consumidor', name:'Perrengue Consumidor',   color:'#F59E0B', emoji:'⚖️', segmento:'Defesa do Consumidor',     isMae: false, website:'' },
   { id:'criativo_pronto',      name:'Criativo Pronto',        color:'#8B5CF6', emoji:'🎨', segmento:'Marketing & Criatividade', isMae: false, website:'https://criativopronto.com.br/' },
   { id:'liga_da_rotina',       name:'Liga da Rotina',         color:'#EAB308', emoji:'📅', segmento:'Produtividade & Rotina',   isMae: false, website:'https://ligadarotina.vercel.app/' },
   { id:'margoti_laudos',       name:'Margoti Laudos',         color:'#06B6D4', emoji:'📋', segmento:'Laudos & Perícia',         isMae: false, website:'' },
-  { id:'raio_x_do_lucro',      name:'Raio X do Lucro',        color:'#EF4444', emoji:'💡', segmento:'Análise Financeira',       isMae: false, website:'' },
+  { id:'raio_x_do_lucro',      name:'Lucro Visível',           color:'#EF4444', emoji:'💡', segmento:'Análise Financeira',       isMae: false, website:'https://lucrovisivel.com.br/' },
   { id:'nexus_horizon',        name:'Nexus Horizon',          color:'#14B8A6', emoji:'🌐', segmento:'Expansão & Estratégia',    isMae: false, website:'https://asxhorizon-qsmnmbit.manus.space/' },
   { id:'loto_app',             name:'Loto App',               color:'#22C55E', emoji:'🎰', segmento:'Loterias & Sorte',          isMae: false, website:'' },
+  { id:'coben_life_os',        name:'Coben Life OS',          color:'#3B82F6', emoji:'🧬', segmento:'Life OS & Produtividade',   isMae: false, website:'https://cobenlifeos.com/' },
 ];
 
 const FILHAS = COMPANIES.filter(c => !c.isMae);
@@ -813,6 +850,7 @@ let saveTimer = null;
 let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp = null;
 let currentEmpresaId = null;
 let selBalancoSocio = 'TODOS';
+let custosExtras = []; // Array de custos extras carregados do Supabase
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 const fmt = v => isNaN(v)||v==null ? 'R$ 0' : new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
@@ -974,13 +1012,17 @@ function badgeHtml(s) {
 }
 
 // ─── COMPUTED ────────────────────────────────────────────────────────────────
+function getTotalCustosExtras(mes, empresa_id) {
+  return getCustosExtras(mes, empresa_id).reduce((a,x)=>a+(x.valor||0),0);
+}
 function getConsolidado() {
   return MONTHS.map(m => {
     let receita=0,custos=0,resultado=0,headcount=0,receitaP=0,resultadoP=0;
     COMPANIES.forEach(c => {
       const e = getLanc(m, c.id), p = getPlan(m, c.id);
-      receita += e.receita||0; custos += calcCustos(e);
-      resultado += calcRes(e); headcount += e.headcount||0;
+      const extras = getTotalCustosExtras(m, c.id);
+      receita += e.receita||0; custos += calcCustos(e) + extras;
+      resultado += calcRes(e) - extras; headcount += e.headcount||0;
       receitaP += p.receita_p||0; resultadoP += calcResP(p);
     });
     return {mes:m, receita, custos, resultado, headcount, receitaP, resultadoP};
@@ -999,7 +1041,8 @@ function getCompaniesYTD() {
     let receita=0,custos=0,resultado=0,receitaP=0,resultadoP=0,hc=0;
     MONTHS.forEach(m => {
       const e=getLanc(m,c.id),p=getPlan(m,c.id);
-      receita+=e.receita||0; custos+=calcCustos(e); resultado+=calcRes(e);
+      const extras = getTotalCustosExtras(m, c.id);
+      receita+=e.receita||0; custos+=calcCustos(e)+extras; resultado+=calcRes(e)-extras;
       receitaP+=p.receita_p||0; resultadoP+=calcResP(p); hc+=e.headcount||0;
     });
     const atR=receitaP>0?receita/receitaP:0, atRe=resultadoP!==0?resultado/resultadoP:0;
@@ -1011,7 +1054,8 @@ function getEmpresaYTD(cid) {
   let receita=0,custos=0,resultado=0,hc=0;
   MONTHS.forEach(m => {
     const e=getLanc(m,cid);
-    receita+=e.receita||0; custos+=calcCustos(e); resultado+=calcRes(e); hc+=e.headcount||0;
+    const extras = getTotalCustosExtras(m, cid);
+    receita+=e.receita||0; custos+=calcCustos(e)+extras; resultado+=calcRes(e)-extras; hc+=e.headcount||0;
   });
   return {receita,custos,resultado,hcAvg:hc/12};
 }
@@ -1057,6 +1101,32 @@ async function saveLanc(mes, empresa_id) {
   }, { onConflict: 'mes,empresa_id' });
   showSaving('saving-lanc');
 }
+// ─── CUSTOS EXTRAS CRUD ─────────────────────────────────────────────────────
+async function saveCustoExtra(custo) {
+  const payload = {
+    mes: custo.mes, empresa_id: custo.empresa_id,
+    descricao: custo.descricao || '', valor: custo.valor || 0,
+    pagador: custo.pagador || '', meio_pagamento: custo.meio_pagamento || '',
+    updated_at: new Date().toISOString()
+  };
+  if (custo.id) {
+    await sb.from('custos_extras').update(payload).eq('id', custo.id);
+  } else {
+    const { data } = await sb.from('custos_extras').insert(payload).select().single();
+    if (data) custo.id = data.id;
+  }
+  showSaving('saving-lanc');
+}
+async function deleteCustoExtra(id) {
+  await sb.from('custos_extras').delete().eq('id', id);
+  custosExtras = custosExtras.filter(c => c.id !== id);
+  renderLancamentos();
+  renderAll();
+}
+function getCustosExtras(mes, empresa_id) {
+  return custosExtras.filter(c => c.mes === mes && c.empresa_id === empresa_id);
+}
+
 async function savePlan(mes, empresa_id) {
   const p = getPlan(mes, empresa_id);
   await sb.from('planejado').upsert({
@@ -1103,13 +1173,15 @@ async function saveEstrutura() {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
+    sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
   ]);
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
+  if (ceData) custosExtras = ceData;
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -1352,9 +1424,13 @@ function renderLancamentos() {
     </div>`;
 
   updateLancResult();
+  renderCustosExtrasTable();
+  fecharFormCustoExtra();
 
   document.getElementById('lanc-overview-table').innerHTML = COMPANIES.map((c,i)=>{
     const ec=getLanc(selMonth,c.id), rc=calcRes(ec);
+    const extrasTotal = getCustosExtras(selMonth, c.id).reduce((a,x)=>a+(x.valor||0),0);
+    const rcComExtras = rc - extrasTotal;
     const isSelected=c.id===selCompany;
     const pgdr = ec.pagador || '—';
     const pgdrColor = SOCIOS.includes(pgdr) ? '#F59E0B' : (pgdr==='EMPRESA'?'#10B981':'#9CA3AF');
@@ -1362,7 +1438,7 @@ function renderLancamentos() {
       onclick="selCompany='${c.id}';renderLancamentos()">
       <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lanc-'+c.id})}</td>
       <td>${fmt(ec.receita||0)}</td>
-      <td style="${rc<0?'color:#DC2626':'color:#059669'}">${fmt(rc)}</td>
+      <td style="${rcComExtras<0?'color:#DC2626':'color:#059669'}">${fmt(rcComExtras)}</td>
       <td style="color:${pgdrColor};font-weight:600;font-size:11px">${pgdr}</td>
     </tr>`;
   }).join('');
@@ -1388,13 +1464,17 @@ function updateLanc(key, val) {
 function updateLancResult() {
   const e = getLanc(selMonth, selCompany);
   const res = calcRes(e);
+  const extrasTotal = getCustosExtras(selMonth, selCompany).reduce((a,x)=>a+(x.valor||0),0);
+  const resComExtras = res - extrasTotal;
   const card = document.getElementById('lanc-result-card');
-  card.className = `result-card ${res>=0?'result-positive':'result-negative'}`;
-  document.getElementById('lanc-result-value').textContent = fmt(res);
+  card.className = `result-card ${resComExtras>=0?'result-positive':'result-negative'}`;
+  document.getElementById('lanc-result-value').textContent = fmt(resComExtras);
   document.getElementById('lanc-result-margem').textContent =
-    `Margem: ${(e.receita||0)>0?fmtPct(res/(e.receita||1)):'—'}`;
+    `Margem: ${(e.receita||0)>0?fmtPct(resComExtras/(e.receita||1)):'—'}`;
   document.getElementById('lanc-overview-table').innerHTML = COMPANIES.map((c,i)=>{
     const ec=getLanc(selMonth,c.id), rc=calcRes(ec);
+    const cExtras = getCustosExtras(selMonth, c.id).reduce((a,x)=>a+(x.valor||0),0);
+    const rcFinal = rc - cExtras;
     const isSelected=c.id===selCompany;
     const pgdr = ec.pagador || '—';
     const pgdrColor = SOCIOS.includes(pgdr) ? '#F59E0B' : (pgdr==='EMPRESA'?'#10B981':'#9CA3AF');
@@ -1402,10 +1482,85 @@ function updateLancResult() {
       onclick="selCompany='${c.id}';renderLancamentos()">
       <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lancr-'+c.id})}</td>
       <td>${fmt(ec.receita||0)}</td>
-      <td style="${rc<0?'color:#DC2626':'color:#059669'}">${fmt(rc)}</td>
+      <td style="${rcFinal<0?'color:#DC2626':'color:#059669'}">${fmt(rcFinal)}</td>
       <td style="color:${pgdrColor};font-weight:600;font-size:11px">${pgdr}</td>
     </tr>`;
   }).join('');
+}
+
+// ─── CUSTOS EXTRAS UI ───────────────────────────────────────────────────────
+function abrirFormCustoExtra() {
+  const form = document.getElementById('lanc-custo-extra-form');
+  form.style.display = 'block';
+  document.getElementById('ce-descricao').value = '';
+  document.getElementById('ce-valor').value = '';
+  const pagadorOpts = ['','EMPRESA',...SOCIOS].map(s =>
+    `<option value="${s}">${s||'— Selecionar —'}</option>`).join('');
+  const meioOpts = [{id:'',label:'— Selecionar —'},...MEIOS_PAGAMENTO].map(m =>
+    `<option value="${m.id}">${m.label}</option>`).join('');
+  document.getElementById('ce-pagador').innerHTML = pagadorOpts;
+  document.getElementById('ce-meio').innerHTML = meioOpts;
+  document.getElementById('ce-descricao').focus();
+}
+function fecharFormCustoExtra() {
+  document.getElementById('lanc-custo-extra-form').style.display = 'none';
+}
+async function salvarCustoExtra() {
+  const descricao = document.getElementById('ce-descricao').value.trim();
+  const valor = parseFloat(document.getElementById('ce-valor').value) || 0;
+  const pagador = document.getElementById('ce-pagador').value;
+  const meio_pagamento = document.getElementById('ce-meio').value;
+  if (!descricao || valor <= 0) { alert('Preencha a descrição e o valor.'); return; }
+  const custo = { mes: selMonth, empresa_id: selCompany, descricao, valor, pagador, meio_pagamento };
+  await saveCustoExtra(custo);
+  custosExtras.push(custo);
+  fecharFormCustoExtra();
+  renderCustosExtrasTable();
+  renderAll();
+}
+async function salvarELancarOutro() {
+  const descricao = document.getElementById('ce-descricao').value.trim();
+  const valor = parseFloat(document.getElementById('ce-valor').value) || 0;
+  const pagador = document.getElementById('ce-pagador').value;
+  const meio_pagamento = document.getElementById('ce-meio').value;
+  if (!descricao || valor <= 0) { alert('Preencha a descrição e o valor.'); return; }
+  const custo = { mes: selMonth, empresa_id: selCompany, descricao, valor, pagador, meio_pagamento };
+  await saveCustoExtra(custo);
+  custosExtras.push(custo);
+  renderCustosExtrasTable();
+  renderAll();
+  // Limpa o form para o próximo lançamento
+  document.getElementById('ce-descricao').value = '';
+  document.getElementById('ce-valor').value = '';
+  document.getElementById('ce-pagador').value = '';
+  document.getElementById('ce-meio').value = '';
+  document.getElementById('ce-descricao').focus();
+}
+function renderCustosExtrasTable() {
+  const extras = getCustosExtras(selMonth, selCompany);
+  const meioLabels = Object.fromEntries(MEIOS_PAGAMENTO.map(m => [m.id, m.label]));
+  if (extras.length === 0) {
+    document.getElementById('lanc-custos-extras-body').innerHTML =
+      `<tr><td colspan="5" style="text-align:center;color:#9CA3AF;padding:16px;font-size:12px;">Nenhum custo extra lançado. Clique em "+ Novo Custo" para adicionar.</td></tr>`;
+    return;
+  }
+  const totalExtras = extras.reduce((a, c) => a + (c.valor || 0), 0);
+  document.getElementById('lanc-custos-extras-body').innerHTML =
+    extras.map((c, i) => {
+      const pgdrColor = SOCIOS.includes(c.pagador) ? '#F59E0B' : (c.pagador==='EMPRESA'?'#10B981':'#9CA3AF');
+      return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
+        <td style="font-size:12px;">${c.descricao}</td>
+        <td style="font-weight:600;color:#EF4444;font-size:12px;">${fmt(c.valor)}</td>
+        <td style="color:${pgdrColor};font-weight:600;font-size:11px;">${c.pagador||'—'}</td>
+        <td style="font-size:11px;color:#6B7280;">${meioLabels[c.meio_pagamento]||c.meio_pagamento||'—'}</td>
+        <td><button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra('${c.id}')" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button></td>
+      </tr>`;
+    }).join('') +
+    `<tr style="background:#F0F4FF;font-weight:700;">
+      <td style="font-size:12px;">TOTAL CUSTOS EXTRAS</td>
+      <td style="color:#EF4444;font-size:12px;">${fmt(totalExtras)}</td>
+      <td colspan="3"></td>
+    </tr>`;
 }
 
 // ─── PLANEJADO ───────────────────────────────────────────────────────────────
@@ -1649,13 +1804,14 @@ function renderBalancoSocios() {
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const socioColors = { SAROM:'#1E6FFF', RICARDO:'#8B5CF6', BERVAL:'#10B981', MARCOS:'#F59E0B' };
 
-  // Calcular gastos pessoais por socio (quando pagador = socio E meio = cartao_pessoal ou pix)
+  // Calcular gastos pessoais por socio (quando pagador = socio E meio != cartao_empresa)
   const gastosPessoais = {};
   const detalhesPessoais = [];
   SOCIOS.forEach(s => { gastosPessoais[s] = 0; });
 
   MONTHS_ALL.forEach(mes => {
     COMPANIES.forEach(comp => {
+      // Lançamentos principais
       const e = getLanc(mes, comp.id);
       if (e.pagador && SOCIOS.includes(e.pagador) && e.meio_pagamento && e.meio_pagamento !== 'cartao_empresa') {
         const totalGasto = calcCustos(e);
@@ -1664,12 +1820,28 @@ function renderBalancoSocios() {
           detalhesPessoais.push({
             mes, empresa: comp.name, empresaColor: comp.color,
             valor: totalGasto, pagador: e.pagador, meio: e.meio_pagamento,
+            descricao: 'Lançamento principal',
             custos_diretos: e.custos_diretos||0, folha: e.folha||0,
             impostos: e.impostos||0, despesas_adm: e.despesas_adm||0,
             outras_despesas: e.outras_despesas||0
           });
         }
       }
+      // Custos extras
+      const extras = getCustosExtras(mes, comp.id);
+      extras.forEach(ce => {
+        if (ce.pagador && SOCIOS.includes(ce.pagador) && ce.meio_pagamento && ce.meio_pagamento !== 'cartao_empresa') {
+          gastosPessoais[ce.pagador] += (ce.valor || 0);
+          if ((ce.valor || 0) > 0) {
+            detalhesPessoais.push({
+              mes, empresa: comp.name, empresaColor: comp.color,
+              valor: ce.valor, pagador: ce.pagador, meio: ce.meio_pagamento,
+              descricao: ce.descricao || 'Custo extra',
+              custos_diretos: 0, folha: 0, impostos: 0, despesas_adm: 0, outras_despesas: 0
+            });
+          }
+        }
+      });
     });
   });
 
@@ -1720,17 +1892,23 @@ function renderBalancoSocios() {
 
   if (filtrado.length === 0) {
     document.getElementById('balanco-detalhe-table').innerHTML =
-      `<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:20px;">Nenhum pagamento pessoal registrado. Selecione um pagador nos lançamentos.</td></tr>`;
+      `<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:20px;">Nenhum pagamento pessoal registrado. Selecione um pagador nos lançamentos.</td></tr>`;
   } else {
     document.getElementById('balanco-detalhe-table').innerHTML =
       filtrado.map((d, i) => {
         const sColor = socioColors[d.pagador] || '#6B7280';
         const tipoDespesa = [];
-        if (d.custos_diretos > 0) tipoDespesa.push('Custos Diretos');
-        if (d.folha > 0) tipoDespesa.push('Folha');
-        if (d.impostos > 0) tipoDespesa.push('Impostos');
-        if (d.despesas_adm > 0) tipoDespesa.push('Desp. Adm');
-        if (d.outras_despesas > 0) tipoDespesa.push('Outras');
+        if (d.descricao && d.descricao !== 'Lançamento principal') {
+          tipoDespesa.push(d.descricao);
+        } else {
+          if (d.custos_diretos > 0) tipoDespesa.push('Custos Diretos');
+          if (d.folha > 0) tipoDespesa.push('Folha');
+          if (d.impostos > 0) tipoDespesa.push('Impostos');
+          if (d.despesas_adm > 0) tipoDespesa.push('Desp. Adm');
+          if (d.outras_despesas > 0) tipoDespesa.push('Outras');
+        }
+        const origem = d.descricao === 'Lançamento principal' ? 'Lançamento' : 'Custo Extra';
+        const origemColor = origem === 'Lançamento' ? '#6B7280' : '#8B5CF6';
         return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
           <td>${d.mes}</td>
           <td><span class="dot" style="background:${d.empresaColor}"></span>${d.empresa}</td>
@@ -1738,12 +1916,13 @@ function renderBalancoSocios() {
           <td style="font-weight:600;color:#EF4444">${fmt(d.valor)}</td>
           <td><strong style="color:${sColor}">${d.pagador}</strong></td>
           <td>${meioLabels[d.meio] || d.meio}</td>
+          <td style="font-size:10px;color:${origemColor};font-weight:600;">${origem}</td>
         </tr>`;
       }).join('') +
       `<tr class="table-total">
         <td colspan="3">TOTAL FILTRADO</td>
         <td>${fmt(filtrado.reduce((a,d) => a + d.valor, 0))}</td>
-        <td colspan="2"></td>
+        <td colspan="3"></td>
       </tr>`;
   }
 }
@@ -1847,13 +2026,15 @@ function renderEmpresaIndividual(cid) {
   const margem = ytd.receita > 0 ? ytd.resultado / ytd.receita : 0;
 
   const e = getLanc(selEmpresaMonth, cid);
-  const mesRes = calcRes(e);
+  const mesExtras = getTotalCustosExtras(selEmpresaMonth, cid);
+  const mesRes = calcRes(e) - mesExtras;
   const mesMargem = (e.receita||0) > 0 ? mesRes / e.receita : 0;
 
   // Dados mensais para o gráfico
   const dadosMensais = MONTHS.map(m => {
     const em = getLanc(m, cid);
-    return { mes: m, receita: em.receita||0, custos: calcCustos(em), resultado: calcRes(em) };
+    const mExtras = getTotalCustosExtras(m, cid);
+    return { mes: m, receita: em.receita||0, custos: calcCustos(em)+mExtras, resultado: calcRes(em)-mExtras };
   });
 
   const content = `
@@ -2012,19 +2193,20 @@ function buildEmpresaForm(cid, mes) {
 
 function buildEmpresaAnualTable(cid) {
   const rows = [
-    {label:'Receita Bruta', fn:e=>e.receita||0, bold:true, color:'#1E6FFF'},
-    {label:'Custos Diretos', fn:e=>e.custos_diretos||0},
-    {label:'Folha de Pagamento', fn:e=>e.folha||0},
-    {label:'Impostos', fn:e=>e.impostos||0},
-    {label:'Despesas Adm.', fn:e=>e.despesas_adm||0},
-    {label:'Outras Despesas', fn:e=>e.outras_despesas||0},
-    {label:'Total Custos', fn:e=>calcCustos(e), bold:true, color:'#F59E0B'},
-    {label:'Resultado Operacional', fn:e=>calcRes(e), bold:true, isResult:true},
-    {label:'Margem (%)', fn:e=>(e.receita||0)>0?fmtPct(calcRes(e)/e.receita):'—', noFmt:true},
+    {label:'Receita Bruta', fn:(e,m,c)=>e.receita||0, bold:true, color:'#1E6FFF'},
+    {label:'Custos Diretos', fn:(e,m,c)=>e.custos_diretos||0},
+    {label:'Folha de Pagamento', fn:(e,m,c)=>e.folha||0},
+    {label:'Impostos', fn:(e,m,c)=>e.impostos||0},
+    {label:'Despesas Adm.', fn:(e,m,c)=>e.despesas_adm||0},
+    {label:'Outras Despesas', fn:(e,m,c)=>e.outras_despesas||0},
+    {label:'Total Custos', fn:(e,m,c)=>calcCustos(e)+getTotalCustosExtras(m,c), bold:true, color:'#F59E0B'},
+    {label:'Custos Extras', fn:(e,m,c)=>getTotalCustosExtras(m,c), color:'#8B5CF6'},
+    {label:'Resultado Operacional', fn:(e,m,c)=>calcRes(e)-getTotalCustosExtras(m,c), bold:true, isResult:true},
+    {label:'Margem (%)', fn:(e,m,c)=>{const r=calcRes(e)-getTotalCustosExtras(m,c);return(e.receita||0)>0?fmtPct(r/e.receita):'—';}, noFmt:true},
   ];
 
   return rows.map((r,ri)=>{
-    const vals = MONTHS.map(m => r.fn(getLanc(m, cid)));
+    const vals = MONTHS.map(m => r.fn(getLanc(m, cid), m, cid));
     const ytdv = r.noFmt ? '—' : vals.reduce((a,b)=>a+b,0);
     return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td style="${r.bold?'font-weight:700;':''}${r.color?`color:${r.color}`:''}">${r.label}</td>
@@ -2048,7 +2230,7 @@ function updateEmpresaLanc(cid, key, val) {
 
   // Atualizar resultado em tempo real
   const e = getLanc(selEmpresaMonth, cid);
-  const res = calcRes(e);
+  const res = calcRes(e) - getTotalCustosExtras(selEmpresaMonth, cid);
   const card = document.getElementById(`emp-result-card-${cid}`);
   if (card) {
     card.className = `result-card ${res>=0?'result-positive':'result-negative'}`;
