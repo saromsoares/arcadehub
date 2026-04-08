@@ -347,6 +347,17 @@
   .cal-modal-actions .btn-save:hover { background:#1558D6; }
   .cal-modal-actions .btn-cancel { background:#F3F4F6; color:#374151; }
   .cal-modal-actions .btn-cancel:hover { background:#E5E7EB; }
+
+  .cal-resp-picker { display:flex; flex-wrap:wrap; gap:6px; padding:6px; border:1px solid #E5E7EB; border-radius:8px; background:#fff; }
+  .cal-resp-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:20px; background:#F3F4F6; border:1.5px solid transparent; font-size:12px; font-weight:600; color:#374151; cursor:pointer; transition:all 0.15s; user-select:none; }
+  .cal-resp-chip:hover { background:#E5E7EB; }
+  .cal-resp-chip.selected { background:#fff; border-color:currentColor; box-shadow:0 0 0 2px rgba(30,111,255,0.08); }
+  .cal-resp-chip-dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+
+  .cal-card-avatars { display:flex; align-items:center; }
+  .cal-card-avatars .cal-card-avatar { margin-left:-6px; border:2px solid #fff; }
+  .cal-card-avatars .cal-card-avatar:first-child { margin-left:0; }
+  .cal-card-avatar-more { width:20px; height:20px; border-radius:50%; background:#E5E7EB; color:#374151; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-left:-6px; border:2px solid #fff; }
 </style>
 </head>
 <body>
@@ -774,10 +785,8 @@
       <input type="text" id="cal-modal-titulo" placeholder="Ex: Reuniao com cliente X" />
       <label>Descricao (opcional)</label>
       <textarea id="cal-modal-descricao" placeholder="Detalhes da acao..."></textarea>
-      <label>Responsavel</label>
-      <select id="cal-modal-responsavel">
-        <option value="">Nao atribuido</option>
-      </select>
+      <label>Responsaveis (selecione um ou mais)</label>
+      <div id="cal-modal-responsaveis" class="cal-resp-picker"></div>
       <label>Status</label>
       <select id="cal-modal-status">
         <option value="todo">A fazer</option>
@@ -2380,16 +2389,22 @@ function updateEmpresaLanc(cid, key, val) {
 
 // ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
 // ─── CALENDÁRIO OPERACIONAL (Trello-style) ──────────────────────────────────
-// Executores: sócios + time operacional (Luiz = programador, Glad = marketing)
 const CAL_EXECUTORES = [
-  { nome:'SAROM',   papel:'Sócio',       color:'#1E6FFF' },
-  { nome:'RICARDO', papel:'Sócio',       color:'#10B981' },
-  { nome:'BERVAL',  papel:'Sócio',       color:'#F59E0B' },
-  { nome:'MARCOS',  papel:'Sócio',       color:'#8B5CF6' },
-  { nome:'LUIZ',    papel:'Programador', color:'#EC4899' },
-  { nome:'GLAD',    papel:'Marketing',   color:'#14B8A6' },
+  { nome:'SAROM',   color:'#1E6FFF' },
+  { nome:'RICARDO', color:'#10B981' },
+  { nome:'BERVAL',  color:'#F59E0B' },
+  { nome:'MARCOS',  color:'#8B5CF6' },
+  { nome:'LUIZ',    color:'#EC4899' },
+  { nome:'GLAD',    color:'#14B8A6' },
 ];
 const CAL_SOCIO_COLORS = Object.fromEntries(CAL_EXECUTORES.map(e => [e.nome, e.color]));
+
+// Normaliza responsavel vindo do banco (pode vir como array, string antiga ou null)
+function calNormResp(r) {
+  if (Array.isArray(r)) return r.filter(Boolean);
+  if (typeof r === 'string' && r.trim()) return [r.trim()];
+  return [];
+}
 
 function calTodayISO() {
   const d = new Date();
@@ -2422,25 +2437,15 @@ function renderCalendario() {
   const inp = document.getElementById('cal-new-date');
   if (inp && !inp.value) inp.value = calTodayISO();
 
-  // Popula select de responsaveis (agrupado por papel)
-  const sel = document.getElementById('cal-modal-responsavel');
-  if (sel && sel.options.length <= 1) {
-    const groups = {};
-    CAL_EXECUTORES.forEach(e => {
-      const key = e.papel === 'Sócio' ? 'Sócios' : 'Time Operacional';
-      (groups[key] = groups[key] || []).push(e);
-    });
-    Object.keys(groups).forEach(gname => {
-      const og = document.createElement('optgroup');
-      og.label = gname;
-      groups[gname].forEach(e => {
-        const o = document.createElement('option');
-        o.value = e.nome;
-        o.textContent = `${e.nome} — ${e.papel}`;
-        og.appendChild(o);
-      });
-      sel.appendChild(og);
-    });
+  // Popula picker de responsaveis (multi-select chips)
+  const picker = document.getElementById('cal-modal-responsaveis');
+  if (picker && !picker.dataset.ready) {
+    picker.innerHTML = CAL_EXECUTORES.map(e => `
+      <div class="cal-resp-chip" data-nome="${e.nome}" style="color:${e.color}" onclick="toggleCalResp('${e.nome}')">
+        <span class="cal-resp-chip-dot" style="background:${e.color}"></span>${e.nome}
+      </div>
+    `).join('');
+    picker.dataset.ready = '1';
   }
 
   // Agrupa acoes por data
@@ -2496,13 +2501,25 @@ function renderCalendario() {
 }
 
 function calCardHtml(c) {
-  const respColor = CAL_SOCIO_COLORS[c.responsavel] || '#6B7280';
-  const respInitial = c.responsavel ? c.responsavel[0] : '?';
+  const resps = calNormResp(c.responsavel);
   const statusLabel = { todo:'A fazer', doing:'Em and.', done:'Concluido' }[c.status||'todo'];
   const descHtml = c.descricao ? `<div class="cal-card-desc">${escapeHtml(c.descricao)}</div>` : '';
-  const respHtml = c.responsavel
-    ? `<div class="cal-card-resp"><div class="cal-card-avatar" style="background:${respColor}">${respInitial}</div>${c.responsavel}</div>`
-    : `<div class="cal-card-resp" style="color:#9CA3AF;">Sem responsavel</div>`;
+
+  let respHtml;
+  if (resps.length === 0) {
+    respHtml = `<div class="cal-card-resp" style="color:#9CA3AF;">Sem responsavel</div>`;
+  } else {
+    const visible = resps.slice(0, 3);
+    const extra = resps.length - visible.length;
+    const avatars = visible.map(n => {
+      const color = CAL_SOCIO_COLORS[n] || '#6B7280';
+      return `<div class="cal-card-avatar" style="background:${color}" title="${escapeHtml(n)}">${n[0]}</div>`;
+    }).join('');
+    const more = extra > 0 ? `<div class="cal-card-avatar-more" title="${escapeHtml(resps.slice(3).join(', '))}">+${extra}</div>` : '';
+    const label = resps.length === 1 ? resps[0] : `${resps.length} pessoas`;
+    respHtml = `<div class="cal-card-resp"><div class="cal-card-avatars">${avatars}${more}</div>${label}</div>`;
+  }
+
   return `
     <div class="cal-card status-${c.status||'todo'}" draggable="true"
          ondragstart="calDragStart(event,'${c.id}')" ondragend="calDragEnd(event)"
@@ -2556,9 +2573,9 @@ function openCalModal(id, date) {
   const dataEl = document.getElementById('cal-modal-data');
   const tEl = document.getElementById('cal-modal-titulo');
   const dEl = document.getElementById('cal-modal-descricao');
-  const rEl = document.getElementById('cal-modal-responsavel');
   const sEl = document.getElementById('cal-modal-status');
 
+  let selected = [];
   if (id) {
     const a = acoesCal.find(x => x.id === id);
     if (!a) return;
@@ -2567,19 +2584,32 @@ function openCalModal(id, date) {
     dataEl.value = a.data;
     tEl.value = a.titulo || '';
     dEl.value = a.descricao || '';
-    rEl.value = a.responsavel || '';
     sEl.value = a.status || 'todo';
+    selected = calNormResp(a.responsavel);
   } else {
     titleEl.textContent = 'Nova Acao';
     idEl.value = '';
     dataEl.value = date || calTodayISO();
     tEl.value = '';
     dEl.value = '';
-    rEl.value = '';
     sEl.value = 'todo';
   }
+  // Marca os chips selecionados
+  document.querySelectorAll('#cal-modal-responsaveis .cal-resp-chip').forEach(ch => {
+    if (selected.includes(ch.dataset.nome)) ch.classList.add('selected');
+    else ch.classList.remove('selected');
+  });
   overlay.classList.add('active');
   setTimeout(() => tEl.focus(), 50);
+}
+
+function toggleCalResp(nome) {
+  const chip = document.querySelector(`#cal-modal-responsaveis .cal-resp-chip[data-nome="${nome}"]`);
+  if (chip) chip.classList.toggle('selected');
+}
+
+function getCalModalResps() {
+  return Array.from(document.querySelectorAll('#cal-modal-responsaveis .cal-resp-chip.selected')).map(c => c.dataset.nome);
 }
 
 function closeCalModal() {
@@ -2591,7 +2621,7 @@ async function saveCalModal() {
   const data = document.getElementById('cal-modal-data').value;
   const titulo = document.getElementById('cal-modal-titulo').value.trim();
   const descricao = document.getElementById('cal-modal-descricao').value.trim();
-  const responsavel = document.getElementById('cal-modal-responsavel').value;
+  const responsavel = getCalModalResps(); // array
   const status = document.getElementById('cal-modal-status').value;
 
   if (!titulo) { alert('Titulo obrigatorio'); return; }
