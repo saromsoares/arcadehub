@@ -273,6 +273,80 @@
   .empresa-card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .empresa-card-metric-label { font-size: 10px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
   .empresa-card-metric-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; }
+
+  /* ─── CALENDÁRIO (Trello-style) ─── */
+  .cal-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .cal-toolbar input[type="date"] { padding:10px 12px; border:1px solid #E5E7EB; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; background:#fff; }
+  .cal-toolbar .btn-primary { background:#1E6FFF; color:#fff; border:none; padding:10px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; transition:all 0.15s; }
+  .cal-toolbar .btn-primary:hover { background:#1558D6; transform:translateY(-1px); }
+  .cal-toolbar .btn-ghost { background:#fff; color:#374151; border:1px solid #E5E7EB; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; }
+  .cal-toolbar .btn-ghost:hover { background:#F3F4F6; }
+  .cal-legend { display:flex; gap:12px; align-items:center; font-size:11px; color:#6B7280; margin-left:auto; }
+  .cal-legend-item { display:flex; align-items:center; gap:5px; }
+  .cal-legend-dot { width:10px; height:10px; border-radius:50%; }
+
+  .cal-board { display:flex; gap:14px; overflow-x:auto; padding:6px 2px 18px; min-height:400px; scroll-behavior:smooth; }
+  .cal-board::-webkit-scrollbar { height:10px; }
+  .cal-board::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:5px; }
+
+  .cal-column { flex:0 0 280px; background:#F3F4F6; border-radius:12px; padding:12px; display:flex; flex-direction:column; max-height:calc(100vh - 240px); }
+  .cal-column.today { background:linear-gradient(180deg,#FFF7E6 0%,#F3F4F6 40%); border:1px solid #FBBF24; }
+  .cal-column.past { opacity:0.72; }
+  .cal-col-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 4px; }
+  .cal-col-date { font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:#111827; }
+  .cal-col-weekday { font-size:10px; color:#6B7280; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+  .cal-col-count { background:#fff; color:#6B7280; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; border:1px solid #E5E7EB; }
+  .cal-col-today-badge { background:#FBBF24; color:#78350F; font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; text-transform:uppercase; letter-spacing:0.5px; margin-left:6px; }
+
+  .cal-cards { display:flex; flex-direction:column; gap:8px; overflow-y:auto; padding:2px; flex:1; }
+  .cal-cards::-webkit-scrollbar { width:6px; }
+  .cal-cards::-webkit-scrollbar-thumb { background:#D1D5DB; border-radius:3px; }
+
+  .cal-card { background:#fff; border-radius:8px; padding:10px 12px; box-shadow:0 1px 2px rgba(0,0,0,0.06); border-left:4px solid #9CA3AF; cursor:grab; transition:all 0.15s; position:relative; }
+  .cal-card:hover { box-shadow:0 3px 10px rgba(0,0,0,0.1); transform:translateY(-1px); }
+  .cal-card.dragging { opacity:0.4; cursor:grabbing; }
+  .cal-card.status-todo { border-left-color:#9CA3AF; }
+  .cal-card.status-doing { border-left-color:#3B82F6; }
+  .cal-card.status-done { border-left-color:#10B981; }
+  .cal-card.status-done .cal-card-title { text-decoration:line-through; color:#6B7280; }
+
+  .cal-card-title { font-weight:600; font-size:13px; color:#111827; line-height:1.3; margin-bottom:4px; padding-right:22px; }
+  .cal-card-desc { font-size:11px; color:#6B7280; line-height:1.4; margin-bottom:6px; white-space:pre-wrap; }
+  .cal-card-footer { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+  .cal-card-resp { display:flex; align-items:center; gap:5px; font-size:10px; color:#374151; font-weight:600; }
+  .cal-card-avatar { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:9px; font-weight:700; font-family:'Sora',sans-serif; }
+  .cal-card-status-pill { font-size:9px; font-weight:700; padding:2px 7px; border-radius:10px; text-transform:uppercase; letter-spacing:0.3px; }
+  .cal-card-status-pill.todo { background:#F3F4F6; color:#6B7280; }
+  .cal-card-status-pill.doing { background:#DBEAFE; color:#1E40AF; }
+  .cal-card-status-pill.done { background:#D1FAE5; color:#065F46; }
+
+  .cal-card-delete { position:absolute; top:6px; right:6px; background:transparent; border:none; color:#9CA3AF; cursor:pointer; font-size:14px; line-height:1; padding:2px 5px; border-radius:4px; opacity:0; transition:all 0.15s; }
+  .cal-card:hover .cal-card-delete { opacity:1; }
+  .cal-card-delete:hover { background:#FEE2E2; color:#DC2626; }
+
+  .cal-add-btn { margin-top:8px; background:transparent; border:1px dashed #9CA3AF; color:#6B7280; padding:8px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+  .cal-add-btn:hover { background:#fff; border-color:#1E6FFF; color:#1E6FFF; }
+
+  .cal-empty-state { text-align:center; padding:60px 20px; color:#9CA3AF; font-size:13px; }
+
+  /* Modal */
+  .cal-modal-overlay { display:none; position:fixed; inset:0; background:rgba(17,24,39,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+  .cal-modal-overlay.active { display:flex; }
+  .cal-modal { background:#fff; border-radius:14px; padding:24px; max-width:460px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+  .cal-modal h3 { font-family:'Sora',sans-serif; font-size:18px; margin:0 0 16px; color:#111827; }
+  .cal-modal label { display:block; font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.4px; margin:12px 0 5px; }
+  .cal-modal input, .cal-modal select, .cal-modal textarea {
+    width:100%; padding:10px 12px; border:1px solid #E5E7EB; border-radius:8px;
+    font-family:'DM Sans',sans-serif; font-size:13px; background:#fff; box-sizing:border-box;
+  }
+  .cal-modal textarea { resize:vertical; min-height:70px; }
+  .cal-modal input:focus, .cal-modal select:focus, .cal-modal textarea:focus { outline:none; border-color:#1E6FFF; box-shadow:0 0 0 3px rgba(30,111,255,0.12); }
+  .cal-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+  .cal-modal-actions button { padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; border:none; }
+  .cal-modal-actions .btn-save { background:#1E6FFF; color:#fff; }
+  .cal-modal-actions .btn-save:hover { background:#1558D6; }
+  .cal-modal-actions .btn-cancel { background:#F3F4F6; color:#374151; }
+  .cal-modal-actions .btn-cancel:hover { background:#E5E7EB; }
 </style>
 </head>
 <body>
@@ -358,6 +432,7 @@
     <button class="nav-item" onclick="showTab('planejado',this)">🎯 Planejado</button>
     <button class="nav-item" onclick="showTab('estrutura',this)">🏗️ Estrutura de Custos</button>
     <button class="nav-item" onclick="showTab('balanco',this)">🤝 Balanço dos Sócios</button>
+    <button class="nav-item" onclick="showTab('calendario',this)">📅 Calendário</button>
 
     <div class="nav-section">Empresas Filhas</div>
     <button class="nav-item" id="nav-empresas" onclick="showTab('empresas',this)">🏢 Visão Geral</button>
@@ -669,6 +744,53 @@
     </div>
   </div>
 
+  <!-- CALENDÁRIO OPERACIONAL -->
+  <div id="tab-calendario" class="tab-content">
+    <div class="page-title" id="pt-calendario">Calendário Operacional</div>
+    <div class="page-sub" id="ps-calendario">Acompanhe acoes e responsaveis por data — modelo Trello. Adicione datas e organize tarefas do dia a dia.</div>
+
+    <div class="cal-toolbar">
+      <input type="date" id="cal-new-date" />
+      <button class="btn-primary" onclick="addCalDate()">+ Adicionar Data</button>
+      <button class="btn-ghost" onclick="scrollCalToToday()">Ir para Hoje</button>
+      <button class="btn-ghost" onclick="cleanEmptyCalDates()">Limpar Datas Vazias</button>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#9CA3AF"></span>A fazer</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#3B82F6"></span>Em andamento</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#10B981"></span>Concluido</div>
+      </div>
+    </div>
+
+    <div class="cal-board" id="cal-board"></div>
+  </div>
+
+  <!-- Modal de Acao -->
+  <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="if(event.target===this)closeCalModal()">
+    <div class="cal-modal">
+      <h3 id="cal-modal-title">Nova Acao</h3>
+      <input type="hidden" id="cal-modal-id" />
+      <input type="hidden" id="cal-modal-data" />
+      <label>Titulo</label>
+      <input type="text" id="cal-modal-titulo" placeholder="Ex: Reuniao com cliente X" />
+      <label>Descricao (opcional)</label>
+      <textarea id="cal-modal-descricao" placeholder="Detalhes da acao..."></textarea>
+      <label>Responsavel</label>
+      <select id="cal-modal-responsavel">
+        <option value="">Nao atribuido</option>
+      </select>
+      <label>Status</label>
+      <select id="cal-modal-status">
+        <option value="todo">A fazer</option>
+        <option value="doing">Em andamento</option>
+        <option value="done">Concluido</option>
+      </select>
+      <div class="cal-modal-actions">
+        <button class="btn-cancel" onclick="closeCalModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveCalModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- VISÃO GERAL EMPRESAS FILHAS -->
   <div id="tab-empresas" class="tab-content">
     <div class="page-title" id="pt-empresas">Empresas Filhas</div>
@@ -798,7 +920,6 @@ const COMPANIES = [
   { id:'margoti_laudos',       name:'Margoti Laudos',         color:'#06B6D4', emoji:'📋', segmento:'Laudos & Perícia',         isMae: false, website:'' },
   { id:'raio_x_do_lucro',      name:'Lucro Visível',           color:'#EF4444', emoji:'💡', segmento:'Análise Financeira',       isMae: false, website:'https://lucrovisivel.com.br/' },
   { id:'nexus_horizon',        name:'Nexus Horizon',          color:'#14B8A6', emoji:'🌐', segmento:'Expansão & Estratégia',    isMae: false, website:'https://asxhorizon-qsmnmbit.manus.space/' },
-  { id:'loto_app',             name:'Loto App',               color:'#22C55E', emoji:'🎰', segmento:'Loterias & Sorte',          isMae: false, website:'' },
   { id:'coben_life_os',        name:'Coben Life OS',          color:'#3B82F6', emoji:'🧬', segmento:'Life OS & Produtividade',   isMae: false, website:'https://cobenlifeos.com/' },
 ];
 
@@ -851,6 +972,8 @@ let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp 
 let currentEmpresaId = null;
 let selBalancoSocio = 'TODOS';
 let custosExtras = []; // Array de custos extras carregados do Supabase
+let acoesCal = [];     // Array de acoes do calendario operacional
+let calExtraDates = []; // Datas vazias adicionadas manualmente (sem acoes)
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
 const fmt = v => isNaN(v)||v==null ? 'R$ 0' : new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
@@ -1173,15 +1296,17 @@ async function saveEstrutura() {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
     sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
+    sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
   ]);
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
+  if (acData) acoesCal = acData;
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -1212,6 +1337,7 @@ function renderAll() {
   renderEstrutura(totals);
   renderEmpresasGeral(companiesYTD);
   renderBalancoSocios();
+  renderCalendario();
   renderNavEmpresas();
   setTimeout(makeAllEditable, 50);
 }
@@ -2253,12 +2379,281 @@ function updateEmpresaLanc(cid, key, val) {
 }
 
 // ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
+// ─── CALENDÁRIO OPERACIONAL (Trello-style) ──────────────────────────────────
+// Executores: sócios + time operacional (Luiz = programador, Glad = marketing)
+const CAL_EXECUTORES = [
+  { nome:'SAROM',   papel:'Sócio',       color:'#1E6FFF' },
+  { nome:'RICARDO', papel:'Sócio',       color:'#10B981' },
+  { nome:'BERVAL',  papel:'Sócio',       color:'#F59E0B' },
+  { nome:'MARCOS',  papel:'Sócio',       color:'#8B5CF6' },
+  { nome:'LUIZ',    papel:'Programador', color:'#EC4899' },
+  { nome:'GLAD',    papel:'Marketing',   color:'#14B8A6' },
+];
+const CAL_SOCIO_COLORS = Object.fromEntries(CAL_EXECUTORES.map(e => [e.nome, e.color]));
+
+function calTodayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function calFormatDateHeader(iso) {
+  // iso = 'YYYY-MM-DD' — parse manualmente para evitar timezone UTC
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const WEEK = ['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
+  const MONTH = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return {
+    weekday: WEEK[dt.getDay()],
+    short: `${d} ${MONTH[m-1]}`,
+    full: iso,
+  };
+}
+
+function calCompareDates(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+
+function renderCalendario() {
+  const board = document.getElementById('cal-board');
+  if (!board) return;
+
+  // Inicializa input date para hoje
+  const inp = document.getElementById('cal-new-date');
+  if (inp && !inp.value) inp.value = calTodayISO();
+
+  // Popula select de responsaveis (agrupado por papel)
+  const sel = document.getElementById('cal-modal-responsavel');
+  if (sel && sel.options.length <= 1) {
+    const groups = {};
+    CAL_EXECUTORES.forEach(e => {
+      const key = e.papel === 'Sócio' ? 'Sócios' : 'Time Operacional';
+      (groups[key] = groups[key] || []).push(e);
+    });
+    Object.keys(groups).forEach(gname => {
+      const og = document.createElement('optgroup');
+      og.label = gname;
+      groups[gname].forEach(e => {
+        const o = document.createElement('option');
+        o.value = e.nome;
+        o.textContent = `${e.nome} — ${e.papel}`;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+
+  // Agrupa acoes por data
+  const byDate = {};
+  acoesCal.forEach(a => {
+    if (!byDate[a.data]) byDate[a.data] = [];
+    byDate[a.data].push(a);
+  });
+
+  // Adiciona datas extras (vazias) que o usuario criou manualmente
+  calExtraDates.forEach(d => { if (!byDate[d]) byDate[d] = []; });
+
+  // Garante que hoje sempre exista como coluna
+  const today = calTodayISO();
+  if (!byDate[today]) byDate[today] = [];
+
+  const dates = Object.keys(byDate).sort(calCompareDates);
+
+  if (dates.length === 0) {
+    board.innerHTML = '<div class="cal-empty-state">Nenhuma data no calendario. Use o botao acima para adicionar.</div>';
+    return;
+  }
+
+  board.innerHTML = dates.map(date => {
+    const info = calFormatDateHeader(date);
+    const cards = byDate[date].sort((a,b) => (a.ordem||0) - (b.ordem||0));
+    const isToday = date === today;
+    const isPast = date < today;
+    const clsExtras = (isToday ? ' today' : '') + (isPast ? ' past' : '');
+
+    const cardsHtml = cards.length
+      ? cards.map(c => calCardHtml(c)).join('')
+      : '<div style="padding:18px 8px;text-align:center;color:#9CA3AF;font-size:11px;">Nenhuma acao</div>';
+
+    return `
+      <div class="cal-column${clsExtras}" data-date="${date}" ondragover="calDragOver(event)" ondrop="calDrop(event,'${date}')">
+        <div class="cal-col-head">
+          <div>
+            <div class="cal-col-date">${info.short}${isToday?'<span class="cal-col-today-badge">Hoje</span>':''}</div>
+            <div class="cal-col-weekday">${info.weekday}</div>
+          </div>
+          <div class="cal-col-count">${cards.length}</div>
+        </div>
+        <div class="cal-cards">${cardsHtml}</div>
+        <button class="cal-add-btn" onclick="openCalModal(null,'${date}')">+ Adicionar acao</button>
+      </div>
+    `;
+  }).join('');
+
+  if (document.getElementById('tab-calendario').classList.contains('active')) {
+    setTimeout(scrollCalToToday, 30);
+  }
+}
+
+function calCardHtml(c) {
+  const respColor = CAL_SOCIO_COLORS[c.responsavel] || '#6B7280';
+  const respInitial = c.responsavel ? c.responsavel[0] : '?';
+  const statusLabel = { todo:'A fazer', doing:'Em and.', done:'Concluido' }[c.status||'todo'];
+  const descHtml = c.descricao ? `<div class="cal-card-desc">${escapeHtml(c.descricao)}</div>` : '';
+  const respHtml = c.responsavel
+    ? `<div class="cal-card-resp"><div class="cal-card-avatar" style="background:${respColor}">${respInitial}</div>${c.responsavel}</div>`
+    : `<div class="cal-card-resp" style="color:#9CA3AF;">Sem responsavel</div>`;
+  return `
+    <div class="cal-card status-${c.status||'todo'}" draggable="true"
+         ondragstart="calDragStart(event,'${c.id}')" ondragend="calDragEnd(event)"
+         onclick="openCalModal('${c.id}')">
+      <button class="cal-card-delete" onclick="event.stopPropagation();deleteCalAcao('${c.id}')" title="Excluir">&times;</button>
+      <div class="cal-card-title">${escapeHtml(c.titulo)}</div>
+      ${descHtml}
+      <div class="cal-card-footer">
+        ${respHtml}
+        <span class="cal-card-status-pill ${c.status||'todo'}">${statusLabel}</span>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function addCalDate() {
+  const inp = document.getElementById('cal-new-date');
+  if (!inp || !inp.value) return;
+  if (!calExtraDates.includes(inp.value)) calExtraDates.push(inp.value);
+  renderCalendario();
+  setTimeout(() => {
+    const col = document.querySelector(`.cal-column[data-date="${inp.value}"]`);
+    if (col) col.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+  }, 50);
+}
+
+function scrollCalToToday() {
+  const today = calTodayISO();
+  const col = document.querySelector(`.cal-column[data-date="${today}"]`);
+  if (col) col.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+}
+
+function cleanEmptyCalDates() {
+  const today = calTodayISO();
+  calExtraDates = calExtraDates.filter(d => {
+    if (d === today) return true;
+    return acoesCal.some(a => a.data === d);
+  });
+  renderCalendario();
+}
+
+// ─── Modal ─────────────────────────────────────────────────────────────
+function openCalModal(id, date) {
+  const overlay = document.getElementById('cal-modal-overlay');
+  const titleEl = document.getElementById('cal-modal-title');
+  const idEl = document.getElementById('cal-modal-id');
+  const dataEl = document.getElementById('cal-modal-data');
+  const tEl = document.getElementById('cal-modal-titulo');
+  const dEl = document.getElementById('cal-modal-descricao');
+  const rEl = document.getElementById('cal-modal-responsavel');
+  const sEl = document.getElementById('cal-modal-status');
+
+  if (id) {
+    const a = acoesCal.find(x => x.id === id);
+    if (!a) return;
+    titleEl.textContent = 'Editar Acao';
+    idEl.value = a.id;
+    dataEl.value = a.data;
+    tEl.value = a.titulo || '';
+    dEl.value = a.descricao || '';
+    rEl.value = a.responsavel || '';
+    sEl.value = a.status || 'todo';
+  } else {
+    titleEl.textContent = 'Nova Acao';
+    idEl.value = '';
+    dataEl.value = date || calTodayISO();
+    tEl.value = '';
+    dEl.value = '';
+    rEl.value = '';
+    sEl.value = 'todo';
+  }
+  overlay.classList.add('active');
+  setTimeout(() => tEl.focus(), 50);
+}
+
+function closeCalModal() {
+  document.getElementById('cal-modal-overlay').classList.remove('active');
+}
+
+async function saveCalModal() {
+  const id = document.getElementById('cal-modal-id').value;
+  const data = document.getElementById('cal-modal-data').value;
+  const titulo = document.getElementById('cal-modal-titulo').value.trim();
+  const descricao = document.getElementById('cal-modal-descricao').value.trim();
+  const responsavel = document.getElementById('cal-modal-responsavel').value;
+  const status = document.getElementById('cal-modal-status').value;
+
+  if (!titulo) { alert('Titulo obrigatorio'); return; }
+  if (!data) { alert('Data obrigatoria'); return; }
+
+  if (id) {
+    const { data: upd } = await sb.from('calendario_acoes')
+      .update({ data, titulo, descricao, responsavel, status, updated_at:new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (upd) {
+      const idx = acoesCal.findIndex(a => a.id === id);
+      if (idx >= 0) acoesCal[idx] = upd;
+    }
+  } else {
+    const ordem = acoesCal.filter(a => a.data === data).length;
+    const { data: ins } = await sb.from('calendario_acoes')
+      .insert({ data, titulo, descricao, responsavel, status, ordem })
+      .select().single();
+    if (ins) acoesCal.push(ins);
+  }
+  closeCalModal();
+  renderCalendario();
+}
+
+async function deleteCalAcao(id) {
+  if (!confirm('Excluir esta acao?')) return;
+  await sb.from('calendario_acoes').delete().eq('id', id);
+  acoesCal = acoesCal.filter(a => a.id !== id);
+  renderCalendario();
+}
+
+// ─── Drag & Drop ───────────────────────────────────────────────────────
+let calDraggingId = null;
+function calDragStart(e, id) {
+  calDraggingId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function calDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  calDraggingId = null;
+}
+function calDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+async function calDrop(e, targetDate) {
+  e.preventDefault();
+  if (!calDraggingId) return;
+  const a = acoesCal.find(x => x.id === calDraggingId);
+  if (!a || a.data === targetDate) return;
+  a.data = targetDate;
+  await sb.from('calendario_acoes')
+    .update({ data:targetDate, updated_at:new Date().toISOString() })
+    .eq('id', a.id);
+  renderCalendario();
+}
+
 function showTab(name, btn) {
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   if (btn) btn.classList.add('active');
   else if (event && event.target) event.target.classList.add('active');
+  if (name === 'calendario') setTimeout(scrollCalToToday, 80);
 }
 
 // ─── WEBSITE EMPRESA ─────────────────────────────────────────────────────────
