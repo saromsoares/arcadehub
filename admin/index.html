@@ -387,11 +387,12 @@
   }
   .cal-filter-check:has(input:checked) { background:rgba(30,111,255,0.06); color:#111827; }
 
+  .cal-quick-row { display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
   .cal-filter-quick {
-    display:flex; align-items:center; justify-content:space-between; width:100%;
-    padding:9px 10px; margin-bottom:6px; background:#F9FAFB; border:1px solid #E5E7EB;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:9px 14px; background:#F9FAFB; border:1px solid #E5E7EB;
     border-radius:8px; font-size:12px; font-weight:600; color:#374151; cursor:pointer;
-    font-family:'DM Sans',sans-serif; transition:all 0.15s;
+    font-family:'DM Sans',sans-serif; transition:all 0.15s; white-space:nowrap;
   }
   .cal-filter-quick:hover { background:#F3F4F6; border-color:#D1D5DB; }
   .cal-filter-quick.active { background:#1E6FFF; color:#fff; border-color:#1E6FFF; }
@@ -824,27 +825,22 @@
       <button class="btn-primary" onclick="addCalDate()">+ Adicionar Data</button>
       <button class="btn-ghost" onclick="scrollCalToToday()">Ir para Hoje</button>
       <button class="btn-ghost" onclick="cleanEmptyCalDates()">Limpar Datas Vazias</button>
+      <div class="cal-quick-row">
+        <button class="cal-filter-quick" id="cal-qf-vencidas" onclick="toggleCalQuickFilter('vencidas')">
+          Vencidas <span class="cal-filter-count" id="cal-count-vencidas">0</span>
+        </button>
+        <button class="cal-filter-quick" id="cal-qf-hoje" onclick="toggleCalQuickFilter('hoje')">
+          Hoje <span class="cal-filter-count" id="cal-count-hoje">0</span>
+        </button>
+        <button class="cal-filter-quick" id="cal-qf-semana" onclick="toggleCalQuickFilter('semana')">
+          Proximos 7 dias <span class="cal-filter-count" id="cal-count-semana">0</span>
+        </button>
+      </div>
     </div>
 
     <div class="cal-layout">
       <!-- Sidebar de filtros -->
       <aside class="cal-sidebar">
-        <div class="cal-filter-section">
-          <div class="cal-filter-title">Acesso Rapido</div>
-          <button class="cal-filter-quick" id="cal-qf-vencidas" onclick="toggleCalQuickFilter('vencidas')">
-            <span>Vencidas</span>
-            <span class="cal-filter-count" id="cal-count-vencidas">0</span>
-          </button>
-          <button class="cal-filter-quick" id="cal-qf-hoje" onclick="toggleCalQuickFilter('hoje')">
-            <span>Hoje</span>
-            <span class="cal-filter-count" id="cal-count-hoje">0</span>
-          </button>
-          <button class="cal-filter-quick" id="cal-qf-semana" onclick="toggleCalQuickFilter('semana')">
-            <span>Proximos 7 dias</span>
-            <span class="cal-filter-count" id="cal-count-semana">0</span>
-          </button>
-        </div>
-
         <div class="cal-filter-section">
           <div class="cal-filter-title">Status</div>
           <label class="cal-filter-check"><input type="checkbox" value="todo" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#9CA3AF"></span>A fazer <span class="cal-filter-count" id="cal-count-todo">0</span></label>
