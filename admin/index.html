@@ -358,6 +358,65 @@
   .cal-card-avatars .cal-card-avatar { margin-left:-6px; border:2px solid #fff; }
   .cal-card-avatars .cal-card-avatar:first-child { margin-left:0; }
   .cal-card-avatar-more { width:20px; height:20px; border-radius:50%; background:#E5E7EB; color:#374151; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-left:-6px; border:2px solid #fff; }
+
+  /* Layout: sidebar + board */
+  .cal-layout { display:flex; gap:16px; align-items:flex-start; }
+  .cal-sidebar {
+    flex:0 0 220px; background:#fff; border:1px solid #E5E7EB; border-radius:12px;
+    padding:14px; position:sticky; top:16px; max-height:calc(100vh - 90px); overflow-y:auto;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .cal-sidebar .cal-board { flex:1; }
+  .cal-layout > .cal-board { flex:1; min-width:0; }
+
+  .cal-filter-section { margin-bottom:18px; }
+  .cal-filter-title {
+    font-size:10px; font-weight:700; color:#6B7280; text-transform:uppercase;
+    letter-spacing:0.8px; margin-bottom:8px; padding:0 2px;
+  }
+  .cal-filter-check {
+    display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:6px;
+    font-size:12px; font-weight:600; color:#374151; cursor:pointer; transition:background 0.12s;
+  }
+  .cal-filter-check:hover { background:#F3F4F6; }
+  .cal-filter-check input[type="checkbox"] { cursor:pointer; width:14px; height:14px; accent-color:#1E6FFF; }
+  .cal-filter-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .cal-filter-count {
+    margin-left:auto; background:#F3F4F6; color:#6B7280; font-size:10px; font-weight:700;
+    padding:2px 7px; border-radius:10px; min-width:20px; text-align:center;
+  }
+  .cal-filter-check:has(input:checked) { background:rgba(30,111,255,0.06); color:#111827; }
+
+  .cal-filter-quick {
+    display:flex; align-items:center; justify-content:space-between; width:100%;
+    padding:9px 10px; margin-bottom:6px; background:#F9FAFB; border:1px solid #E5E7EB;
+    border-radius:8px; font-size:12px; font-weight:600; color:#374151; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:all 0.15s;
+  }
+  .cal-filter-quick:hover { background:#F3F4F6; border-color:#D1D5DB; }
+  .cal-filter-quick.active { background:#1E6FFF; color:#fff; border-color:#1E6FFF; }
+  .cal-filter-quick.active .cal-filter-count { background:rgba(255,255,255,0.25); color:#fff; }
+  .cal-filter-quick#cal-qf-vencidas .cal-filter-count { background:#FEE2E2; color:#DC2626; }
+  .cal-filter-quick#cal-qf-vencidas.active { background:#DC2626; border-color:#DC2626; color:#fff; }
+  .cal-filter-quick#cal-qf-vencidas.active .cal-filter-count { background:rgba(255,255,255,0.25); color:#fff; }
+
+  .cal-filter-clear {
+    width:100%; padding:8px; background:transparent; border:1px solid #E5E7EB;
+    border-radius:8px; font-size:11px; font-weight:600; color:#6B7280; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:all 0.15s; margin-top:4px;
+  }
+  .cal-filter-clear:hover { background:#F3F4F6; color:#374151; }
+
+  /* Vencida: borda vermelha + badge */
+  .cal-card.overdue { border-left-color:#DC2626 !important; box-shadow:0 0 0 1px rgba(220,38,38,0.15); }
+  .cal-card-overdue-badge {
+    display:inline-block; background:#FEE2E2; color:#DC2626; font-size:9px; font-weight:800;
+    padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px; margin-right:4px;
+  }
+  .cal-card-deadline {
+    font-size:10px; color:#6B7280; margin-top:3px; display:flex; align-items:center; gap:4px;
+  }
+  .cal-card-deadline.overdue { color:#DC2626; font-weight:700; }
 </style>
 </head>
 <body>
@@ -765,14 +824,44 @@
       <button class="btn-primary" onclick="addCalDate()">+ Adicionar Data</button>
       <button class="btn-ghost" onclick="scrollCalToToday()">Ir para Hoje</button>
       <button class="btn-ghost" onclick="cleanEmptyCalDates()">Limpar Datas Vazias</button>
-      <div class="cal-legend">
-        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#9CA3AF"></span>A fazer</div>
-        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#3B82F6"></span>Em andamento</div>
-        <div class="cal-legend-item"><span class="cal-legend-dot" style="background:#10B981"></span>Concluido</div>
-      </div>
     </div>
 
-    <div class="cal-board" id="cal-board"></div>
+    <div class="cal-layout">
+      <!-- Sidebar de filtros -->
+      <aside class="cal-sidebar">
+        <div class="cal-filter-section">
+          <div class="cal-filter-title">Acesso Rapido</div>
+          <button class="cal-filter-quick" id="cal-qf-vencidas" onclick="toggleCalQuickFilter('vencidas')">
+            <span>Vencidas</span>
+            <span class="cal-filter-count" id="cal-count-vencidas">0</span>
+          </button>
+          <button class="cal-filter-quick" id="cal-qf-hoje" onclick="toggleCalQuickFilter('hoje')">
+            <span>Hoje</span>
+            <span class="cal-filter-count" id="cal-count-hoje">0</span>
+          </button>
+          <button class="cal-filter-quick" id="cal-qf-semana" onclick="toggleCalQuickFilter('semana')">
+            <span>Proximos 7 dias</span>
+            <span class="cal-filter-count" id="cal-count-semana">0</span>
+          </button>
+        </div>
+
+        <div class="cal-filter-section">
+          <div class="cal-filter-title">Status</div>
+          <label class="cal-filter-check"><input type="checkbox" value="todo" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#9CA3AF"></span>A fazer <span class="cal-filter-count" id="cal-count-todo">0</span></label>
+          <label class="cal-filter-check"><input type="checkbox" value="doing" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#3B82F6"></span>Em andamento <span class="cal-filter-count" id="cal-count-doing">0</span></label>
+          <label class="cal-filter-check"><input type="checkbox" value="done" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#10B981"></span>Concluido <span class="cal-filter-count" id="cal-count-done">0</span></label>
+        </div>
+
+        <div class="cal-filter-section">
+          <div class="cal-filter-title">Pessoas</div>
+          <div id="cal-filter-pessoas"></div>
+        </div>
+
+        <button class="cal-filter-clear" onclick="clearCalFilters()">Limpar filtros</button>
+      </aside>
+
+      <div class="cal-board" id="cal-board"></div>
+    </div>
   </div>
 
   <!-- Modal de Acao -->
@@ -787,6 +876,10 @@
       <textarea id="cal-modal-descricao" placeholder="Detalhes da acao..."></textarea>
       <label>Responsaveis (selecione um ou mais)</label>
       <div id="cal-modal-responsaveis" class="cal-resp-picker"></div>
+      <label>Tempo de execucao (dias)</label>
+      <input type="number" id="cal-modal-dias" min="1" step="1" value="1" />
+      <div id="cal-modal-deadline-hint" style="font-size:11px;color:#6B7280;margin-top:4px;"></div>
+
       <label>Status</label>
       <select id="cal-modal-status">
         <option value="todo">A fazer</option>
@@ -2406,6 +2499,114 @@ function calNormResp(r) {
   return [];
 }
 
+// Estado de filtros do calendario
+const calFilters = {
+  status: new Set(['todo','doing','done']),
+  pessoas: new Set(), // vazio = todas
+  quick: null,        // 'vencidas' | 'hoje' | 'semana' | null
+};
+
+// Soma N dias em uma data ISO (YYYY-MM-DD)
+function calAddDays(iso, days) {
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  const dd = String(dt.getDate()).padStart(2,'0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+// Deadline = data inicial + (dias_execucao - 1). 1 dia = vence no mesmo dia.
+function calDeadline(a) {
+  const d = Math.max(1, a.dias_execucao || 1);
+  return calAddDays(a.data, d - 1);
+}
+
+function calIsOverdue(a) {
+  if ((a.status || 'todo') === 'done') return false;
+  return calDeadline(a) < calTodayISO();
+}
+
+function calPassesFilter(a) {
+  // Status
+  if (!calFilters.status.has(a.status || 'todo')) return false;
+  // Pessoas (se vazio, passa tudo)
+  if (calFilters.pessoas.size > 0) {
+    const resps = calNormResp(a.responsavel);
+    const match = resps.some(r => calFilters.pessoas.has(r));
+    if (!match) return false;
+  }
+  // Quick filter
+  if (calFilters.quick === 'vencidas') {
+    if (!calIsOverdue(a)) return false;
+  } else if (calFilters.quick === 'hoje') {
+    const t = calTodayISO();
+    if (!(a.data <= t && calDeadline(a) >= t && (a.status||'todo')!=='done')) return false;
+  } else if (calFilters.quick === 'semana') {
+    const t = calTodayISO();
+    const in7 = calAddDays(t, 7);
+    if (!(a.data <= in7 && calDeadline(a) >= t && (a.status||'todo')!=='done')) return false;
+  }
+  return true;
+}
+
+function updateCalFilterCounts() {
+  const counts = { todo:0, doing:0, done:0, vencidas:0, hoje:0, semana:0 };
+  const t = calTodayISO();
+  const in7 = calAddDays(t, 7);
+  acoesCal.forEach(a => {
+    counts[a.status || 'todo']++;
+    if (calIsOverdue(a)) counts.vencidas++;
+    if (a.data <= t && calDeadline(a) >= t && (a.status||'todo') !== 'done') counts.hoje++;
+    if (a.data <= in7 && calDeadline(a) >= t && (a.status||'todo') !== 'done') counts.semana++;
+  });
+  ['todo','doing','done','vencidas','hoje','semana'].forEach(k => {
+    const el = document.getElementById('cal-count-'+k);
+    if (el) el.textContent = counts[k];
+  });
+  // Pessoas: conta quantas acoes cada um tem
+  CAL_EXECUTORES.forEach(e => {
+    const c = acoesCal.filter(a => calNormResp(a.responsavel).includes(e.nome)).length;
+    const el = document.getElementById('cal-fp-count-'+e.nome);
+    if (el) el.textContent = c;
+  });
+}
+
+function onCalFilterChange() {
+  calFilters.status = new Set(
+    Array.from(document.querySelectorAll('.cal-sidebar input[type="checkbox"][value]'))
+      .filter(c => c.checked && ['todo','doing','done'].includes(c.value))
+      .map(c => c.value)
+  );
+  calFilters.pessoas = new Set(
+    Array.from(document.querySelectorAll('.cal-sidebar input[type="checkbox"][data-pessoa]'))
+      .filter(c => c.checked)
+      .map(c => c.dataset.pessoa)
+  );
+  renderCalendario();
+}
+
+function toggleCalQuickFilter(key) {
+  calFilters.quick = calFilters.quick === key ? null : key;
+  document.querySelectorAll('.cal-filter-quick').forEach(b => b.classList.remove('active'));
+  if (calFilters.quick) {
+    const btn = document.getElementById('cal-qf-' + calFilters.quick);
+    if (btn) btn.classList.add('active');
+  }
+  renderCalendario();
+}
+
+function clearCalFilters() {
+  calFilters.status = new Set(['todo','doing','done']);
+  calFilters.pessoas = new Set();
+  calFilters.quick = null;
+  document.querySelectorAll('.cal-sidebar input[type="checkbox"][value]').forEach(c => { if(['todo','doing','done'].includes(c.value)) c.checked = true; });
+  document.querySelectorAll('.cal-sidebar input[type="checkbox"][data-pessoa]').forEach(c => c.checked = false);
+  document.querySelectorAll('.cal-filter-quick').forEach(b => b.classList.remove('active'));
+  renderCalendario();
+}
+
 function calTodayISO() {
   const d = new Date();
   const y = d.getFullYear();
@@ -2448,24 +2649,50 @@ function renderCalendario() {
     picker.dataset.ready = '1';
   }
 
-  // Agrupa acoes por data
+  // Popula filtro de pessoas (sidebar)
+  const pessoasFilter = document.getElementById('cal-filter-pessoas');
+  if (pessoasFilter && !pessoasFilter.dataset.ready) {
+    pessoasFilter.innerHTML = CAL_EXECUTORES.map(e => `
+      <label class="cal-filter-check">
+        <input type="checkbox" data-pessoa="${e.nome}" onchange="onCalFilterChange()">
+        <span class="cal-filter-dot" style="background:${e.color}"></span>
+        ${e.nome}
+        <span class="cal-filter-count" id="cal-fp-count-${e.nome}">0</span>
+      </label>
+    `).join('');
+    pessoasFilter.dataset.ready = '1';
+  }
+
+  updateCalFilterCounts();
+
+  // Aplica filtros
+  const filtradas = acoesCal.filter(calPassesFilter);
+  const temFiltroAtivo = calFilters.quick !== null
+    || calFilters.pessoas.size > 0
+    || calFilters.status.size < 3;
+
+  // Agrupa acoes filtradas por data
   const byDate = {};
-  acoesCal.forEach(a => {
+  filtradas.forEach(a => {
     if (!byDate[a.data]) byDate[a.data] = [];
     byDate[a.data].push(a);
   });
 
-  // Adiciona datas extras (vazias) que o usuario criou manualmente
-  calExtraDates.forEach(d => { if (!byDate[d]) byDate[d] = []; });
+  // Adiciona datas extras (vazias) criadas manualmente — so quando sem filtro
+  if (!temFiltroAtivo) {
+    calExtraDates.forEach(d => { if (!byDate[d]) byDate[d] = []; });
+    const today = calTodayISO();
+    if (!byDate[today]) byDate[today] = [];
+  }
 
-  // Garante que hoje sempre exista como coluna
   const today = calTodayISO();
-  if (!byDate[today]) byDate[today] = [];
-
   const dates = Object.keys(byDate).sort(calCompareDates);
 
   if (dates.length === 0) {
-    board.innerHTML = '<div class="cal-empty-state">Nenhuma data no calendario. Use o botao acima para adicionar.</div>';
+    const msg = temFiltroAtivo
+      ? 'Nenhuma acao corresponde aos filtros selecionados.'
+      : 'Nenhuma data no calendario. Use o botao acima para adicionar.';
+    board.innerHTML = `<div class="cal-empty-state">${msg}</div>`;
     return;
   }
 
@@ -2505,6 +2732,32 @@ function calCardHtml(c) {
   const statusLabel = { todo:'A fazer', doing:'Em and.', done:'Concluido' }[c.status||'todo'];
   const descHtml = c.descricao ? `<div class="cal-card-desc">${escapeHtml(c.descricao)}</div>` : '';
 
+  const dias = Math.max(1, c.dias_execucao || 1);
+  const deadline = calDeadline(c);
+  const today = calTodayISO();
+  const overdue = calIsOverdue(c);
+  const overdueCls = overdue ? ' overdue' : '';
+  const overdueBadge = overdue ? '<span class="cal-card-overdue-badge">Vencida</span>' : '';
+
+  // Diferenca em dias (hoje vs deadline)
+  const diffDays = (() => {
+    const [y1,m1,d1] = today.split('-').map(Number);
+    const [y2,m2,d2] = deadline.split('-').map(Number);
+    const t1 = new Date(y1,m1-1,d1).getTime();
+    const t2 = new Date(y2,m2-1,d2).getTime();
+    return Math.round((t2 - t1) / 86400000);
+  })();
+
+  let deadlineHtml = '';
+  if ((c.status||'todo') !== 'done') {
+    let txt;
+    if (overdue) txt = `Vencida ha ${Math.abs(diffDays)} dia(s) · prazo ${calFormatDateHeader(deadline).short}`;
+    else if (diffDays === 0) txt = `Prazo: hoje (${dias}d total)`;
+    else if (diffDays > 0) txt = `Prazo em ${diffDays} dia(s) · ${calFormatDateHeader(deadline).short}`;
+    else txt = `Prazo: ${calFormatDateHeader(deadline).short}`;
+    deadlineHtml = `<div class="cal-card-deadline${overdue?' overdue':''}">&#x23F3; ${txt}</div>`;
+  }
+
   let respHtml;
   if (resps.length === 0) {
     respHtml = `<div class="cal-card-resp" style="color:#9CA3AF;">Sem responsavel</div>`;
@@ -2521,12 +2774,13 @@ function calCardHtml(c) {
   }
 
   return `
-    <div class="cal-card status-${c.status||'todo'}" draggable="true"
+    <div class="cal-card status-${c.status||'todo'}${overdueCls}" draggable="true"
          ondragstart="calDragStart(event,'${c.id}')" ondragend="calDragEnd(event)"
          onclick="openCalModal('${c.id}')">
       <button class="cal-card-delete" onclick="event.stopPropagation();deleteCalAcao('${c.id}')" title="Excluir">&times;</button>
-      <div class="cal-card-title">${escapeHtml(c.titulo)}</div>
+      <div class="cal-card-title">${overdueBadge}${escapeHtml(c.titulo)}</div>
       ${descHtml}
+      ${deadlineHtml}
       <div class="cal-card-footer">
         ${respHtml}
         <span class="cal-card-status-pill ${c.status||'todo'}">${statusLabel}</span>
@@ -2575,6 +2829,7 @@ function openCalModal(id, date) {
   const dEl = document.getElementById('cal-modal-descricao');
   const sEl = document.getElementById('cal-modal-status');
 
+  const diasEl = document.getElementById('cal-modal-dias');
   let selected = [];
   if (id) {
     const a = acoesCal.find(x => x.id === id);
@@ -2585,6 +2840,7 @@ function openCalModal(id, date) {
     tEl.value = a.titulo || '';
     dEl.value = a.descricao || '';
     sEl.value = a.status || 'todo';
+    diasEl.value = Math.max(1, a.dias_execucao || 1);
     selected = calNormResp(a.responsavel);
   } else {
     titleEl.textContent = 'Nova Acao';
@@ -2593,14 +2849,32 @@ function openCalModal(id, date) {
     tEl.value = '';
     dEl.value = '';
     sEl.value = 'todo';
+    diasEl.value = 1;
   }
   // Marca os chips selecionados
   document.querySelectorAll('#cal-modal-responsaveis .cal-resp-chip').forEach(ch => {
     if (selected.includes(ch.dataset.nome)) ch.classList.add('selected');
     else ch.classList.remove('selected');
   });
+  updateCalModalDeadlineHint();
+  // Liga listeners para recalcular hint (apenas uma vez)
+  if (!diasEl.dataset.ready) {
+    diasEl.addEventListener('input', updateCalModalDeadlineHint);
+    dataEl.addEventListener('change', updateCalModalDeadlineHint);
+    diasEl.dataset.ready = '1';
+  }
   overlay.classList.add('active');
   setTimeout(() => tEl.focus(), 50);
+}
+
+function updateCalModalDeadlineHint() {
+  const data = document.getElementById('cal-modal-data').value;
+  const dias = Math.max(1, parseInt(document.getElementById('cal-modal-dias').value) || 1);
+  const hint = document.getElementById('cal-modal-deadline-hint');
+  if (!data || !hint) return;
+  const deadline = calAddDays(data, dias - 1);
+  const info = calFormatDateHeader(deadline);
+  hint.textContent = `Prazo final: ${info.short} (${info.weekday})`;
 }
 
 function toggleCalResp(nome) {
@@ -2623,13 +2897,14 @@ async function saveCalModal() {
   const descricao = document.getElementById('cal-modal-descricao').value.trim();
   const responsavel = getCalModalResps(); // array
   const status = document.getElementById('cal-modal-status').value;
+  const dias_execucao = Math.max(1, parseInt(document.getElementById('cal-modal-dias').value) || 1);
 
   if (!titulo) { alert('Titulo obrigatorio'); return; }
   if (!data) { alert('Data obrigatoria'); return; }
 
   if (id) {
     const { data: upd } = await sb.from('calendario_acoes')
-      .update({ data, titulo, descricao, responsavel, status, updated_at:new Date().toISOString() })
+      .update({ data, titulo, descricao, responsavel, status, dias_execucao, updated_at:new Date().toISOString() })
       .eq('id', id).select().single();
     if (upd) {
       const idx = acoesCal.findIndex(a => a.id === id);
@@ -2638,7 +2913,7 @@ async function saveCalModal() {
   } else {
     const ordem = acoesCal.filter(a => a.data === data).length;
     const { data: ins } = await sb.from('calendario_acoes')
-      .insert({ data, titulo, descricao, responsavel, status, ordem })
+      .insert({ data, titulo, descricao, responsavel, status, dias_execucao, ordem })
       .select().single();
     if (ins) acoesCal.push(ins);
   }
