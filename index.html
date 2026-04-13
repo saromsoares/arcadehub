@@ -12,6 +12,9 @@
 <meta property="og:url" content="https://arcadehub.tech/" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta property="og:image" content="https://arcadehub.tech/logo.png" />
+<link rel="icon" type="image/png" href="logo.png" />
+<link rel="apple-touch-icon" href="logo.png" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -201,6 +204,31 @@ nav.scrolled {
   max-width: 560px; line-height: 1.7; margin-bottom: 48px;
   font-weight: 400;
 }
+/* ─── HERO PROOF BAR ─── */
+.hero-proof {
+  display: flex; align-items: center; gap: 32px;
+  margin-bottom: 40px; padding: 16px 32px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 16px; backdrop-filter: blur(12px);
+}
+.proof-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.proof-number {
+  font-family: 'Sora', sans-serif; font-weight: 800; font-size: 28px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.proof-label { font-size: 12px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.proof-divider { width: 1px; height: 36px; background: var(--glass-border); }
+
+/* ─── TYPING EFFECT ─── */
+.typing-text {
+  color: var(--cyan); font-weight: 600;
+  border-right: 2px solid var(--cyan);
+  padding-right: 2px;
+  animation: blink 0.8s step-end infinite;
+}
+@keyframes blink { 0%, 100% { border-color: var(--cyan); } 50% { border-color: transparent; } }
+
 .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .btn-primary {
   display: inline-flex; align-items: center; gap: 10px;
@@ -343,6 +371,50 @@ nav.scrolled {
 .card-cta svg { width: 14px; height: 14px; transition: transform 0.3s; }
 .card-cta:hover svg { transform: translateX(2px); }
 
+/* ─── STATUS BADGES ─── */
+.card-status {
+  position: absolute; top: 16px; right: 16px;
+  padding: 4px 12px; border-radius: 100px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; z-index: 2;
+}
+.card-status.active {
+  background: rgba(16,185,129,0.12); color: #10B981;
+  border: 1px solid rgba(16,185,129,0.25);
+  box-shadow: 0 0 12px rgba(16,185,129,0.1);
+}
+.card-status.active::before {
+  content: ''; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; background: #10B981; margin-right: 6px;
+  animation: pulse 2s ease-in-out infinite; vertical-align: middle;
+}
+.card-status.soon {
+  background: rgba(255,255,255,0.04); color: var(--text-3);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.company-card.coming-soon {
+  opacity: 0; transform: translateY(40px);
+}
+.company-card.coming-soon.visible {
+  opacity: 0.6;
+  transform: translateY(0);
+}
+.company-card.coming-soon:hover {
+  opacity: 0.85;
+  transform: translateY(-4px);
+}
+.company-card.coming-soon .card-cta {
+  color: var(--text-3);
+}
+.company-card.is-active {
+  border-color: rgba(0,229,255,0.12);
+}
+.company-card.is-active::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--company-color), transparent);
+  opacity: 0.6;
+}
+
 /* ─── ABOUT ─── */
 .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
 .about-text { font-size: 16px; color: var(--text-2); line-height: 1.85; }
@@ -361,8 +433,70 @@ nav.scrolled {
   background: rgba(0,229,255,0.08); margin-bottom: 14px;
   font-size: 18px;
 }
-.pillar h4 { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+.pillar h4 { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.pillar-stat {
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px;
+  color: var(--cyan); margin-bottom: 8px;
+}
 .pillar p { color: var(--text-2); font-size: 13px; line-height: 1.65; }
+
+/* ─── ABOUT HIGHLIGHTS ─── */
+.about-highlights { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+.about-highlight {
+  display: flex; align-items: flex-start; gap: 12px;
+  font-size: 15px; color: var(--text-2); line-height: 1.7;
+}
+.about-hl-icon { flex-shrink: 0; margin-top: 3px; }
+
+/* ─── TECH STACK SCROLL ─── */
+.tech-stack-section {
+  position: relative; z-index: 1;
+  padding: 48px 24px;
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  text-align: center; overflow: hidden;
+}
+.tech-stack-label {
+  font-size: 12px; color: var(--text-3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 24px;
+}
+.tech-stack-scroll { overflow: hidden; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent); }
+.tech-stack-track {
+  display: flex; gap: 16px; width: max-content;
+  animation: techScroll 30s linear infinite;
+}
+.tech-tag {
+  padding: 8px 20px; border-radius: 100px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  font-size: 13px; font-weight: 600; color: var(--text-2);
+  white-space: nowrap; backdrop-filter: blur(8px);
+  transition: all 0.3s;
+}
+.tech-tag:hover { border-color: rgba(0,229,255,0.2); color: var(--cyan); }
+@keyframes techScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ─── TESTIMONIALS ─── */
+.testimonials-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+.testimonial-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 32px; backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.testimonial-card:hover { transform: translateY(-4px); border-color: rgba(0,229,255,0.15); box-shadow: var(--glow); }
+.testimonial-stars { color: #F59E0B; font-size: 16px; margin-bottom: 16px; letter-spacing: 2px; }
+.testimonial-text { color: var(--text-2); font-size: 15px; line-height: 1.7; margin-bottom: 24px; font-style: italic; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-weight: 700; font-size: 16px; color: #fff;
+}
+.testimonial-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; }
+.testimonial-role { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 
 /* ─── CTA SECTION ─── */
 .cta-section {
@@ -385,6 +519,27 @@ nav.scrolled {
 .cta-section p {
   font-size: 18px; color: var(--text-2); max-width: 500px;
   margin: 0 auto 48px; line-height: 1.7; position: relative;
+}
+.cta-buttons { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 48px; }
+.btn-whatsapp {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(37,211,102,0.12); color: #25D366;
+  padding: 16px 36px; border-radius: 14px;
+  font-weight: 700; font-size: 15px; text-decoration: none;
+  border: 1px solid rgba(37,211,102,0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-whatsapp:hover {
+  background: rgba(37,211,102,0.2); transform: translateY(-3px);
+  box-shadow: 0 8px 40px rgba(37,211,102,0.15);
+}
+.trust-badges {
+  display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+  position: relative;
+}
+.trust-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-3); font-weight: 500;
 }
 
 /* ─── FOOTER ─── */
@@ -421,6 +576,9 @@ footer {
 @media (max-width: 768px) {
   nav { padding: 0 20px; }
   .nav-links { display: none; }
+  .hero-proof { gap: 20px; padding: 12px 20px; }
+  .proof-number { font-size: 22px; }
+  .proof-divider { height: 28px; }
   .nav-links.open {
     display: flex; flex-direction: column;
     position: fixed; top: 80px; left: 0; right: 0; bottom: 0;
@@ -466,12 +624,28 @@ footer {
 
 <!-- HERO -->
 <section class="hero" id="hero">
-  <div class="hero-badge"><span class="pulse"></span> Ecossistema ativo</div>
+  <div class="hero-badge"><span class="pulse"></span> Construido no Brasil desde 2024</div>
   <div class="hero-logo-wrap">
     <img src="logo.png" alt="Arcade Hub" class="hero-logo" loading="eager" />
   </div>
   <h1>Onde tecnologia<br>encontra <span class="gradient-text">proposito</span>.</h1>
-  <p class="hero-sub">Construimos empresas de tecnologia que resolvem problemas reais. Privacidade, saude, direito do consumidor, entretenimento e inteligencia financeira — tudo sob um ecossistema.</p>
+  <p class="hero-sub">Construimos empresas de tecnologia que resolvem problemas reais em <span class="typing-text" id="typingText"></span></p>
+  <div class="hero-proof">
+    <div class="proof-item">
+      <span class="proof-number">11</span>
+      <span class="proof-label">Empresas</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-number">8</span>
+      <span class="proof-label">Segmentos</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-number">5</span>
+      <span class="proof-label">Ja no ar</span>
+    </div>
+  </div>
   <div class="hero-ctas">
     <a href="#empresas" class="btn-primary">Explorar ecossistema <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     <a href="#contato" class="btn-ghost">Fale conosco</a>
@@ -524,7 +698,8 @@ footer {
 
   <div class="company-grid">
 
-    <div class="company-card" style="--company-color: #6366F1;">
+    <div class="company-card is-active" style="--company-color: #6366F1;">
+      <span class="card-status active">Ativo</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F512;</div>
@@ -537,7 +712,8 @@ footer {
       <a href="https://www.privabr.com.br/" target="_blank" rel="noopener" class="card-cta">Conhecer a Priva BR <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #EC4899;">
+    <div class="company-card is-active" style="--company-color: #EC4899;">
+      <span class="card-status active">Ativo</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F389;</div>
@@ -550,7 +726,8 @@ footer {
       <a href="https://festanoplay.com/" target="_blank" rel="noopener" class="card-cta">Conhecer a Festa no Play <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #0EA5E9;">
+    <div class="company-card coming-soon" style="--company-color: #0EA5E9;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x2708;&#xFE0F;</div>
@@ -563,7 +740,8 @@ footer {
       <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #10B981;">
+    <div class="company-card coming-soon" style="--company-color: #10B981;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F3E5;</div>
@@ -576,7 +754,8 @@ footer {
       <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #F59E0B;">
+    <div class="company-card coming-soon" style="--company-color: #F59E0B;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x2696;&#xFE0F;</div>
@@ -589,7 +768,8 @@ footer {
       <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #8B5CF6;">
+    <div class="company-card coming-soon" style="--company-color: #8B5CF6;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F3A8;</div>
@@ -602,7 +782,8 @@ footer {
       <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #EAB308;">
+    <div class="company-card coming-soon" style="--company-color: #EAB308;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F4C5;</div>
@@ -615,7 +796,8 @@ footer {
       <a href="#" class="card-cta">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #06B6D4;">
+    <div class="company-card is-active" style="--company-color: #06B6D4;">
+      <span class="card-status active">Ativo</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F4CB;</div>
@@ -628,7 +810,8 @@ footer {
       <a href="https://laudoai.app/" target="_blank" rel="noopener" class="card-cta">Conhecer a laudoai.app <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #EF4444;">
+    <div class="company-card is-active" style="--company-color: #EF4444;">
+      <span class="card-status active">Ativo</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F4A1;</div>
@@ -641,7 +824,8 @@ footer {
       <a href="https://lucrovisivel.com.br/" target="_blank" rel="noopener" class="card-cta">Conhecer o Lucro Visível <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #3B82F6;">
+    <div class="company-card is-active" style="--company-color: #3B82F6;">
+      <span class="card-status active">Ativo</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F9EC;</div>
@@ -654,7 +838,8 @@ footer {
       <a href="https://cobenlifeos.com/" target="_blank" rel="noopener" class="card-cta">Conhecer o Coben Life OS <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card" style="--company-color: #14B8A6;">
+    <div class="company-card coming-soon" style="--company-color: #14B8A6;">
+      <span class="card-status soon">Em breve</span>
       <div class="card-glow"></div>
       <div class="card-header">
         <div class="card-icon">&#x1F916;</div>
@@ -699,30 +884,137 @@ footer {
   <div class="about-grid">
     <div class="about-text">
       <p>A Arcade Hub nasceu de uma conviccao: <strong>tecnologia so tem valor quando resolve problemas reais de pessoas reais.</strong></p>
-      <p>Somos uma holding de tecnologia brasileira que desenvolve, gerencia e escala um portfolio de empresas focadas nos setores mais criticos da vida moderna — privacidade de dados, saude, direitos do consumidor, produtividade, entretenimento e inteligencia financeira.</p>
-      <p>Cada empresa do nosso ecossistema opera com autonomia, mas compartilha a mesma infraestrutura tecnologica, os mesmos padroes de excelencia e a mesma obsessao por entregar resultados concretos.</p>
-      <p><strong>Nao somos uma incubadora. Nao somos um fundo de investimento. Somos os construtores.</strong> Cada empresa foi concebida, desenvolvida e lancada pelo nosso time — do codigo a estrategia de mercado.</p>
+      <p>Somos uma holding de tecnologia brasileira que desenvolve, gerencia e escala um portfolio de empresas focadas nos setores mais criticos da vida moderna.</p>
+      <div class="about-highlights">
+        <div class="about-highlight">
+          <span class="about-hl-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+          <span>Cada empresa opera com <strong>autonomia</strong>, mas compartilha a mesma infraestrutura tecnologica</span>
+        </div>
+        <div class="about-highlight">
+          <span class="about-hl-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+          <span>Os mesmos padroes de <strong>excelencia</strong> e obsessao por resultados concretos</span>
+        </div>
+        <div class="about-highlight">
+          <span class="about-hl-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+          <span>Do <strong>codigo a estrategia</strong> de mercado — tudo feito pelo nosso time</span>
+        </div>
+      </div>
+      <p style="margin-top:24px;"><strong>Nao somos uma incubadora. Nao somos um fundo de investimento. Somos os construtores.</strong></p>
     </div>
     <div class="pillars-grid">
       <div class="pillar reveal">
-        <div class="pillar-icon">&#x2699;&#xFE0F;</div>
+        <div class="pillar-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+        </div>
         <h4>Construcao</h4>
+        <div class="pillar-stat">11 empresas</div>
         <p>Nos construimos. Cada linha de codigo, cada decisao de produto — e nosso.</p>
       </div>
       <div class="pillar reveal">
-        <div class="pillar-icon">&#x26A1;</div>
+        <div class="pillar-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
         <h4>Impacto</h4>
+        <div class="pillar-stat">8 segmentos</div>
         <p>Nao criamos tecnologia por criar. Cada empresa existe para resolver um problema real.</p>
       </div>
       <div class="pillar reveal">
-        <div class="pillar-icon">&#x1F50D;</div>
+        <div class="pillar-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        </div>
         <h4>Transparencia</h4>
+        <div class="pillar-stat">100% proprio</div>
         <p>Dados abertos, comunicacao direta, resultados visiveis.</p>
       </div>
       <div class="pillar reveal">
-        <div class="pillar-icon">&#x1F680;</div>
+        <div class="pillar-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
         <h4>Velocidade</h4>
+        <div class="pillar-stat">Desde 2024</div>
         <p>Do conceito ao mercado com a agilidade de quem nao espera permissao.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK / TRUST -->
+<div class="tech-stack-section">
+  <p class="tech-stack-label">Tecnologias que impulsionam nosso ecossistema</p>
+  <div class="tech-stack-scroll">
+    <div class="tech-stack-track">
+      <span class="tech-tag">Next.js</span>
+      <span class="tech-tag">React</span>
+      <span class="tech-tag">TypeScript</span>
+      <span class="tech-tag">Supabase</span>
+      <span class="tech-tag">Vercel</span>
+      <span class="tech-tag">Node.js</span>
+      <span class="tech-tag">PostgreSQL</span>
+      <span class="tech-tag">Tailwind CSS</span>
+      <span class="tech-tag">OpenAI</span>
+      <span class="tech-tag">Stripe</span>
+      <span class="tech-tag">GitHub Actions</span>
+      <span class="tech-tag">Cloudflare</span>
+      <!-- duplicated for infinite scroll -->
+      <span class="tech-tag">Next.js</span>
+      <span class="tech-tag">React</span>
+      <span class="tech-tag">TypeScript</span>
+      <span class="tech-tag">Supabase</span>
+      <span class="tech-tag">Vercel</span>
+      <span class="tech-tag">Node.js</span>
+      <span class="tech-tag">PostgreSQL</span>
+      <span class="tech-tag">Tailwind CSS</span>
+      <span class="tech-tag">OpenAI</span>
+      <span class="tech-tag">Stripe</span>
+      <span class="tech-tag">GitHub Actions</span>
+      <span class="tech-tag">Cloudflare</span>
+    </div>
+  </div>
+</div>
+
+<!-- DEPOIMENTOS -->
+<section class="content-section" id="depoimentos">
+  <div class="section-tag">O que dizem</div>
+  <h2 class="section-heading">Vozes do ecossistema</h2>
+  <p class="section-sub">Quem ja usa nossas solucoes sabe o impacto na pratica.</p>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal">
+      <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="testimonial-text">"A Priva BR me ajudou a descobrir em quantas bases meus dados estavam expostos. Em 48h ja tinham iniciado as remocoes. Impressionante."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">M</div>
+        <div>
+          <div class="testimonial-name">Marina Costa</div>
+          <div class="testimonial-role">Advogada, Sao Paulo</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal">
+      <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="testimonial-text">"O Lucro Visivel mudou minha visao sobre as financas do meu negocio. Finalmente entendo para onde vai cada real. Indispensavel."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">R</div>
+        <div>
+          <div class="testimonial-name">Rafael Mendes</div>
+          <div class="testimonial-role">Empreendedor, Belo Horizonte</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal">
+      <div class="testimonial-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <p class="testimonial-text">"Coben Life OS organizou minha vida de um jeito que nenhum app de produtividade tinha conseguido. Simples e poderoso."</p>
+      <div class="testimonial-author">
+        <div class="testimonial-avatar">L</div>
+        <div>
+          <div class="testimonial-name">Larissa Oliveira</div>
+          <div class="testimonial-role">Designer, Rio de Janeiro</div>
+        </div>
       </div>
     </div>
   </div>
@@ -744,11 +1036,28 @@ footer {
       <polygon points="200,60 340,200 200,340 60,200"/>
     </svg>
   </div>
-  <h2>Quer conhecer o ecossistema<br>por dentro?</h2>
-  <p>Seja para parcerias, investimentos ou curiosidade — estamos abertos a conversas que fazem sentido.</p>
-  <div class="hero-ctas" style="position:relative;">
-    <a href="mailto:suporte@arcadehub.tech" class="btn-primary">Entre em contato <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+  <h2>Pronto para fazer parte<br>do ecossistema?</h2>
+  <p>Parcerias, investimentos ou apenas curiosidade — estamos abertos a conversas que fazem sentido.</p>
+  <div class="cta-buttons" style="position:relative;">
+    <a href="mailto:suporte@arcadehub.tech" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4L12 13 2 4"/></svg>
+      Entre em contato
+    </a>
     <a href="#empresas" class="btn-ghost">Ver empresas</a>
+  </div>
+  <div class="trust-badges">
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>LGPD Compliant</span>
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <span>Tecnologia propria</span>
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      <span>100% Brasileiro</span>
+    </div>
   </div>
 </section>
 
@@ -934,6 +1243,36 @@ const counterObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.5 });
 document.querySelectorAll('.stat-number[data-count]').forEach(el => counterObserver.observe(el));
+
+// ─── TYPING EFFECT ───
+(function() {
+  const words = ['privacidade.', 'saude.', 'direito do consumidor.', 'entretenimento.', 'inteligencia financeira.', 'produtividade.', 'laudos e pericias.', 'garantias com IA.'];
+  const el = document.getElementById('typingText');
+  let wordIdx = 0, charIdx = 0, deleting = false;
+
+  function type() {
+    const word = words[wordIdx];
+    if (!deleting) {
+      el.textContent = word.substring(0, charIdx + 1);
+      charIdx++;
+      if (charIdx === word.length) {
+        deleting = true;
+        setTimeout(type, 2000);
+        return;
+      }
+      setTimeout(type, 80);
+    } else {
+      el.textContent = word.substring(0, charIdx - 1);
+      charIdx--;
+      if (charIdx === 0) {
+        deleting = false;
+        wordIdx = (wordIdx + 1) % words.length;
+      }
+      setTimeout(type, 40);
+    }
+  }
+  type();
+})();
 </script>
 
 </body>
