@@ -95,6 +95,52 @@ nav.scrolled {
 }
 .btn-nav:hover { background: rgba(0,229,255,0.2) !important; box-shadow: var(--glow); }
 .btn-nav::after { display: none !important; }
+
+/* ─── NAV DROPDOWN ─── */
+.nav-dropdown {
+  position: relative;
+}
+.nav-dropdown > a { cursor: pointer; }
+.nav-dropdown > a svg { display: inline-block; vertical-align: middle; margin-left: 4px; transition: transform 0.3s; }
+.nav-dropdown:hover > a svg { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  position: absolute; top: calc(100% + 16px); left: 50%; transform: translateX(-50%);
+  min-width: 220px; padding: 12px;
+  background: rgba(10,22,40,0.95); backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--glass-border); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 30px rgba(0,229,255,0.05);
+  opacity: 0; visibility: hidden; transform: translateX(-50%) translateY(8px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 300;
+}
+.nav-dropdown:hover .nav-dropdown-menu {
+  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+}
+.nav-dropdown-menu::before {
+  content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
+  width: 100%; height: 8px;
+}
+.nav-dropdown-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 13px !important; color: var(--text-2) !important;
+  transition: all 0.2s !important;
+}
+.nav-dropdown-menu a::after { display: none !important; }
+.nav-dropdown-menu a:hover {
+  background: rgba(0,229,255,0.06) !important; color: #fff !important;
+}
+.nav-dropdown-menu a .dropdown-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.nav-dropdown-menu a .dropdown-arrow {
+  margin-left: auto; opacity: 0; transition: opacity 0.2s;
+}
+.nav-dropdown-menu a:hover .dropdown-arrow { opacity: 1; }
+.nav-dropdown-divider {
+  height: 1px; background: var(--glass-border); margin: 8px 0;
+}
+
 .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
 .hamburger span { display: block; width: 24px; height: 2px; background: #fff; margin: 5px 0; transition: all 0.3s; border-radius: 2px; }
 
@@ -586,6 +632,13 @@ footer {
     padding: 32px 24px; gap: 24px; z-index: 199;
   }
   .hamburger { display: block; }
+  .nav-dropdown-menu {
+    position: static; transform: none; opacity: 1; visibility: visible;
+    min-width: auto; background: rgba(0,229,255,0.04); border: none;
+    box-shadow: none; backdrop-filter: none; padding: 8px 0 0;
+    margin-top: 8px; border-radius: 8px;
+  }
+  .nav-dropdown > a svg { display: none; }
   .company-grid { grid-template-columns: 1fr; }
   .pillars-grid { grid-template-columns: 1fr; }
   .scroll-indicator { display: none; }
@@ -614,7 +667,41 @@ footer {
 <nav id="navbar">
   <a href="#" class="nav-brand">ARCADE <span>HUB</span></a>
   <div class="nav-links" id="navLinks">
-    <a href="#empresas">Empresas</a>
+    <div class="nav-dropdown">
+      <a href="#empresas">Empresas <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></a>
+      <div class="nav-dropdown-menu">
+        <a href="https://www.privabr.com.br/" target="_blank" rel="noopener">
+          <span class="dropdown-dot" style="background:#6366F1;"></span>
+          Priva BR
+          <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://festanoplay.com/" target="_blank" rel="noopener">
+          <span class="dropdown-dot" style="background:#EC4899;"></span>
+          Festa no Play
+          <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://laudoai.app/" target="_blank" rel="noopener">
+          <span class="dropdown-dot" style="background:#06B6D4;"></span>
+          laudoai.app
+          <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://lucrovisivel.com.br/" target="_blank" rel="noopener">
+          <span class="dropdown-dot" style="background:#EF4444;"></span>
+          Lucro Visivel
+          <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://cobenlifeos.com/" target="_blank" rel="noopener">
+          <span class="dropdown-dot" style="background:#3B82F6;"></span>
+          Coben Life OS
+          <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <div class="nav-dropdown-divider"></div>
+        <a href="#empresas">
+          <span class="dropdown-dot" style="background:var(--cyan);"></span>
+          Ver todas (11)
+        </a>
+      </div>
+    </div>
     <a href="#sobre">Sobre</a>
     <a href="#contato">Contato</a>
     <a href="/admin/" class="btn-nav">Admin</a>
