@@ -29,6 +29,27 @@ Thumbs.db
 .claude/settings.local.json
 .aiox/install-log.txt
 
+# AIOX Framework (local-only, instalado via @aiox-squads/core; não vai para repo público)
+.aiox-core/
+.aiox/
+squads/
+pro-installed-manifest.yaml
+pro-version.json
+AGENTS.md
+
+# IDE adapter folders (local-only)
+.antigravity/
+.codex/
+.cursor/
+.gemini/
+.kimi/
+
+# Claude Code config (settings.json pode ter rules privadas)
+.claude/
+
+# CI/CD adapter (workflows não publicar)
+.github/
+
 # Residual/temp files
 patch*.py
 copy-showcase-site.md

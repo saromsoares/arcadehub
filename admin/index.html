@@ -4,10 +4,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data: blob:;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+  object-src 'none';
+" />
+<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 <title>Arcade Hub | Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous" />
+<!-- Versões pinadas para reduzir superfície de supply-chain; ver docs/runbooks/cdn-pinning.md para rotação -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: #F3F4F6; color: #111827; }
@@ -434,7 +449,10 @@
     border:1px solid rgba(0,229,255,0.1);border-radius:20px;
     padding:48px 40px;width:100%;max-width:420px;text-align:center;
   ">
-    <img src="../logo.png" alt="Arcade Hub" style="width:160px;height:auto;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 0 30px rgba(0,229,255,0.3));" />
+    <picture>
+      <source srcset="../logo.webp" type="image/webp" />
+      <img src="../logo.png" alt="Arcade Hub" style="width:160px;height:auto;object-fit:contain;margin-bottom:24px;filter:drop-shadow(0 0 30px rgba(0,229,255,0.3));" />
+    </picture>
     <h1 style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:#fff;margin-bottom:6px;letter-spacing:1px;">ARCADE <span style="color:#00E5FF;">HUB</span></h1>
     <p style="color:rgba(255,255,255,0.4);font-size:13px;margin-bottom:32px;">Painel Administrativo</p>
 
@@ -487,7 +505,10 @@
 <div id="sidebar" style="display:none;">
   <div class="nav-logo">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <img src="../logo.png" alt="Arcade Hub" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" />
+      <picture>
+        <source srcset="../logo.webp" type="image/webp" />
+        <img src="../logo.png" alt="Arcade Hub" style="width:36px;height:36px;object-fit:contain;border-radius:6px;" />
+      </picture>
       <div class="brand" id="brand-name">ARCADE<span> HUB</span></div>
     </div>
     <div class="sub" id="brand-sub">FINTECH · CONEXÃO · INOVAÇÃO</div>
@@ -915,7 +936,8 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://zdwgwpvlwqtsdgervcof.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkd2d3cHZsd3F0c2RnZXJ2Y29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MjA5NzQsImV4cCI6MjA4ODM5Njk3NH0.t5dY0bFyfGh4dSeNRuy6XsmSWDUXN0Z3EMeRGGJMh98';
+// Publishable key (formato moderno sb_publishable_*) — independent rotation, melhor que legacy anon JWT
+const SUPABASE_KEY = 'sb_publishable_8yfc-M-6SZl5RTkLdMKe5w_9colNPe-';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
@@ -1081,22 +1103,34 @@ const fmtNum = v => isNaN(v)||v==null ? '0' : Number(v).toFixed(1).replace('.','
 // ─── INLINE EDIT SYSTEM ──────────────────────────────────────────────────────
 // editable(value, onSaveCallbackExpr, options) — returns HTML string
 // callbackExpr is a JS expression that returns a function, e.g. 'onEditCompanyName("id")'
+//   Validated against ALLOWED_CALLBACKS to prevent eval injection.
 // options: { type:'text'|'number'|'url', light:bool, style:'', inputStyle:'', id:'' }
+const ALLOWED_CALLBACKS = /^(onEditCompanyName|onEditCompanySegmento|onEditCompanyWebsite|onEditCompanyEmoji|onEditCompanyColor|onEditText)\("[A-Za-z0-9_:.\-]+"\)$/;
+
 function editable(value, callbackExpr, opts={}) {
   const t = opts.type || 'text';
   const light = opts.light ? ' editable-light' : '';
   const style = opts.style || '';
   const inputStyle = opts.inputStyle || '';
   const id = opts.id || ('ed-'+Math.random().toString(36).substr(2,6));
-  const displayVal = value || (t==='url'?'Adicionar...':'—');
-  const escaped = String(value||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
-  return `<span class="editable${light}" id="${id}" style="${style}">
-    <span class="editable-value">${displayVal}</span>
-    <input class="editable-input" type="${t}" value="${escaped}" style="${inputStyle}"
-      onkeydown="if(event.key==='Enter'){confirmEdit('${id}',${callbackExpr});}" />
-    <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${id}')" title="Editar">✏️</button>
-    <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${id}',${callbackExpr})" title="Confirmar">✔</button>
-    <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${id}')" title="Cancelar">✕</button>
+  if (!ALLOWED_CALLBACKS.test(callbackExpr)) {
+    console.warn('editable(): callbackExpr rejected by whitelist:', callbackExpr);
+    return escapeHtml(value || '—');
+  }
+  const safeId = escapeHtml(id);
+  const safeStyle = escapeHtml(style);
+  const safeInputStyle = escapeHtml(inputStyle);
+  const safeType = escapeHtml(t);
+  const safeCb = escapeHtml(callbackExpr);
+  const safeDisplay = escapeHtml(value || (t==='url'?'Adicionar...':'—'));
+  const safeAttr = escapeHtml(String(value||''));
+  return `<span class="editable${light}" id="${safeId}" style="${safeStyle}">
+    <span class="editable-value">${safeDisplay}</span>
+    <input class="editable-input" type="${safeType}" value="${safeAttr}" style="${safeInputStyle}"
+      onkeydown="if(event.key==='Enter'){confirmEdit('${safeId}',${safeCb});}" />
+    <button class="editable-btn btn-edit" onclick="event.stopPropagation();startEdit('${safeId}')" title="Editar">✏️</button>
+    <button class="editable-btn btn-confirm" onclick="event.stopPropagation();confirmEdit('${safeId}',${safeCb})" title="Confirmar">✔</button>
+    <button class="editable-btn btn-cancel" onclick="event.stopPropagation();cancelEdit('${safeId}')" title="Cancelar">✕</button>
   </span>`;
 }
 
@@ -1452,8 +1486,8 @@ function kpiCard(label, value, sub, color) {
 // ─── NAV EMPRESAS ─────────────────────────────────────────────────────────────
 function renderNavEmpresas() {
   document.getElementById('nav-empresas-list').innerHTML = FILHAS.map(c => `
-    <button class="nav-item" id="nav-emp-${c.id}" onclick="showEmpresaIndividual('${c.id}',this)" style="padding-left:28px;font-size:12px;">
-      <span class="nav-dot" style="background:${c.color}"></span>${c.name}
+    <button class="nav-item" id="nav-emp-${escapeHtml(c.id)}" onclick="showEmpresaIndividual('${escapeHtml(c.id)}',this)" style="padding-left:28px;font-size:12px;">
+      <span class="nav-dot" style="background:${escapeHtml(c.color)}"></span>${escapeHtml(c.name)}
     </button>`).join('');
 }
 
@@ -1596,9 +1630,9 @@ function renderLancamentos() {
   ).join('');
 
   document.getElementById('lanc-companies').innerHTML = COMPANIES.map(c=>
-    `<button class="btn-company" onclick="selCompany='${c.id}';renderLancamentos()"
-      style="${c.id===selCompany?`background:${c.color};color:#fff;border-color:${c.color}`:''}">
-      ${c.emoji} ${c.name}</button>`
+    `<button class="btn-company" onclick="selCompany='${escapeHtml(c.id)}';renderLancamentos()"
+      style="${c.id===selCompany?`background:${escapeHtml(c.color)};color:#fff;border-color:${escapeHtml(c.color)}`:''}">
+      ${escapeHtml(c.emoji)} ${escapeHtml(c.name)}</button>`
   ).join('');
 
   const comp = COMPANIES.find(c=>c.id===selCompany);
@@ -1772,12 +1806,13 @@ function renderCustosExtrasTable() {
   document.getElementById('lanc-custos-extras-body').innerHTML =
     extras.map((c, i) => {
       const pgdrColor = SOCIOS.includes(c.pagador) ? '#F59E0B' : (c.pagador==='EMPRESA'?'#10B981':'#9CA3AF');
+      const safeId = encodeURIComponent(String(c.id||''));
       return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-        <td style="font-size:12px;">${c.descricao}</td>
+        <td style="font-size:12px;">${escapeHtml(c.descricao)}</td>
         <td style="font-weight:600;color:#EF4444;font-size:12px;">${fmt(c.valor)}</td>
-        <td style="color:${pgdrColor};font-weight:600;font-size:11px;">${c.pagador||'—'}</td>
-        <td style="font-size:11px;color:#6B7280;">${meioLabels[c.meio_pagamento]||c.meio_pagamento||'—'}</td>
-        <td><button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra('${c.id}')" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button></td>
+        <td style="color:${pgdrColor};font-weight:600;font-size:11px;">${escapeHtml(c.pagador||'—')}</td>
+        <td style="font-size:11px;color:#6B7280;">${escapeHtml(meioLabels[c.meio_pagamento]||c.meio_pagamento||'—')}</td>
+        <td><button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button></td>
       </tr>`;
     }).join('') +
     `<tr style="background:#F0F4FF;font-weight:700;">
@@ -2134,13 +2169,13 @@ function renderBalancoSocios() {
         const origem = d.descricao === 'Lançamento principal' ? 'Lançamento' : 'Custo Extra';
         const origemColor = origem === 'Lançamento' ? '#6B7280' : '#8B5CF6';
         return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-          <td>${d.mes}</td>
-          <td><span class="dot" style="background:${d.empresaColor}"></span>${d.empresa}</td>
-          <td>${tipoDespesa.join(', ') || '—'}</td>
+          <td>${escapeHtml(d.mes)}</td>
+          <td><span class="dot" style="background:${escapeHtml(d.empresaColor)}"></span>${escapeHtml(d.empresa)}</td>
+          <td>${escapeHtml(tipoDespesa.join(', ') || '—')}</td>
           <td style="font-weight:600;color:#EF4444">${fmt(d.valor)}</td>
-          <td><strong style="color:${sColor}">${d.pagador}</strong></td>
-          <td>${meioLabels[d.meio] || d.meio}</td>
-          <td style="font-size:10px;color:${origemColor};font-weight:600;">${origem}</td>
+          <td><strong style="color:${sColor}">${escapeHtml(d.pagador)}</strong></td>
+          <td>${escapeHtml(meioLabels[d.meio] || d.meio)}</td>
+          <td style="font-size:10px;color:${origemColor};font-weight:600;">${escapeHtml(origem)}</td>
         </tr>`;
       }).join('') +
       `<tr class="table-total">
@@ -2197,12 +2232,12 @@ function renderEmpresasGeral(companiesYTD) {
         </div>
       </div>
       ${comp && comp.website ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F3F4F6;">
-        <a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+        <a href="${safeUrl(comp.website)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
           style="display:inline-flex;align-items:center;gap:5px;color:${c.color};font-size:11px;font-weight:600;
           text-decoration:none;background:${c.color}11;border:1px solid ${c.color}33;border-radius:20px;padding:4px 12px;
           max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
           onmouseover="this.style.background='${c.color}22'" onmouseout="this.style.background='${c.color}11'">
-          🌐 ${comp.website.replace('https://','').replace('http://','').replace(/\/$/,'')}
+          🌐 ${escapeHtml(String(comp.website).replace(/^https?:\/\//,'').replace(/\/$/,''))}
         </a>
       </div>` : ''}
     </div>`;
@@ -2269,13 +2304,13 @@ function renderEmpresaIndividual(cid) {
         <div class="empresa-header-name">${editable(comp.name, 'onEditCompanyName("'+cid+'")', {light:true, id:'ed-name-'+cid})}</div>
         <div class="empresa-header-sub">${editable(comp.segmento, 'onEditCompanySegmento("'+cid+'")', {light:true, id:'ed-seg-'+cid})} · Empresa Filha da Arcade Hub</div>
         <div style="margin-top:5px;display:flex;align-items:center;gap:8px;">
-          ${comp.website ? `<a href="${comp.website}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
+          ${comp.website ? `<a href="${safeUrl(comp.website)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
             style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.9);
             background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;
             padding:3px 10px;font-size:11px;font-weight:600;text-decoration:none;transition:all 0.2s;"
             onmouseover="this.style.background='rgba(255,255,255,0.25)'"
             onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-            🌐 ${comp.website.replace('https://','').replace('http://','').replace(/\/$/,'')}
+            🌐 ${escapeHtml(String(comp.website).replace(/^https?:\/\//,'').replace(/\/$/,''))}
           </a>` : ''}
           ${editable(comp.website||'', 'onEditCompanyWebsite("'+cid+'")', {light:true, type:'url', id:'ed-web-'+cid, inputStyle:'min-width:220px'})}
         </div>
@@ -2311,10 +2346,10 @@ function renderEmpresaIndividual(cid) {
     <div class="two-col" style="margin-bottom:20px;">
       <div>
         <div class="table-wrap">
-          <div style="background:${comp.color};padding:12px 16px;display:flex;align-items:center;gap:10px;">
-            <span style="font-size:18px">${comp.emoji}</span>
-            <span style="color:#fff;font-weight:700;font-size:13px;font-family:'Sora',sans-serif;">${comp.name} · ${selEmpresaMonth}</span>
-            <span class="saving" id="saving-emp-${cid}" style="color:rgba(255,255,255,0.7)">💾 Salvando...</span>
+          <div style="background:${escapeHtml(comp.color)};padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:18px">${escapeHtml(comp.emoji)}</span>
+            <span style="color:#fff;font-weight:700;font-size:13px;font-family:'Sora',sans-serif;">${escapeHtml(comp.name)} · ${escapeHtml(selEmpresaMonth)}</span>
+            <span class="saving" id="saving-emp-${escapeHtml(cid)}" style="color:rgba(255,255,255,0.7)">💾 Salvando...</span>
           </div>
           <div class="form-grid" id="emp-form-${cid}">
             ${buildEmpresaForm(cid, selEmpresaMonth)}
@@ -2787,6 +2822,16 @@ function calCardHtml(c) {
 
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+// safeUrl: returns an http(s) URL or '#' — bloqueia javascript:, data:, vbscript: e similares
+function safeUrl(u) {
+  if (!u) return '#';
+  const s = String(u).trim();
+  if (/^https?:\/\//i.test(s)) return escapeHtml(s);
+  if (/^\/\//.test(s)) return escapeHtml('https:' + s);
+  if (/^[\w.-]+\.[a-z]{2,}/i.test(s)) return escapeHtml('https://' + s);
+  return '#';
 }
 
 function addCalDate() {
