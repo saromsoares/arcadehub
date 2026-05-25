@@ -606,7 +606,7 @@
   <!-- LANÇAMENTOS -->
   <div id="tab-lancamentos" class="tab-content">
     <div class="page-title" id="pt-lancamentos">Lançamentos Mensais <span class="saving" id="saving-lanc">💾 Salvando...</span></div>
-    <div class="page-sub" id="ps-lancamentos">Preencha os valores realizados por empresa e mês.</div>
+    <div class="page-sub" id="ps-lancamentos">Base de tudo: lance a receita do mês e cada custo como um item (categoria, quem pagou e como). Alimenta Estrutura, Balanço e Dashboards.</div>
     <div class="btn-group" id="lanc-months"></div>
     <div class="btn-group" id="lanc-companies"></div>
     <div class="two-col">
@@ -620,11 +620,11 @@
         <!-- CUSTOS EXTRAS -->
         <div class="table-wrap" style="margin-top:16px;">
           <div style="background:#0A1628;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="color:#fff;font-weight:700;font-size:12px;">Custos Extras</span>
+            <span style="color:#fff;font-weight:700;font-size:12px;">Custos do Mês</span>
             <button onclick="abrirFormCustoExtra()" style="background:#10B981;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">+ Novo Custo</button>
           </div>
           <div id="lanc-custo-extra-form" style="display:none;padding:14px;border-bottom:1px solid #E5E7EB;background:#F9FAFB;">
-            <div id="ce-form-title" style="font-size:12px;font-weight:700;color:#0A1628;margin-bottom:10px;text-transform:uppercase;">Novo Custo Extra</div>
+            <div id="ce-form-title" style="font-size:12px;font-weight:700;color:#0A1628;margin-bottom:10px;text-transform:uppercase;">Novo Custo</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
                 <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Categoria</label>
@@ -1247,6 +1247,18 @@ function getRealizadoCustoMes(mes, cat) {
 function getTotalRealizadoMes(mes) {
   return CUSTO_CATS.reduce((a,k)=>a+getRealizadoCustoMes(mes,k),0);
 }
+// Custo de UMA empresa, por categoria, num mês (null/'' = Outros Custos).
+function getCustoEmpresaCatMes(mes, cid, cat) {
+  return custosExtras.reduce((a, c) => {
+    if (c.mes !== mes || c.empresa_id !== cid) return a;
+    const cc = (c.categoria && c.categoria !== '') ? c.categoria : 'Outros Custos';
+    return cc === cat ? a + (c.valor || 0) : a;
+  }, 0);
+}
+// Categorias que têm algum custo lançado no ano para a empresa (para resumos enxutos).
+function getCategoriasComCusto(cid) {
+  return CUSTO_CATS.filter(cat => MONTHS.some(m => getCustoEmpresaCatMes(m, cid, cat) > 0));
+}
 function getTotalAportes() {
   // Suporta formato novo {SOCIO: {Mes: val}} e legado {Mes: val}
   const ap = estrutura.aportes || {};
@@ -1677,21 +1689,13 @@ function renderLancamentos() {
   document.getElementById('lanc-overview-title').textContent = `Todas as Empresas · ${selMonth}`;
 
   const e = getLanc(selMonth, selCompany);
+  // Form principal enxuto: receita + headcount + obs. Os custos são itens (Custos do Mês),
+  // cada um com sua própria categoria/pagador/meio. Os baldes antigos foram aposentados.
   const fields = [
     {key:'receita',label:'Receita Bruta (R$)'},
-    {key:'custos_diretos',label:'Custos Diretos (R$)'},
-    {key:'folha',label:'Folha de Pagamento (R$)'},
-    {key:'impostos',label:'Impostos (R$)'},
-    {key:'despesas_adm',label:'Despesas Administrativas (R$)'},
-    {key:'outras_despesas',label:'Outras Despesas (R$)'},
     {key:'headcount',label:'Headcount'},
     {key:'obs',label:'Observações',text:true},
   ];
-
-  const pagadorOpts = ['','EMPRESA',...SOCIOS].map(s =>
-    `<option value="${s}" ${e.pagador===s?'selected':''}>${s||'— Selecionar —'}</option>`).join('');
-  const meioOpts = [{id:'',label:'— Selecionar —'},...MEIOS_PAGAMENTO].map(m =>
-    `<option value="${m.id}" ${e.meio_pagamento===m.id?'selected':''}>${m.label}</option>`).join('');
 
   document.getElementById('lanc-form').innerHTML = fields.map(f=>{
     const lid = 'ed-lfl-'+f.key;
@@ -1703,19 +1707,7 @@ function renderLancamentos() {
         oninput="updateLanc('${f.key}',this.value)"
       />
     </div>`;
-  }).join('') + `
-    <div class="form-field">
-      <label style="font-size:11px;color:#6B7280;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;">Quem Pagou</label>
-      <select class="inp" id="lanc-pagador" style="text-align:left;" onchange="updateLanc('pagador',this.value)">
-        ${pagadorOpts}
-      </select>
-    </div>
-    <div class="form-field">
-      <label style="font-size:11px;color:#6B7280;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;">Meio de Pagamento</label>
-      <select class="inp" id="lanc-meio" style="text-align:left;" onchange="updateLanc('meio_pagamento',this.value)">
-        ${meioOpts}
-      </select>
-    </div>`;
+  }).join('');
 
   updateLancResult();
   renderCustosExtrasTable();
@@ -1803,7 +1795,7 @@ function abrirFormCustoExtra(id) {
     document.getElementById('ce-valor').value = custo.valor || '';
     document.getElementById('ce-pagador').value = custo.pagador || '';
     document.getElementById('ce-meio').value = custo.meio_pagamento || '';
-    document.getElementById('ce-form-title').textContent = 'Editar Custo Extra';
+    document.getElementById('ce-form-title').textContent = 'Editar Custo';
     document.getElementById('ce-btn-salvar').textContent = 'Atualizar Custo';
     document.getElementById('ce-btn-outro').style.display = 'none';
   } else {
@@ -1813,7 +1805,7 @@ function abrirFormCustoExtra(id) {
     document.getElementById('ce-valor').value = '';
     document.getElementById('ce-pagador').value = '';
     document.getElementById('ce-meio').value = '';
-    document.getElementById('ce-form-title').textContent = 'Novo Custo Extra';
+    document.getElementById('ce-form-title').textContent = 'Novo Custo';
     document.getElementById('ce-btn-salvar').textContent = 'Salvar Custo';
     document.getElementById('ce-btn-outro').style.display = '';
   }
@@ -1869,7 +1861,7 @@ function renderCustosExtrasTable() {
   const meioLabels = Object.fromEntries(MEIOS_PAGAMENTO.map(m => [m.id, m.label]));
   if (extras.length === 0) {
     document.getElementById('lanc-custos-extras-body').innerHTML =
-      `<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:16px;font-size:12px;">Nenhum custo extra lançado. Clique em "+ Novo Custo" para adicionar.</td></tr>`;
+      `<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:16px;font-size:12px;">Nenhum custo lançado neste mês. Clique em "+ Novo Custo" para adicionar.</td></tr>`;
     return;
   }
   const totalExtras = extras.reduce((a, c) => a + (c.valor || 0), 0);
@@ -1885,12 +1877,12 @@ function renderCustosExtrasTable() {
         <td style="font-size:11px;color:#6B7280;">${escapeHtml(meioLabels[c.meio_pagamento]||c.meio_pagamento||'—')}</td>
         <td style="white-space:nowrap;">
           <button onclick="abrirFormCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#1E6FFF;cursor:pointer;font-size:14px;margin-right:4px;" title="Editar">✏️</button>
-          <button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button>
+          <button onclick="if(confirm('Excluir este custo?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button>
         </td>
       </tr>`;
     }).join('') +
     `<tr style="background:#F0F4FF;font-weight:700;">
-      <td colspan="2" style="font-size:12px;">TOTAL CUSTOS EXTRAS</td>
+      <td colspan="2" style="font-size:12px;">TOTAL CUSTOS DO MÊS</td>
       <td style="color:#EF4444;font-size:12px;">${fmt(totalExtras)}</td>
       <td colspan="3"></td>
     </tr>`;
@@ -2258,7 +2250,7 @@ function renderBalancoSocios() {
           if (d.despesas_adm > 0) tipoDespesa.push('Desp. Adm');
           if (d.outras_despesas > 0) tipoDespesa.push('Outras');
         }
-        const origem = d.descricao === 'Lançamento principal' ? 'Lançamento' : 'Custo Extra';
+        const origem = d.descricao === 'Lançamento principal' ? 'Lançamento' : 'Custo';
         const origemColor = origem === 'Lançamento' ? '#6B7280' : '#8B5CF6';
         return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
           <td>${escapeHtml(d.mes)}</td>
@@ -2428,7 +2420,7 @@ function renderEmpresaIndividual(cid) {
     </div>
 
     <!-- Seletor de mês -->
-    <div class="section-title"><span>${editable('Lançamento de Custos Mensais — '+comp.name, 'onEditText("ed-sec-lanc-'+cid+'")', {id:'ed-sec-lanc-'+cid})}</span></div>
+    <div class="section-title"><span>${editable('Resumo do Mês — '+comp.name+' (somente leitura)', 'onEditText("ed-sec-lanc-'+cid+'")', {id:'ed-sec-lanc-'+cid})}</span></div>
     <div class="btn-group" id="emp-months-${cid}">
       ${MONTHS.map(m=>`<button class="btn-month${m===selEmpresaMonth?' active':''}"
         onclick="selEmpresaMonth='${m}';renderEmpresaIndividual('${cid}')">${m}</button>`).join('')}
@@ -2441,7 +2433,6 @@ function renderEmpresaIndividual(cid) {
           <div style="background:${escapeHtml(comp.color)};padding:12px 16px;display:flex;align-items:center;gap:10px;">
             <span style="font-size:18px">${escapeHtml(comp.emoji)}</span>
             <span style="color:#fff;font-weight:700;font-size:13px;font-family:'Sora',sans-serif;">${escapeHtml(comp.name)} · ${escapeHtml(selEmpresaMonth)}</span>
-            <span class="saving" id="saving-emp-${escapeHtml(cid)}" style="color:rgba(255,255,255,0.7)">💾 Salvando...</span>
           </div>
           <div class="form-grid" id="emp-form-${cid}">
             ${buildEmpresaForm(cid, selEmpresaMonth)}
@@ -2459,7 +2450,7 @@ function renderEmpresaIndividual(cid) {
         <!-- KPIs do mês -->
         <div class="kpi-grid">
           ${kpiCard('Receita '+selEmpresaMonth, fmt(e.receita||0), '', comp.color)}
-          ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)), '', '#F59E0B')}
+          ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)+mesExtras), '', '#F59E0B')}
           ${kpiCard('Headcount', fmtNum(e.headcount||0), 'pessoas', '#8B5CF6')}
         </div>
       </div>
@@ -2517,47 +2508,62 @@ function renderEmpresaIndividual(cid) {
   }, 50);
 }
 
+// Visão Geral da filha é SOMENTE LEITURA. A edição acontece na aba Lançamentos (fonte única).
 function buildEmpresaForm(cid, mes) {
   const e = getLanc(mes, cid);
-  const fields = [
-    {key:'receita',label:'Receita Bruta (R$)'},
-    {key:'custos_diretos',label:'Custos Diretos (R$)'},
-    {key:'folha',label:'Folha de Pagamento (R$)'},
-    {key:'impostos',label:'Impostos e Taxas (R$)'},
-    {key:'despesas_adm',label:'Despesas Administrativas (R$)'},
-    {key:'outras_despesas',label:'Outras Despesas (R$)'},
-    {key:'headcount',label:'Headcount (pessoas)'},
-    {key:'obs',label:'Observações',text:true},
-  ];
-  return fields.map(f=>{
-    const lid = 'ed-fl-'+cid+'-'+f.key;
-    return `
+  const itens = getCustosExtras(mes, cid);
+  const meioLabels = Object.fromEntries(MEIOS_PAGAMENTO.map(m => [m.id, m.label]));
+  const totalCustos = itens.reduce((a,c)=>a+(c.valor||0),0);
+  const ro = (label, val) => `
     <div class="form-field">
-      <label>${editable(f.label, 'onEditText("'+lid+'")', {id:lid, style:'font-size:11px'})}</label>
-      <input class="inp" type="${f.text?'text':'number'}" id="emp-${cid}-${f.key}"
-        value="${e[f.key]||''}"
-        oninput="updateEmpresaLanc('${cid}','${f.key}',this.value)"
-      />
+      <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;">${label}</label>
+      <div style="padding:9px 12px;background:#F3F4F6;border-radius:8px;font-weight:600;color:#111827;">${val}</div>
     </div>`;
-  }).join('');
+  const itensHtml = itens.length === 0
+    ? `<div style="grid-column:1/-1;color:#9CA3AF;font-size:12px;padding:6px 2px;">Nenhum custo lançado neste mês.</div>`
+    : `<div style="grid-column:1/-1;overflow-x:auto;">
+        <table style="width:100%;font-size:11px;">
+          <thead><tr>
+            <th style="text-align:left;">Categoria</th><th style="text-align:left;">Descrição</th>
+            <th style="text-align:right;">Valor</th><th>Pagador</th><th>Meio</th>
+          </tr></thead>
+          <tbody>${itens.map(c=>`<tr>
+            <td style="color:#1E6FFF;font-weight:600;">${escapeHtml(c.categoria||'Outros Custos')}</td>
+            <td>${escapeHtml(c.descricao||'')}</td>
+            <td style="text-align:right;color:#EF4444;font-weight:600;">${fmt(c.valor||0)}</td>
+            <td>${escapeHtml(c.pagador||'—')}</td>
+            <td>${escapeHtml(meioLabels[c.meio_pagamento]||c.meio_pagamento||'—')}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  return `
+    ${ro('Receita Bruta (R$)', fmt(e.receita||0))}
+    ${ro('Headcount', fmtNum(e.headcount||0))}
+    ${ro('Total Custos (R$)', fmt(totalCustos))}
+    ${ro('Observações', e.obs ? escapeHtml(e.obs) : '—')}
+    <div style="grid-column:1/-1;margin-top:2px;">
+      <button onclick="irParaLancamentos('${escapeHtml(cid)}','${escapeHtml(mes)}')"
+        style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+        ✏️ Editar em Lançamentos</button>
+    </div>
+    <div style="grid-column:1/-1;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-top:8px;border-top:1px solid #E5E7EB;padding-top:8px;">Custos do mês</div>
+    ${itensHtml}
+  `;
 }
 
 function buildEmpresaAnualTable(cid) {
+  // Custos quebrados pelas categorias que tiveram lançamento no ano (modelo itemizado).
+  const cats = getCategoriasComCusto(cid);
   const rows = [
-    {label:'Receita Bruta', fn:(e,m,c)=>e.receita||0, bold:true, color:'#1E6FFF'},
-    {label:'Custos Diretos', fn:(e,m,c)=>e.custos_diretos||0},
-    {label:'Folha de Pagamento', fn:(e,m,c)=>e.folha||0},
-    {label:'Impostos', fn:(e,m,c)=>e.impostos||0},
-    {label:'Despesas Adm.', fn:(e,m,c)=>e.despesas_adm||0},
-    {label:'Outras Despesas', fn:(e,m,c)=>e.outras_despesas||0},
-    {label:'Total Custos', fn:(e,m,c)=>calcCustos(e)+getTotalCustosExtras(m,c), bold:true, color:'#F59E0B'},
-    {label:'Custos Extras', fn:(e,m,c)=>getTotalCustosExtras(m,c), color:'#8B5CF6'},
-    {label:'Resultado Operacional', fn:(e,m,c)=>calcRes(e)-getTotalCustosExtras(m,c), bold:true, isResult:true},
-    {label:'Margem (%)', fn:(e,m,c)=>{const r=calcRes(e)-getTotalCustosExtras(m,c);return(e.receita||0)>0?fmtPct(r/e.receita):'—';}, noFmt:true},
+    {label:'Receita Bruta', fn:(m)=>getLanc(m,cid).receita||0, bold:true, color:'#1E6FFF'},
+    ...cats.map(cat => ({label:'• '+cat, fn:(m)=>getCustoEmpresaCatMes(m,cid,cat)})),
+    {label:'Total Custos', fn:(m)=>getTotalCustosExtras(m,cid), bold:true, color:'#F59E0B'},
+    {label:'Resultado Operacional', fn:(m)=>(getLanc(m,cid).receita||0)-getTotalCustosExtras(m,cid), bold:true, isResult:true},
+    {label:'Margem (%)', fn:(m)=>{const e=getLanc(m,cid);const r=(e.receita||0)-getTotalCustosExtras(m,cid);return(e.receita||0)>0?fmtPct(r/e.receita):'—';}, noFmt:true},
   ];
 
   return rows.map((r,ri)=>{
-    const vals = MONTHS.map(m => r.fn(getLanc(m, cid), m, cid));
+    const vals = MONTHS.map(m => r.fn(m));
     const ytdv = r.noFmt ? '—' : vals.reduce((a,b)=>a+b,0);
     return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td style="${r.bold?'font-weight:700;':''}${r.color?`color:${r.color}`:''}">${r.label}</td>
@@ -2601,6 +2607,15 @@ function updateEmpresaLanc(cid, key, val) {
     const tbody = document.querySelector(`#empresa-individual-content table tbody`);
     if (tbody) tbody.innerHTML = buildEmpresaAnualTable(cid);
   }, 700);
+}
+
+// Vai para a aba Lançamentos já com a empresa (e mês) selecionados.
+function irParaLancamentos(cid, mes) {
+  selCompany = cid;
+  if (mes) selMonth = mes;
+  const navBtn = document.querySelector('.nav-item[onclick*="lancamentos"]');
+  showTab('lancamentos', navBtn);
+  renderLancamentos();
 }
 
 // ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
