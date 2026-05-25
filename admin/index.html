@@ -731,18 +731,13 @@
 
     <div class="caixa-block">
       <div class="caixa-input-wrap">
-        <div class="caixa-label">Caixa Inicial do Grupo (R$)</div>
-        <div class="caixa-desc">Saldo em 01/04/2025 (capital proprio)</div>
-        <input class="caixa-inp" type="number" id="caixa-inicial" placeholder="Ex: 500000" oninput="saveEstrutura()" />
-      </div>
-      <div class="caixa-input-wrap">
         <div class="caixa-label">Inicio da Operacao</div>
         <div class="caixa-desc">Data de abertura do periodo</div>
         <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);">01/04/2025</div>
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual = Caixa Inicial + Aportes Acumulados + Resultado Acumulado - Custos de Estrutura Acumulados (Abr-Dez)</div>
+    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios − Custos Consumidos (realizado dos lançamentos, Abr–Dez). O caixa começa com o capital que os sócios efetivamente aportaram e vai sendo abatido conforme os custos são lançados.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
     <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses Jan/Fev/Mar = pré-operação (bloqueados).</p>
@@ -753,7 +748,9 @@
           <th style="color:rgba(255,255,255,0.4)">Jan</th><th style="color:rgba(255,255,255,0.4)">Fev</th><th style="color:rgba(255,255,255,0.4)">Mar</th>
           <th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th>
           <th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-          <th>Total</th>
+          <th>Confirmado</th>
+          <th style="background:#1E3A5F;color:#C4B5FD;">Meta/Sócio</th>
+          <th style="background:#1E3A5F;color:#C4B5FD;">% Conf.</th>
         </tr></thead>
         <tbody id="aportes-table"></tbody>
       </table>
@@ -1269,6 +1266,20 @@ function getAporteSocioTotal(socio) {
   return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
     .reduce((a, m) => a + getAporteSocioMes(socio, m), 0);
 }
+// Meta de aporte por sócio (default 30k). Editável; 0 = sócio não aporta.
+function getAporteMetaSocio(socio) {
+  const m = estrutura.metas?.aporteMetas || {};
+  return m[socio] !== undefined && m[socio] !== null ? m[socio] : 30000;
+}
+function getTotalAporteMeta() {
+  return SOCIOS.reduce((a,s)=>a+getAporteMetaSocio(s),0);
+}
+function setAporteMetaSocio(socio, val) {
+  if (!estrutura.metas) estrutura.metas = {};
+  if (!estrutura.metas.aporteMetas) estrutura.metas.aporteMetas = {};
+  estrutura.metas.aporteMetas[socio] = parseFloat(val)||0;
+  saveEstrutura();
+}
 function getAporteMesTotal(mes) {
   return SOCIOS.reduce((a, s) => a + getAporteSocioMes(s, mes), 0);
 }
@@ -1332,20 +1343,24 @@ function getEmpresaYTD(cid) {
   return {receita,custos,resultado,hcAvg:hc/12};
 }
 function getTotals() {
-  const totalCusto = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0);
+  const totalCusto = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0); // custo base mensal (planejado)
   const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const totalCustoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalCustoMes(m),0);
+  const totalCustoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalCustoMes(m),0);       // planejado acumulado (projeção)
+  const totalRealizadoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalRealizadoMes(m),0); // consumido real (lançamentos)
   const totalInv = INV_CATS.reduce((a,k)=>a+(estrutura.investimento[k]||0),0);
   const cons = getConsolidado();
   const resultadoAcum = cons.reduce((a,c)=>a+c.resultado,0);
-  const totalAportes = getTotalAportes();
-  const caixaInicial = estrutura.caixa_inicial||0;
-  const caixaAtual = caixaInicial + totalAportes + resultadoAcum - totalCustoAcum;
-  const burnRate = cons.reduce((a,c)=>c.resultado<0?a+Math.abs(c.resultado):a,0)/MONTHS_OP.length;
+  const totalAportes = getTotalAportes();          // aportes confirmados
+  const totalAporteMeta = getTotalAporteMeta();     // aportes previstos (meta)
+  // Caixa real = o que entrou (aportes confirmados) menos o que foi consumido (custos realizados)
+  const caixaAtual = totalAportes - totalRealizadoAcum;
+  // Burn rate real = consumo médio mensal nos meses que tiveram gasto
+  const mesesComConsumo = MONTHS_OP.filter(m=>getTotalRealizadoMes(m)>0).length || 1;
+  const burnRate = totalRealizadoAcum / mesesComConsumo;
   const runway = burnRate>0?caixaAtual/burnRate:0;
   const ytd = getYTD(cons);
   const margem = ytd.receita>0?ytd.resultado/ytd.receita:0;
-  return {totalCusto,totalCustoAcum,totalInv,resultadoAcum,caixaInicial,caixaAtual,burnRate,runway,ytd,margem,totalAportes};
+  return {totalCusto,totalCustoAcum,totalRealizadoAcum,totalInv,resultadoAcum,caixaAtual,burnRate,runway,ytd,margem,totalAportes,totalAporteMeta};
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
@@ -1415,14 +1430,17 @@ async function savePlan(mes, empresa_id) {
 async function saveEstrutura() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
+    // Preserva campos existentes de metas (ex: aporteMetas) ao gravar os 3 inputs de KPI
     const metas = {
+      ...(estrutura.metas || {}),
       runway: parseFloat(document.getElementById('meta-runway')?.value)||6,
       margem: parseFloat(document.getElementById('meta-margem')?.value)||0.15,
       burnRateMax: parseFloat(document.getElementById('meta-burnrate')?.value)||0,
     };
-    const caixa_inicial = parseFloat(document.getElementById('caixa-inicial')?.value)||0;
     estrutura.metas = metas;
-    estrutura.caixa_inicial = caixa_inicial;
+    // caixa_inicial (capital próprio) foi descontinuado da UI; o caixa agora deriva dos aportes.
+    // Preserva o valor já gravado para não perder histórico, sem usá-lo no cálculo.
+    const caixa_inicial = estrutura.caixa_inicial || 0;
     const payload = {
       caixa_inicial,
       data_inicio: '01/04/2025',
@@ -1983,13 +2001,10 @@ function renderComparativo(cons, ytd, companiesYTD) {
 
 // ─── ESTRUTURA ───────────────────────────────────────────────────────────────
 function renderEstrutura(totals) {
-  const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalInv, totalAportes } = totals;
-  const ci = estrutura.caixa_inicial||0;
+  const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalRealizadoAcum, totalInv, totalAportes, totalAporteMeta } = totals;
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-
-  const ciEl = document.getElementById('caixa-inicial');
-  if (ciEl && document.activeElement!==ciEl) ciEl.value = ci||'';
+  const aportePct = totalAporteMeta>0 ? totalAportes/totalAporteMeta : 0;
 
   const mt = estrutura.metas;
   const ri=document.getElementById('meta-runway'), mi=document.getElementById('meta-margem'), bi=document.getElementById('meta-burnrate');
@@ -1998,15 +2013,15 @@ function renderEstrutura(totals) {
   if(bi&&document.activeElement!==bi) bi.value=mt.burnRateMax||0;
 
   document.getElementById('caixa-cards').innerHTML = [
-    {label:'Caixa Inicial (01/04)', val:fmt(ci), color:'#1E6FFF'},
-    {label:'Aportes Acumulados', val:fmt(totalAportes), color:'#8B5CF6'},
-    {label:'Resultado Acumulado', val:fmt(resultadoAcum), color:resultadoAcum>=0?'#10B981':'#EF4444'},
-    {label:'Custos Estrutura Acum.', val:fmt(totalCustoAcum), color:'#F59E0B'},
-    {label:'Caixa Atual Estimado', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444'},
-  ].map(({label,val,color})=>`
+    {label:'Aportes Confirmados', val:fmt(totalAportes), color:'#8B5CF6', sub:`de ${fmt(totalAporteMeta)} previstos · ${fmtPct(aportePct)}`},
+    {label:'Consumido (Abr–Dez)', val:fmt(totalRealizadoAcum), color:'#EF4444', sub:'custos realmente lançados'},
+    {label:'Caixa Atual', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444', sub:'aportes − consumido'},
+    {label:'Runway', val:`${fmtNum(totals.runway)} m`, color:totals.runway>=(mt.runway||6)?'#10B981':'#F59E0B', sub:'no ritmo de consumo atual'},
+  ].map(({label,val,color,sub})=>`
     <div class="caixa-mini" style="border-left:3px solid ${color}">
       <div class="caixa-mini-label">${label}</div>
       <div class="caixa-mini-val" style="color:${color}">${val}</div>
+      ${sub?`<div style="font-size:10px;color:#9CA3AF;margin-top:2px;">${sub}</div>`:''}
     </div>`).join('');
 
   // Migrar aportes legado para novo formato se necessario
@@ -2029,6 +2044,10 @@ function renderEstrutura(totals) {
   document.getElementById('aportes-table').innerHTML =
     SOCIOS.map(socio => {
       const sColor = socioColors[socio] || '#6B7280';
+      const confirmado = getAporteSocioTotal(socio);
+      const meta = getAporteMetaSocio(socio);
+      const pct = meta>0 ? confirmado/meta : 0;
+      const pctColor = pct>=1 ? '#059669' : (confirmado>0 ? '#F59E0B' : '#9CA3AF');
       return `<tr><td><strong style="color:${sColor}">● ${socio}</strong></td>` +
         MONTHS_ALL.map(mm => {
           const isOp = MONTHS_OP.includes(mm);
@@ -2038,12 +2057,17 @@ function renderEstrutura(totals) {
               ${isOp ? `oninput="estrutura.aportes['${socio}']['${mm}']=parseFloat(this.value)||0;saveEstrutura()"` : ' disabled'}
             /></td>`;
         }).join('') +
-        `<td style="font-weight:700;color:${sColor}">${fmt(getAporteSocioTotal(socio))}</td></tr>`;
+        `<td style="font-weight:700;color:${sColor}">${fmt(confirmado)}</td>` +
+        `<td style="padding:4px 6px;background:#F5F3FF;"><input class="inp" type="number" value="${meta||''}" placeholder="30000" style="width:80px;"
+            oninput="setAporteMetaSocio('${socio}',this.value)" /></td>` +
+        `<td style="font-weight:700;color:${pctColor};">${meta>0?fmtPct(pct):'—'}</td></tr>`;
     }).join('') +
     // Linha TOTAL
     `<tr class="table-total"><td>TOTAL</td>` +
     MONTHS_ALL.map(mm => `<td>${fmt(getAporteMesTotal(mm))}</td>`).join('') +
-    `<td style="color:#8B5CF6">${fmt(totalAportes)}</td></tr>` +
+    `<td style="color:#8B5CF6">${fmt(totalAportes)}</td>` +
+    `<td style="color:#8B5CF6">${fmt(getTotalAporteMeta())}</td>` +
+    `<td style="color:#8B5CF6">${getTotalAporteMeta()>0?fmtPct(totalAportes/getTotalAporteMeta()):'—'}</td></tr>` +
     // Linha acumulado
     (() => {
       let acc = 0;
@@ -2052,7 +2076,7 @@ function renderEstrutura(totals) {
           acc += getAporteMesTotal(mm);
           const isOp = MONTHS_OP.includes(mm);
           return `<td style="color:${isOp?'#059669':'#9CA3AF'};font-weight:600">${fmt(acc)}</td>`;
-        }).join('') + `<td></td></tr>`;
+        }).join('') + `<td></td><td></td><td></td></tr>`;
     })();
 
   // Tabela de custos mes a mes
@@ -2114,14 +2138,15 @@ function renderEstrutura(totals) {
     </tr>`).join('') +
     `<tr class="table-total"><td>TOTAL INVESTIDO</td><td>${fmt(totalInv)}</td></tr>`;
 
-  const rwSemReceita = totalBase>0?`${fmtNum(ci/totalBase)} m`:'∞';
+  // Cards de PROJEÇÃO/referência (complementam os cards de caixa do topo, sem repetir)
+  const consumoPct = totalCustoAcum>0 ? totalRealizadoAcum/totalCustoAcum : 0;
   document.getElementById('estr-summary-cards').innerHTML = [
-    kpiCard('Caixa Inicial', fmt(ci), '01/04/2025', '#1E6FFF'),
-    kpiCard('Aportes Acumulados', fmt(totalAportes), 'capital externo', '#8B5CF6'),
-    kpiCard('Custo Base Mensal', fmt(totalBase), 'estrutura central', '#F59E0B'),
-    kpiCard('Custo Acumulado', fmt(totalCustoAcum), 'Abr-Dez', '#EF4444'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
-    kpiCard('Runway', `${fmtNum(totals.runway)} m`, 'so custo fixo', '#1E6FFF'),
+    kpiCard('Custo Base Mensal', fmt(totalBase), 'estrutura planejada', '#F59E0B'),
+    kpiCard('Planejado Acum.', fmt(totalCustoAcum), 'projeção Abr–Dez', '#1E6FFF'),
+    kpiCard('Realizado Acum.', fmt(totalRealizadoAcum), `${fmtPct(consumoPct)} do planejado`, '#EF4444'),
+    kpiCard('Caixa Atual', fmt(caixaAtual), 'aportes − consumido', caixaAtual>=0?'#10B981':'#EF4444'),
+    kpiCard('Total Investido', fmt(totalInv), 'estruturação (histórico)', '#8B5CF6'),
+    kpiCard('Runway', `${fmtNum(totals.runway)} m`, 'no ritmo atual', totals.runway>=(estrutura.metas?.runway||6)?'#10B981':'#F59E0B'),
   ].join('');
 }
 
