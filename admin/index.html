@@ -624,7 +624,12 @@
             <button onclick="abrirFormCustoExtra()" style="background:#10B981;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">+ Novo Custo</button>
           </div>
           <div id="lanc-custo-extra-form" style="display:none;padding:14px;border-bottom:1px solid #E5E7EB;background:#F9FAFB;">
+            <div id="ce-form-title" style="font-size:12px;font-weight:700;color:#0A1628;margin-bottom:10px;text-transform:uppercase;">Novo Custo Extra</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Categoria</label>
+                <select class="inp" id="ce-categoria" style="text-align:left;"></select>
+              </div>
               <div>
                 <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Descrição</label>
                 <input class="inp" type="text" id="ce-descricao" placeholder="Ex: VPS Europa, Domínio...">
@@ -644,12 +649,12 @@
             </div>
             <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
               <button onclick="fecharFormCustoExtra()" style="background:#E5E7EB;color:#374151;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
-              <button onclick="salvarCustoExtra()" style="background:#1E6FFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar Custo</button>
-              <button onclick="salvarELancarOutro()" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar e Lançar Outro</button>
+              <button id="ce-btn-salvar" onclick="salvarCustoExtra()" style="background:#1E6FFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar Custo</button>
+              <button id="ce-btn-outro" onclick="salvarELancarOutro()" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Salvar e Lançar Outro</button>
             </div>
           </div>
           <table id="lanc-custos-extras-table" style="width:100%;">
-            <thead><tr><th>Descrição</th><th>Valor</th><th>Pagador</th><th>Meio</th><th style="width:40px;"></th></tr></thead>
+            <thead><tr><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Pagador</th><th>Meio</th><th style="width:72px;">Ações</th></tr></thead>
             <tbody id="lanc-custos-extras-body"></tbody>
           </table>
         </div>
@@ -755,7 +760,7 @@
     </div>
 
     <div class="section-title"><span>Gestao de Custos Mes a Mes</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrao. Preencha o mes para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados.</p>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrao. Preencha o mes para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados. <strong style="color:#059669;">▸ valor</strong> = <strong>Realizado</strong> (soma dos custos lançados em Lançamentos, todas as empresas, por categoria/mês). Verde = dentro do planejado, vermelho = acima.</p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1200px;">
         <thead><tr>
@@ -1233,6 +1238,18 @@ function getCustoMes(mes, cat) {
 function getTotalCustoMes(mes) {
   return ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'].reduce((a,k)=>a+getCustoMes(mes,k),0);
 }
+// Realizado: soma os custos extras lançados (TODAS as empresas) no mês, por categoria.
+// Categoria vazia/nula é tratada como "Outros Custos" para não perder lançamentos legados.
+function getRealizadoCustoMes(mes, cat) {
+  return custosExtras.reduce((a, c) => {
+    if (c.mes !== mes) return a;
+    const cc = (c.categoria && c.categoria !== '') ? c.categoria : 'Outros Custos';
+    return cc === cat ? a + (c.valor || 0) : a;
+  }, 0);
+}
+function getTotalRealizadoMes(mes) {
+  return CUSTO_CATS.reduce((a,k)=>a+getRealizadoCustoMes(mes,k),0);
+}
 function getTotalAportes() {
   // Suporta formato novo {SOCIO: {Mes: val}} e legado {Mes: val}
   const ap = estrutura.aportes || {};
@@ -1360,6 +1377,7 @@ async function saveLanc(mes, empresa_id) {
 async function saveCustoExtra(custo) {
   const payload = {
     mes: custo.mes, empresa_id: custo.empresa_id,
+    categoria: custo.categoria || 'Outros Custos',
     descricao: custo.descricao || '', valor: custo.valor || 0,
     pagador: custo.pagador || '', meio_pagamento: custo.meio_pagamento || '',
     updated_at: new Date().toISOString()
@@ -1747,47 +1765,81 @@ function updateLancResult() {
 }
 
 // ─── CUSTOS EXTRAS UI ───────────────────────────────────────────────────────
-function abrirFormCustoExtra() {
+function abrirFormCustoExtra(id) {
   const form = document.getElementById('lanc-custo-extra-form');
   form.style.display = 'block';
-  document.getElementById('ce-descricao').value = '';
-  document.getElementById('ce-valor').value = '';
   const pagadorOpts = ['','EMPRESA',...SOCIOS].map(s =>
     `<option value="${s}">${s||'— Selecionar —'}</option>`).join('');
   const meioOpts = [{id:'',label:'— Selecionar —'},...MEIOS_PAGAMENTO].map(m =>
     `<option value="${m.id}">${m.label}</option>`).join('');
+  const catOpts = CUSTO_CATS.map(c =>
+    `<option value="${c}">${c}</option>`).join('');
   document.getElementById('ce-pagador').innerHTML = pagadorOpts;
   document.getElementById('ce-meio').innerHTML = meioOpts;
+  document.getElementById('ce-categoria').innerHTML = catOpts;
+  const custo = id ? custosExtras.find(c => String(c.id) === String(id)) : null;
+  if (custo) {
+    form.dataset.editId = custo.id;
+    document.getElementById('ce-categoria').value = custo.categoria || 'Outros Custos';
+    document.getElementById('ce-descricao').value = custo.descricao || '';
+    document.getElementById('ce-valor').value = custo.valor || '';
+    document.getElementById('ce-pagador').value = custo.pagador || '';
+    document.getElementById('ce-meio').value = custo.meio_pagamento || '';
+    document.getElementById('ce-form-title').textContent = 'Editar Custo Extra';
+    document.getElementById('ce-btn-salvar').textContent = 'Atualizar Custo';
+    document.getElementById('ce-btn-outro').style.display = 'none';
+  } else {
+    form.dataset.editId = '';
+    document.getElementById('ce-categoria').value = 'Outros Custos';
+    document.getElementById('ce-descricao').value = '';
+    document.getElementById('ce-valor').value = '';
+    document.getElementById('ce-pagador').value = '';
+    document.getElementById('ce-meio').value = '';
+    document.getElementById('ce-form-title').textContent = 'Novo Custo Extra';
+    document.getElementById('ce-btn-salvar').textContent = 'Salvar Custo';
+    document.getElementById('ce-btn-outro').style.display = '';
+  }
   document.getElementById('ce-descricao').focus();
 }
 function fecharFormCustoExtra() {
   document.getElementById('lanc-custo-extra-form').style.display = 'none';
 }
 async function salvarCustoExtra() {
+  const categoria = document.getElementById('ce-categoria').value;
   const descricao = document.getElementById('ce-descricao').value.trim();
   const valor = parseFloat(document.getElementById('ce-valor').value) || 0;
   const pagador = document.getElementById('ce-pagador').value;
   const meio_pagamento = document.getElementById('ce-meio').value;
   if (!descricao || valor <= 0) { alert('Preencha a descrição e o valor.'); return; }
-  const custo = { mes: selMonth, empresa_id: selCompany, descricao, valor, pagador, meio_pagamento };
-  await saveCustoExtra(custo);
-  custosExtras.push(custo);
+  const editId = document.getElementById('lanc-custo-extra-form').dataset.editId;
+  if (editId) {
+    const existente = custosExtras.find(c => String(c.id) === String(editId));
+    if (existente) {
+      Object.assign(existente, { categoria, descricao, valor, pagador, meio_pagamento });
+      await saveCustoExtra(existente);
+    }
+  } else {
+    const custo = { mes: selMonth, empresa_id: selCompany, categoria, descricao, valor, pagador, meio_pagamento };
+    await saveCustoExtra(custo);
+    custosExtras.push(custo);
+  }
   fecharFormCustoExtra();
   renderCustosExtrasTable();
   renderAll();
 }
 async function salvarELancarOutro() {
+  const categoria = document.getElementById('ce-categoria').value;
   const descricao = document.getElementById('ce-descricao').value.trim();
   const valor = parseFloat(document.getElementById('ce-valor').value) || 0;
   const pagador = document.getElementById('ce-pagador').value;
   const meio_pagamento = document.getElementById('ce-meio').value;
   if (!descricao || valor <= 0) { alert('Preencha a descrição e o valor.'); return; }
-  const custo = { mes: selMonth, empresa_id: selCompany, descricao, valor, pagador, meio_pagamento };
+  const custo = { mes: selMonth, empresa_id: selCompany, categoria, descricao, valor, pagador, meio_pagamento };
   await saveCustoExtra(custo);
   custosExtras.push(custo);
   renderCustosExtrasTable();
   renderAll();
-  // Limpa o form para o próximo lançamento
+  // Limpa o form para o próximo lançamento (mantém categoria para agilizar)
   document.getElementById('ce-descricao').value = '';
   document.getElementById('ce-valor').value = '';
   document.getElementById('ce-pagador').value = '';
@@ -1799,7 +1851,7 @@ function renderCustosExtrasTable() {
   const meioLabels = Object.fromEntries(MEIOS_PAGAMENTO.map(m => [m.id, m.label]));
   if (extras.length === 0) {
     document.getElementById('lanc-custos-extras-body').innerHTML =
-      `<tr><td colspan="5" style="text-align:center;color:#9CA3AF;padding:16px;font-size:12px;">Nenhum custo extra lançado. Clique em "+ Novo Custo" para adicionar.</td></tr>`;
+      `<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:16px;font-size:12px;">Nenhum custo extra lançado. Clique em "+ Novo Custo" para adicionar.</td></tr>`;
     return;
   }
   const totalExtras = extras.reduce((a, c) => a + (c.valor || 0), 0);
@@ -1808,15 +1860,19 @@ function renderCustosExtrasTable() {
       const pgdrColor = SOCIOS.includes(c.pagador) ? '#F59E0B' : (c.pagador==='EMPRESA'?'#10B981':'#9CA3AF');
       const safeId = encodeURIComponent(String(c.id||''));
       return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
+        <td style="font-size:11px;color:#1E6FFF;font-weight:600;">${escapeHtml(c.categoria||'Outros Custos')}</td>
         <td style="font-size:12px;">${escapeHtml(c.descricao)}</td>
         <td style="font-weight:600;color:#EF4444;font-size:12px;">${fmt(c.valor)}</td>
         <td style="color:${pgdrColor};font-weight:600;font-size:11px;">${escapeHtml(c.pagador||'—')}</td>
         <td style="font-size:11px;color:#6B7280;">${escapeHtml(meioLabels[c.meio_pagamento]||c.meio_pagamento||'—')}</td>
-        <td><button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button></td>
+        <td style="white-space:nowrap;">
+          <button onclick="abrirFormCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#1E6FFF;cursor:pointer;font-size:14px;margin-right:4px;" title="Editar">✏️</button>
+          <button onclick="if(confirm('Excluir este custo extra?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button>
+        </td>
       </tr>`;
     }).join('') +
     `<tr style="background:#F0F4FF;font-weight:700;">
-      <td style="font-size:12px;">TOTAL CUSTOS EXTRAS</td>
+      <td colspan="2" style="font-size:12px;">TOTAL CUSTOS EXTRAS</td>
       <td style="color:#EF4444;font-size:12px;">${fmt(totalExtras)}</td>
       <td colspan="3"></td>
     </tr>`;
@@ -2003,6 +2059,7 @@ function renderEstrutura(totals) {
   const custosRows = CUSTO_CATS.map((cat,rIdx)=>{
     const base = estrutura.custos_mensais[cat]||0;
     const totalAcumCat = MONTHS_OP.reduce((a,mm)=>a+getCustoMes(mm,cat),0);
+    const totalRealCat = MONTHS_OP.reduce((a,mm)=>a+getRealizadoCustoMes(mm,cat),0);
     return `<tr style="background:${rIdx%2===0?'#FAFAFA':'#fff'}">
       <td style="font-weight:500">${cat}</td>
       <td style="padding:4px 8px;background:#EFF6FF;">
@@ -2014,19 +2071,27 @@ function renderEstrutura(totals) {
         const override = estrutura.custos_por_mes?.[mm]?.[cat];
         const hasOverride = override !== undefined && override !== null && override !== '';
         const displayVal = hasOverride ? override : '';
-        return `<td style="padding:4px 6px;background:${!isOp?'#F3F4F6':(hasOverride?'#FFFBEB':'')}">
+        const plan = isOp ? getCustoMes(mm,cat) : 0;
+        const real = isOp ? getRealizadoCustoMes(mm,cat) : 0;
+        const realColor = real>plan ? '#EF4444' : '#059669';
+        const realHtml = (isOp && real>0)
+          ? `<div style="font-size:9px;font-weight:600;color:${realColor};margin-top:2px;" title="Realizado (lançamentos consolidados)">▸ ${fmt(real)}</div>`
+          : '';
+        return `<td style="padding:4px 6px;text-align:center;background:${!isOp?'#F3F4F6':(hasOverride?'#FFFBEB':'')}">
           <input class="inp" type="number" value="${displayVal}" placeholder="${isOp?base:''}"
             style="width:80px;${!isOp?'background:#F3F4F6;color:#9CA3AF;':(hasOverride?'background:#FFFBEB;border-color:#F59E0B;':'')}"
             ${isOp?`oninput="updateCustoMes('${mm}','${cat}',this.value)"`:' disabled'}
-          /></td>`;
+          />${realHtml}</td>`;
       }).join('') +
-      `<td style="font-weight:700;color:#F59E0B">${fmt(totalAcumCat)}</td>
+      `<td style="font-weight:700;color:#F59E0B;text-align:center;">${fmt(totalAcumCat)}${totalRealCat>0?`<div style="font-size:9px;color:${totalRealCat>totalAcumCat?'#EF4444':'#059669'};">▸ ${fmt(totalRealCat)}</div>`:''}</td>
     </tr>`;
   }).join('');
 
   const totalBase = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0);
   const totalPorMes = MONTHS_ALL.map(mm=>MONTHS_OP.includes(mm)?getTotalCustoMes(mm):0);
   const totalAcumGeral = totalPorMes.reduce((a,v)=>a+v,0);
+  const totalRealPorMes = MONTHS_ALL.map(mm=>MONTHS_OP.includes(mm)?getTotalRealizadoMes(mm):0);
+  const totalRealAcum = totalRealPorMes.reduce((a,v)=>a+v,0);
 
   document.getElementById('custo-mensal-table').innerHTML = custosRows;
   document.getElementById('custo-mensal-total').innerHTML =
@@ -2035,9 +2100,11 @@ function renderEstrutura(totals) {
     MONTHS_ALL.map((mm,i)=>{
       const isOp = MONTHS_OP.includes(mm);
       const v = totalPorMes[i];
-      return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?'#1E6FFF':'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;">${isOp?fmt(v):'—'}</td>`;
+      const r = totalRealPorMes[i];
+      const realHtml = (isOp && r>0) ? `<div style="font-size:9px;color:${r>v?'#FCA5A5':'#6EE7B7'};font-weight:600;">▸ ${fmt(r)}</div>` : '';
+      return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?'#1E6FFF':'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;text-align:center;">${isOp?fmt(v):'—'}${realHtml}</td>`;
     }).join('') +
-    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;">${fmt(totalAcumGeral)}</td>`;
+    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;">${fmt(totalAcumGeral)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>totalAcumGeral?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
 
   document.getElementById('inv-table').innerHTML = INV_CATS.map((k,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
