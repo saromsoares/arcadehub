@@ -44,15 +44,9 @@
     { "@type": "Organization", "name": "PeptiBoard", "url": "https://peptiboard.com/" },
     { "@type": "Organization", "name": "Giro na Máxima", "url": "https://gironamaxima.com.br/" },
     { "@type": "Organization", "name": "Festa no Play", "url": "https://festanoplay.com/" },
-    { "@type": "Organization", "name": "Perrengue Aéreo" },
-    { "@type": "Organization", "name": "Perrengue Saúde" },
-    { "@type": "Organization", "name": "Perrengue Consumidor" },
-    { "@type": "Organization", "name": "Criativo Pronto" },
-    { "@type": "Organization", "name": "Liga da Rotina" },
-    { "@type": "Organization", "name": "laudoai.app" },
+    { "@type": "Organization", "name": "laudoai.app", "url": "https://laudoai.app/" },
     { "@type": "Organization", "name": "Lucro Visível", "url": "https://lucrovisivel.com.br/" },
-    { "@type": "Organization", "name": "Coben Life OS", "url": "https://cobenlifeos.com/" },
-    { "@type": "Organization", "name": "GarantIA Flow" }
+    { "@type": "Organization", "name": "Coben Life OS", "url": "https://cobenlifeos.com/" }
   ]
 }
 </script>
@@ -464,20 +458,6 @@ nav.scrolled {
   background: rgba(255,255,255,0.04); color: var(--text-3);
   border: 1px solid rgba(255,255,255,0.06);
 }
-.company-card.coming-soon {
-  opacity: 0; transform: translateY(40px);
-}
-.company-card.coming-soon.visible {
-  opacity: 0.6;
-  transform: translateY(0);
-}
-.company-card.coming-soon:hover {
-  opacity: 0.85;
-  transform: translateY(-4px);
-}
-.company-card.coming-soon .card-cta {
-  color: var(--text-3);
-}
 .card-cta[aria-disabled="true"] {
   cursor: not-allowed;
   pointer-events: none;
@@ -638,7 +618,6 @@ footer {
 .footer-links li { margin-bottom: 12px; }
 .footer-links a { color: var(--text-2); text-decoration: none; font-size: 14px; }
 .footer-links a:not([aria-disabled="true"]):hover { color: var(--cyan); }
-.footer-soon { font-size: 10px; color: var(--text-3); margin-left: 4px; }
 .footer-bottom {
   border-top: 1px solid var(--glass-border); padding-top: 24px;
   display: flex; justify-content: space-between; align-items: center;
@@ -1207,7 +1186,7 @@ nav.scrolled {
         <div class="nav-dropdown-divider"></div>
         <a href="#empresas">
           <span class="dropdown-dot" style="background:var(--cyan);"></span>
-          Ver todas (12)
+          Ver todas (6)
         </a>
       </div>
     </div>
@@ -1339,75 +1318,6 @@ nav.scrolled {
       <a href="https://festanoplay.com/" target="_blank" rel="noopener" class="card-cta">Conhecer a Festa no Play <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card coming-soon" style="--company-color: #0EA5E9;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x2708;&#xFE0F;</div>
-        <div class="card-info">
-          <h3>Perrengue Aereo</h3>
-          <span class="card-segment">Viagens &amp; Aviacao</span>
-        </div>
-      </div>
-      <p class="card-desc">Voo cancelado. Mala extraviada. Horas no aeroporto sem resposta. O Perrengue Aereo transforma a sua dor de cabeca em indenizacao — sem burocracia, sem custo inicial. Voce teve o problema. A gente resolve.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
-
-    <div class="company-card coming-soon" style="--company-color: #10B981;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x1F3E5;</div>
-        <div class="card-info">
-          <h3>Perrengue Saude</h3>
-          <span class="card-segment">Saude &amp; Bem-estar</span>
-        </div>
-      </div>
-      <p class="card-desc">Quando o plano de saude nega um procedimento ou um hospital erra, voce nao deveria lutar sozinho. O Perrengue Saude conecta pacientes a solucoes juridicas especializadas para garantir o atendimento que voce merece. Sua saude, seus direitos.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
-
-    <div class="company-card coming-soon" style="--company-color: #F59E0B;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x2696;&#xFE0F;</div>
-        <div class="card-info">
-          <h3>Perrengue Consumidor</h3>
-          <span class="card-segment">Defesa do Consumidor</span>
-        </div>
-      </div>
-      <p class="card-desc">Cobranca indevida, produto com defeito, servico nao entregue — todo brasileiro ja passou por isso. O Perrengue Consumidor e a plataforma que luta pelos seus direitos de consumo com tecnologia, agilidade e sem complicacao.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
-
-    <div class="company-card coming-soon" style="--company-color: #8B5CF6;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x1F3A8;</div>
-        <div class="card-info">
-          <h3>Criativo Pronto</h3>
-          <span class="card-segment">Marketing &amp; Criatividade</span>
-        </div>
-      </div>
-      <p class="card-desc">Criar conteudo profissional para redes sociais nao deveria exigir um designer, um redator e tres dias de espera. O Criativo Pronto entrega pecas prontas para uso, personalizadas para o seu negocio, em minutos. Seu marketing, finalmente no ritmo certo.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
-
-    <div class="company-card coming-soon" style="--company-color: #EAB308;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x1F4C5;</div>
-        <div class="card-info">
-          <h3>Liga da Rotina</h3>
-          <span class="card-segment">Produtividade &amp; Rotina</span>
-        </div>
-      </div>
-      <p class="card-desc">A maioria dos apps de produtividade complica o que deveria simplificar. A Liga da Rotina transforma sua rotina em um sistema visual e intuitivo que realmente funciona — sem curva de aprendizado, sem overload de funcionalidades.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
 
     <div class="company-card is-active" style="--company-color: #06B6D4;">
       <span class="card-status active">Ativo</span>
@@ -1451,19 +1361,6 @@ nav.scrolled {
       <a href="https://cobenlifeos.com/" target="_blank" rel="noopener" class="card-cta">Conhecer o Coben Life OS <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
     </div>
 
-    <div class="company-card coming-soon" style="--company-color: #14B8A6;">
-      <span class="card-status soon">Em breve</span>
-      <div class="card-glow"></div>
-      <div class="card-header">
-        <div class="card-icon">&#x1F916;</div>
-        <div class="card-info">
-          <h3>GarantIA Flow</h3>
-          <span class="card-segment">CRM &amp; Garantias com IA</span>
-        </div>
-      </div>
-      <p class="card-desc">CRM de garantias com IA, pipeline e Kanban para organizar o atendimento, reduzir falhas de processo e dar mais agilidade ao time. Tecnologia que transforma garantias em eficiencia operacional.</p>
-      <a href="#" class="card-cta" aria-disabled="true" tabindex="-1" role="link">Em breve <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
-    </div>
 
   </div>
 </section>
@@ -1687,15 +1584,9 @@ nav.scrolled {
         <li><a href="https://peptiboard.com/" target="_blank" rel="noopener">PeptiBoard</a></li>
         <li><a href="https://gironamaxima.com.br/" target="_blank" rel="noopener">Giro na Máxima</a></li>
         <li><a href="https://festanoplay.com/" target="_blank" rel="noopener">Festa no Play</a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">Perrengue Aéreo <span class="footer-soon">(em breve)</span></a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">Perrengue Saúde <span class="footer-soon">(em breve)</span></a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">Perrengue Consumidor <span class="footer-soon">(em breve)</span></a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">Criativo Pronto <span class="footer-soon">(em breve)</span></a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">Liga da Rotina <span class="footer-soon">(em breve)</span></a></li>
         <li><a href="https://laudoai.app/" target="_blank" rel="noopener">laudoai.app</a></li>
         <li><a href="https://lucrovisivel.com.br/" target="_blank" rel="noopener">Lucro Visível</a></li>
         <li><a href="https://cobenlifeos.com/" target="_blank" rel="noopener">Coben Life OS</a></li>
-        <li><a href="#" aria-disabled="true" tabindex="-1">GarantIA Flow <span class="footer-soon">(em breve)</span></a></li>
       </ul>
     </div>
     <div>
