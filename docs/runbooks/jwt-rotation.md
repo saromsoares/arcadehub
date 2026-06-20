@@ -40,17 +40,11 @@ No SQL Editor do Supabase:
 -- Substitua os UUIDs reais (puxe de auth.users)
 insert into public.usuarios_empresas (user_id, empresa_id, role) values
   ('UUID_DO_USER_SAROM', 'arcade_hub', 'owner'),
+  ('UUID_DO_USER_SAROM', 'peptiboard', 'owner'),
+  ('UUID_DO_USER_SAROM', 'gironamaxima', 'owner'),
   ('UUID_DO_USER_SAROM', 'priva_br', 'owner'),
-  ('UUID_DO_USER_SAROM', 'festa_play', 'owner'),
-  ('UUID_DO_USER_SAROM', 'perrengue_aereo', 'owner'),
-  ('UUID_DO_USER_SAROM', 'perrengue_saude', 'owner'),
-  ('UUID_DO_USER_SAROM', 'perrengue_consumidor', 'owner'),
-  ('UUID_DO_USER_SAROM', 'criativo_pronto', 'owner'),
-  ('UUID_DO_USER_SAROM', 'liga_da_rotina', 'owner'),
-  ('UUID_DO_USER_SAROM', 'margoti_laudos', 'owner'),
-  ('UUID_DO_USER_SAROM', 'raio_x_do_lucro', 'owner'),
-  ('UUID_DO_USER_SAROM', 'nexus_horizon', 'owner'),
-  ('UUID_DO_USER_SAROM', 'coben_life_os', 'owner')
+  ('UUID_DO_USER_SAROM', 'coben_life_os', 'owner'),
+  ('UUID_DO_USER_SAROM', 'liquida_pecas', 'owner')
 on conflict (user_id, empresa_id) do nothing;
 ```
 

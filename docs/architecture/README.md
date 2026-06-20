@@ -44,7 +44,7 @@ Template:
 - **Admin** (`/admin/index.html`): SPA vanilla com Supabase JS SDK + Chart.js
 - **Backend**: Supabase (Postgres + Auth + RLS) — projeto `zdwgwpvlwqtsdgervcof`
 - **Migrations**: `/supabase/migrations/`
-- **Subsidiárias**: 11 empresas filhas + Arcade Hub (holding)
+- **Subsidiárias**: empresas filhas + Arcade Hub (holding)
 
 ## Referências
 
