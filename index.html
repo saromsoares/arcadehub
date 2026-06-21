@@ -846,241 +846,140 @@ function ArcadeScene(root) {
     return tex;
   }
 
-  /* ---------- Textura procedural neon do card (fallback) ---------- */
-  function makeCardTexture(item) {
-    const W = 768, H = 1024;
+  /* ---------- Planetas (cada projeto = um planeta do sistema solar) ---------- */
+  const glowTex = makeGlowTexture();
+  const sphereGeo = track(new THREE.SphereGeometry(1, 48, 48));
+  const ringGeo = track(new THREE.TorusGeometry(1, 0.02, 12, 90));
+  const haloGeo = track(new THREE.PlaneGeometry(1, 1));
+  const labelGeo = track(new THREE.PlaneGeometry(1.95, 0.61));
+
+  // Material do planeta: corpo escuro com bandas vivas + atmosfera neon (fresnel)
+  function makePlanetMaterial(color) {
+    return track(new THREE.ShaderMaterial({
+      fog: false,
+      uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 } },
+      vertexShader: `
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        void main() {
+          vP = position;
+          vN = normalize(normalMatrix * normal);
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vV = normalize(-mv.xyz);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        uniform vec3 uColor;
+        uniform float uTime;
+        varying vec3 vN; varying vec3 vV; varying vec3 vP;
+        void main() {
+          vec3 n = normalize(vN);
+          float fres = pow(1.0 - max(dot(n, normalize(vV)), 0.0), 2.4);
+          float bands = 0.5 + 0.5 * sin(vP.y * 9.0 + uTime * 0.6);
+          float streak = 0.5 + 0.5 * sin((vP.x + vP.z) * 6.0 - uTime * 0.3);
+          vec3 body = uColor * (0.10 + 0.16 * bands + 0.06 * streak);
+          float lit = clamp(dot(n, normalize(vec3(-0.5, 0.85, 0.6))), 0.0, 1.0);
+          body *= (0.5 + 0.7 * lit);
+          vec3 col = body + uColor * fres * 2.1;   // atmosfera neon na borda
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
+    }));
+  }
+
+  // Nome do projeto flutuando abaixo do planeta (billboard)
+  function makeLabelTexture(item) {
+    const W = 640, H = 200;
     const canvas = document.createElement("canvas");
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
-    const accent = item.color;
-
-    const rr = (x, y, w, h, r) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    };
-
-    // vidro escuro
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, "#170a36");
-    bg.addColorStop(1, "#0a0420");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    // wash de cor no topo
-    const wash = ctx.createRadialGradient(W / 2, 200, 40, W / 2, 200, 620);
-    wash.addColorStop(0, accent + "44");
-    wash.addColorStop(1, "transparent");
-    ctx.fillStyle = wash;
-    ctx.fillRect(0, 0, W, H);
-
-    // scanlines
-    ctx.fillStyle = "rgba(0,0,0,0.16)";
-    for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
-
-    // moldura neon
-    ctx.save();
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 34;
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 6;
-    rr(40, 40, W - 80, H - 80, 34);
-    ctx.stroke();
-    ctx.restore();
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 1.5;
-    rr(60, 60, W - 120, H - 120, 24);
-    ctx.stroke();
-
-    // tag superior
-    ctx.fillStyle = "rgba(243,236,255,0.5)";
-    ctx.font = "600 26px ui-monospace, Consolas, monospace";
-    ctx.fillText("ARCADE://PORTFOLIO", 92, 132);
-
-    // marca central — logo real da empresa (quando houver) ou glifo
-    ctx.save();
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 44;
-    ctx.fillStyle = accent;
-    if (item.logo === "kanbia") {
-      drawKanbiaMark(ctx, W / 2, H / 2 - 28, 250, accent);
-    } else {
-      ctx.font = "800 230px Inter, Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(item.glyph, W / 2, H / 2 + 40);
-      ctx.textAlign = "left";
-    }
-    ctx.restore();
-
-    // título
-    ctx.save();
-    ctx.shadowColor = "rgba(255,255,255,0.4)";
-    ctx.shadowBlur = 16;
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "800 62px Inter, Arial, sans-serif";
-    wrapText(ctx, item.title, 92, H - 250, W - 184, 66);
-    ctx.restore();
-
-    // segmento
-    ctx.fillStyle = accent;
-    ctx.font = "700 28px ui-monospace, Consolas, monospace";
-    ctx.fillText(item.segment.toUpperCase(), 92, H - 150);
-
-    // pill LAUNCH
-    ctx.save();
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 22;
-    ctx.fillStyle = accent;
-    rr(92, H - 124, 220, 56, 28);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "800 60px Inter, Arial, sans-serif";
+    const tw = ctx.measureText(item.title).width;
+    const pillW = Math.min(W - 24, tw + 80), pillH = 108;
+    const px = (W - pillW) / 2, py = (H - pillH) / 2, r = pillH / 2;
+    // pílula escura com borda na cor da empresa — nome legível sobre o brilho do sol
+    ctx.beginPath();
+    ctx.moveTo(px + r, py);
+    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, r);
+    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, r);
+    ctx.arcTo(px, py + pillH, px, py, r);
+    ctx.arcTo(px, py, px + pillW, py, r);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(8,4,20,0.58)";
     ctx.fill();
-    ctx.restore();
-    ctx.fillStyle = "#0a0420";
-    ctx.font = "800 24px Inter, Arial, sans-serif";
-    ctx.fillText("▶ LAUNCH", 124, H - 88);
-
-    // cantos
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 5;
-    const tick = 46;
-    const corners = [[60, 60, 1, 1], [W - 60, 60, -1, 1], [60, H - 60, 1, -1], [W - 60, H - 60, -1, -1]];
-    corners.forEach(([x, y, sx, sy]) => {
-      ctx.beginPath();
-      ctx.moveTo(x, y + tick * sy);
-      ctx.lineTo(x, y);
-      ctx.lineTo(x + tick * sx, y);
-      ctx.stroke();
-    });
-
+    ctx.globalAlpha = 0.72;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = item.color;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(item.title, W / 2, H / 2 + 2);
     const tex = track(new THREE.CanvasTexture(canvas));
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return tex;
   }
 
-  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-    const words = text.split(" ");
-    let line = "";
-    for (let i = 0; i < words.length; i++) {
-      const test = line + words[i] + " ";
-      if (ctx.measureText(test).width > maxWidth && i > 0) {
-        ctx.fillText(line.trim(), x, y);
-        line = words[i] + " ";
-        y += lineHeight;
-      } else {
-        line = test;
-      }
-    }
-    ctx.fillText(line.trim(), x, y);
-  }
-
-  // Logo da Kanbia recriada no canvas (robô de rosto arredondado + 2 olhos + sparkle de IA)
-  function drawKanbiaMark(ctx, cx, cy, s, color) {
-    const path = (x, y, w, h, r) => {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + w, y, x + w, y + h, r);
-      ctx.arcTo(x + w, y + h, x, y + h, r);
-      ctx.arcTo(x, y + h, x, y, r);
-      ctx.arcTo(x, y, x + w, y, r);
-      ctx.closePath();
-    };
-    ctx.save();
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 30;
-    const x = cx - s / 2, y = cy - s / 2;
-    ctx.lineWidth = s * 0.09;             // cabeça: quadrado arredondado (contorno)
-    path(x, y, s, s, s * 0.3);
-    ctx.stroke();
-    const ew = s * 0.135, eh = s * 0.26, gap = s * 0.10;   // olhos: cápsulas verticais
-    ctx.shadowBlur = 16;
-    path(cx - gap - ew, cy - eh / 2 + s * 0.02, ew, eh, ew / 2); ctx.fill();
-    path(cx + gap, cy - eh / 2 + s * 0.02, ew, eh, ew / 2); ctx.fill();
-    drawSparkle(ctx, x + s * 1.0, y + s * 0.04, s * 0.28, color);   // sparkle sup. direito
-    ctx.restore();
-  }
-
-  function drawSparkle(ctx, cx, cy, r, color) {
-    const inner = r * 0.34;
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 24;
-    ctx.beginPath();
-    for (let i = 0; i < 4; i++) {
-      const a = i * Math.PI / 2;
-      const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
-      const a2 = a + Math.PI / 4;
-      const ix = cx + Math.cos(a2) * inner, iy = cy + Math.sin(a2) * inner;
-      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      ctx.lineTo(ix, iy);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  /* ---------- Portais (cards 3D) ---------- */
-  const glowTex = makeGlowTexture();
-  const cardGeo = track(new THREE.PlaneGeometry(2.3, 3.05));
-  const glowGeo = track(new THREE.PlaneGeometry(3.3, 4.1));
-
   const portalGroup = new THREE.Group();
   portalGroup.position.set(0, 3.6, -3.5);
   const portals = [];
-  const cardMeshes = [];
+  const cardMeshes = [];   // alvos de raycast = as esferas dos planetas
+  const RADII = [0.95, 1.02, 0.88, 1.04, 0.93];
 
   PORTFOLIO.forEach((item, index) => {
     const color = new THREE.Color(item.color);
+    const radius = RADII[index % RADII.length];
     const holder = new THREE.Group();
-    const spacing = PORTFOLIO.length >= 5 ? 2.32 : 2.62;
+    const spacing = PORTFOLIO.length >= 5 ? 2.3 : 2.7;
     const x = (index - (PORTFOLIO.length - 1) / 2) * spacing;
-    holder.position.set(x, 0, -Math.abs(x) * 0.32);
-    holder.rotation.y = -x * 0.045;
-    holder.userData = { index, baseX: x, baseY: 0, baseRotY: holder.rotation.y, baseZ: holder.position.z, hover: 0 };
+    holder.position.set(x, 0, -Math.abs(x) * 0.22);
+    holder.userData = { index, baseX: x, baseY: 0, baseZ: holder.position.z, hover: 0, spin: 0.12 + index * 0.03 };
 
-    // halo (fake bloom)
+    // atmosfera / halo (fake bloom)
     const glowMat = track(new THREE.MeshBasicMaterial({
       map: glowTex, color, transparent: true, opacity: 0.5,
       depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
     }));
-    const glow = new THREE.Mesh(glowGeo, glowMat);
-    glow.position.z = -0.06;
+    const glow = new THREE.Mesh(haloGeo, glowMat);
+    glow.scale.setScalar(radius * 3.6);
+    glow.position.z = -0.05;
     holder.add(glow);
 
-    // painel — unlit, neon constante
-    const faceMat = track(new THREE.MeshBasicMaterial({
-      map: makeCardTexture(item), toneMapped: false, fog: true,
-    }));
-    const face = new THREE.Mesh(cardGeo, faceMat);
-    face.userData.index = index;
-    holder.add(face);
-    cardMeshes.push(face);
+    // planeta
+    const planet = new THREE.Mesh(sphereGeo, makePlanetMaterial(color));
+    planet.scale.setScalar(radius);
+    planet.rotation.z = 0.25;            // leve inclinação de eixo
+    planet.userData.index = index;
+    holder.add(planet);
+    cardMeshes.push(planet);
 
-    // tenta carregar imagem real; mantém procedural como fallback
-    if (item.asset && item.assetReady) {
-      textureLoader.load(
-        item.asset,
-        (loaded) => {
-          loaded.colorSpace = THREE.SRGBColorSpace;
-          loaded.anisotropy = renderer.capabilities.getMaxAnisotropy();
-          const old = faceMat.map;
-          faceMat.map = loaded;
-          faceMat.needsUpdate = true;
-          track(loaded);
-          if (old) old.dispose();
-        },
-        undefined,
-        () => { /* fallback procedural já está no material */ }
-      );
-    }
+    // anel orbital neon
+    const ringMat = track(new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.78,
+      depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
+    }));
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.scale.setScalar(radius * 1.6);
+    ring.rotation.x = 1.15 + index * 0.06;
+    ring.rotation.y = 0.2;
+    holder.add(ring);
+
+    // nome flutuante
+    const labelMat = track(new THREE.MeshBasicMaterial({
+      map: makeLabelTexture(item), transparent: true,
+      depthWrite: false, fog: false, toneMapped: false,
+    }));
+    const label = new THREE.Mesh(labelGeo, labelMat);
+    label.position.y = -radius - 0.62;
+    holder.add(label);
+
+    holder.userData.planet = planet;
+    holder.userData.ring = ring;
+    holder.userData.glow = glow;
+    holder.userData.label = label;
 
     portalGroup.add(holder);
     portals.push(holder);
@@ -1141,22 +1040,17 @@ function ArcadeScene(root) {
     const many = PORTFOLIO.length >= 5;   // cluster mais largo -> aperta escala/foco
     // No desktop a câmera olha quase reto e o foco 3D vive à direita,
     // deixando a coluna de texto livre à esquerda. No mobile, tudo centralizado.
-    const focalX  = isMobile ? 0 : (many ? 4.55 : 4.3);   // posição do cluster de portais
+    const focalX  = isMobile ? 0 : (many ? 4.55 : 4.3);   // posição do cluster de planetas
     const sunX    = isMobile ? 0 : 3.2;   // sol um pouco à esquerda do cluster
     const camX    = isMobile ? 0 : 0.0;   // câmera centrada
     const lookX   = isMobile ? 0 : 0.6;   // leve viés à direita
     camera.aspect = w / h;
     cameraHome.set(camX, isMobile ? 3.6 : 3.5, isMobile ? 15.5 : 13);
     lookHome.set(lookX, isMobile ? 3.0 : 3.1, -12);
-    // No mobile os portais sobem para a faixa superior, livres do texto do hero.
-    portalGroup.position.set(focalX, isMobile ? 7.2 : 3.7, -3.5);
-    portalGroup.scale.setScalar(isMobile ? (many ? 0.55 : 0.72) : (many ? 0.88 : 1));
+    // No mobile os planetas sobem para a faixa superior, livres do texto do hero.
+    portalGroup.position.set(focalX, isMobile ? 7.2 : 4.25, -3.5);
+    portalGroup.scale.setScalar(isMobile ? (many ? 0.52 : 0.6) : (many ? 0.78 : 0.82));
     sun.position.x = sunX;
-    // Cada portal encara a câmera central (corrige o ângulo oblíquo do cluster à direita)
-    portals.forEach((h) => {
-      const bx = h.userData.baseX;
-      h.userData.baseRotY = isMobile ? -bx * 0.05 : -(focalX + bx) / 17;
-    });
     camera.updateProjectionMatrix();
     // Mobile tem teto de DPR menor: os shaders aditivos são limitados por fill-rate.
     const dprCap = isMobile ? 1.3 : CONFIG.maxPixelRatio;
@@ -1233,28 +1127,27 @@ function ArcadeScene(root) {
     camera.position.lerp(camTarget, 0.04);
     camera.lookAt(lookHome.x + smooth.x * 0.6, lookHome.y, lookHome.z);
 
-    // animação por card
+    // animação por planeta
     for (let i = 0; i < portals.length; i++) {
       const h = portals[i];
       const d = h.userData;
       const isActive = i === activeIndex;
       d.hover += ((isActive ? 1 : 0) - d.hover) * Math.min(1, dt * 8);
 
-      h.position.y = d.baseY + Math.sin(t * 0.8 + i * 0.9) * 0.12 + d.hover * 0.22;
-      h.position.z = d.baseZ + d.hover * 0.6;
+      h.position.y = d.baseY + Math.sin(t * 0.6 + i * 0.9) * 0.14 + d.hover * 0.25;
+      h.position.z = d.baseZ + d.hover * 0.7;
 
-      // tilt: card ativo sob o mouse inclina na direção do ponteiro
-      const tiltY = d.baseRotY + (isActive && rayIndex >= 0 ? smooth.x * 0.35 : 0);
-      const tiltX = (isActive && rayIndex >= 0 ? -smooth.y * 0.25 : 0);
-      h.rotation.y += (tiltY - h.rotation.y) * 0.12;
-      h.rotation.x += (tiltX - h.rotation.x) * 0.12;
-
-      const s = 1 + d.hover * 0.07;
+      const s = 1 + d.hover * 0.12;        // cresce no hover
       h.scale.lerp(tmpScale.set(s, s, s), 0.16);
 
-      // brilho do halo acompanha o hover
-      const glowMesh = h.children[0];
-      glowMesh.material.opacity = 0.42 + d.hover * 0.5;
+      // giro do planeta + bandas vivas + anel
+      d.planet.rotation.y += dt * d.spin;
+      d.planet.material.uniforms.uTime.value = t;
+      d.ring.rotation.z += dt * 0.12;
+
+      // atmosfera acende no hover; nome sempre encara a câmera
+      d.glow.material.opacity = 0.45 + d.hover * 0.6;
+      d.label.quaternion.copy(camera.quaternion);
     }
 
     // pulsar leve do sol (sempre a partir da base — sem drift acumulativo) e estrelas
