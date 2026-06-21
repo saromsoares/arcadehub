@@ -507,10 +507,10 @@ const PORTFOLIO = [
   // assetReady: deixe false para usar a arte procedural neon (default).
   //   Ao adicionar o arquivo real em assets/, mude para true e a imagem entra via TextureLoader.
   // url: quando a empresa tiver site próprio, preencha aqui; vazio cai no contato por e-mail.
-  { title: "PeptiBoard",     segment: "Saúde & Protocolos",       glyph: "PB", color: "#18e0ff", asset: "assets/peptiboard.jpg",      assetReady: false, url: "" },
-  { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", asset: "assets/giro-na-maxima.jpg",  assetReady: false, url: "" },
-  { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", asset: "assets/privabr.jpg",        assetReady: false, url: "" },
-  { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", asset: "assets/coben-life-os.jpg",   assetReady: false, url: "" },
+  { title: "PeptiBoard",     segment: "Saúde & Protocolos",       glyph: "PB", color: "#18e0ff", asset: "assets/peptiboard.jpg",      assetReady: false, url: "https://peptiboard.com/" },
+  { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", asset: "assets/giro-na-maxima.jpg",  assetReady: false, url: "https://gironamaxima.com.br/" },
+  { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", asset: "assets/privabr.jpg",        assetReady: false, url: "https://www.privabr.com.br/" },
+  { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", asset: "assets/coben-life-os.jpg",   assetReady: false, url: "https://cobenlifeos.com/" },
   { title: "Kanbia",         segment: "Pós-venda & IA",           glyph: "KB", color: "#2ee6a3", asset: "assets/kanbia.jpg",          assetReady: false, url: "https://www.instagram.com/kanbia.oficial/", logo: "kanbia" },
 ];
 
@@ -1010,6 +1010,12 @@ function ArcadeScene(root) {
   function onPointerUp(e) {
     if (e.pointerType === "touch") onPointerLeave();
   }
+  // Clique no portal 3D abre o site da empresa (concretiza o "▶ LAUNCH" do card).
+  function onCanvasClick() {
+    if (pointerActive && lastRayIndex >= 0) {
+      window.open(companyHref(PORTFOLIO[lastRayIndex]), "_blank", "noopener");
+    }
+  }
 
   let dockHoverIndex = -1;
   const onDockEnter = (i) => { dockHoverIndex = i; };
@@ -1077,6 +1083,7 @@ function ArcadeScene(root) {
   let activeIndex = -1;
   let animTime = 0;          // tempo de animação contínuo (sobrevive a pause/resume)
   let lastRayIndex = -1;     // último card sob o cursor (cache do raycast)
+  let cursorIsPointer = false;
 
   function frame() {
     const dt = Math.min(clock.getDelta(), CONFIG.maxDelta);
@@ -1097,6 +1104,12 @@ function ArcadeScene(root) {
     const rayIndex = pointerActive ? lastRayIndex : -1;
     activeIndex = rayIndex >= 0 ? rayIndex : dockHoverIndex;
     setDockActive(activeIndex);
+
+    // cursor de "clicável" quando há um portal sob o mouse
+    if ((rayIndex >= 0) !== cursorIsPointer) {
+      cursorIsPointer = rayIndex >= 0;
+      renderer.domElement.style.cursor = cursorIsPointer ? "pointer" : "default";
+    }
 
     // grid scroll
     grid.mat.uniforms.uTime.value = t;
@@ -1203,6 +1216,7 @@ function ArcadeScene(root) {
     on(window, "pointerup", onPointerUp, { passive: true });
     on(window, "pointercancel", onPointerUp, { passive: true });
     on(window, "pointerleave", onPointerLeave, { passive: true });
+    on(renderer.domElement, "click", onCanvasClick);
     on(window, "resize", onResize, { passive: true });
     on(window, "orientationchange", onResize, { passive: true });
     on(document, "visibilitychange", onVisibility);
