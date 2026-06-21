@@ -248,10 +248,8 @@ h1 {
   text-shadow: 0 2px 30px rgba(5, 1, 13, 0.8);
 }
 .accent {
-  color: var(--neon-magenta);
-  text-shadow:
-    0 0 14px rgba(255, 45, 155, 0.7),
-    0 0 38px rgba(255, 45, 155, 0.45);
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(255, 255, 255, 0.28);
 }
 .hero p {
   max-width: 540px;
@@ -800,34 +798,37 @@ function ArcadeScene(root) {
   }
 
   /* ---------- Campo de estrelas ---------- */
-  function buildStars() {
-    const count = prefersReducedMotion ? Math.floor(CONFIG.starCount * 0.6) : CONFIG.starCount;
+  // Duas camadas: muitas estrelas pequenas + poucas maiores (sem shader custom)
+  function buildStarLayer(count, size, opacity, big) {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const cA = new THREE.Color(0x8fd9ff);
     const cB = new THREE.Color(0xff9ed1);
+    const cC = new THREE.Color(0xffffff);
     for (let i = 0; i < count; i++) {
       const k = i * 3;
-      positions[k]     = (Math.random() - 0.5) * 240;
-      positions[k + 1] = 6 + Math.random() * 60;
-      positions[k + 2] = -40 - Math.random() * 200;
-      const c = Math.random() > 0.7 ? cB : cA;
+      positions[k]     = (Math.random() - 0.5) * 320;
+      positions[k + 1] = -16 + Math.random() * 92;
+      positions[k + 2] = -20 - Math.random() * 260;
+      const r = Math.random();
+      const c = r > 0.8 ? cB : (r > 0.48 ? cC : cA);
       colors[k] = c.r; colors[k + 1] = c.g; colors[k + 2] = c.b;
     }
     const geo = track(new THREE.BufferGeometry());
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     const mat = track(new THREE.PointsMaterial({
-      size: 0.5,
-      sizeAttenuation: true,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.85,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: false,
+      size, sizeAttenuation: true, vertexColors: true, transparent: true,
+      opacity, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
     }));
     return new THREE.Points(geo, mat);
+  }
+  function buildStars() {
+    const n = prefersReducedMotion ? 0.6 : 1;
+    const group = new THREE.Group();
+    group.add(buildStarLayer(Math.floor(1800 * n), 0.42, 0.85));   // poeira de estrelas
+    group.add(buildStarLayer(Math.floor(260 * n), 1.15, 0.95));    // estrelas brilhantes
+    return group;
   }
 
   /* ---------- Halo radial reutilizável (fake bloom) ---------- */
@@ -846,18 +847,35 @@ function ArcadeScene(root) {
     return tex;
   }
 
-  /* ---------- Planetas (cada projeto = um planeta do sistema solar) ---------- */
+  /* ---------- Planetas (cada projeto = um mundo distinto na galáxia) ---------- */
   const glowTex = makeGlowTexture();
-  const sphereGeo = track(new THREE.SphereGeometry(1, 48, 48));
-  const ringGeo = track(new THREE.TorusGeometry(1, 0.02, 12, 90));
+  const sphereGeo = track(new THREE.SphereGeometry(1, 56, 56));
+  const ringGeo = track(new THREE.TorusGeometry(1, 0.018, 14, 110));
   const haloGeo = track(new THREE.PlaneGeometry(1, 1));
   const labelGeo = track(new THREE.PlaneGeometry(1.95, 0.61));
 
-  // Material do planeta: corpo escuro com bandas vivas + atmosfera neon (fresnel)
-  function makePlanetMaterial(color) {
+  // Config por planeta (segue a ordem do PORTFOLIO): posição espalhada (x,y,z),
+  // raio, tipo de superfície (bandMix: 0 rochoso/manchado .. 1 gasoso/faixas) e anel.
+  const PLANETS = [
+    { pos: [-4.4, -0.7,  1.2], r: 1.30, bands: 3.2, bandMix: 0.85, feat: 2.0, ring: true,  ringTilt: 1.15 }, // PeptiBoard — gigante gasoso anelado
+    { pos: [-1.6,  2.1,  0.2], r: 0.88, bands: 0.0, bandMix: 0.08, feat: 5.0, ring: false, ringTilt: 0    }, // Giro na Máxima — rochoso
+    { pos: [ 1.2, -0.7, -0.3], r: 1.12, bands: 5.5, bandMix: 0.62, feat: 3.0, ring: true,  ringTilt: 1.5  }, // PrivaBR — faixas, anelado
+    { pos: [ 3.9,  1.7, -0.7], r: 0.80, bands: 0.0, bandMix: 0.22, feat: 6.5, ring: false, ringTilt: 0    }, // Coben Life OS — gelado/rochoso
+    { pos: [ 6.3, -0.5, -1.1], r: 1.02, bands: 4.0, bandMix: 0.70, feat: 2.6, ring: true,  ringTilt: 0.8  }, // Kanbia — tempestuoso anelado
+  ];
+
+  // Material do planeta: superfície procedural (FBM) única por seed/tipo + atmosfera neon
+  function makePlanetMaterial(color, cfg, seed) {
     return track(new THREE.ShaderMaterial({
       fog: false,
-      uniforms: { uColor: { value: new THREE.Color(color) }, uTime: { value: 0 } },
+      uniforms: {
+        uColor: { value: new THREE.Color(color) },
+        uTime: { value: 0 },
+        uSeed: { value: seed },
+        uBands: { value: cfg.bands },
+        uBandMix: { value: cfg.bandMix },
+        uFeat: { value: cfg.feat },
+      },
       vertexShader: `
         varying vec3 vN; varying vec3 vV; varying vec3 vP;
         void main() {
@@ -870,18 +888,31 @@ function ArcadeScene(root) {
       `,
       fragmentShader: `
         precision highp float;
-        uniform vec3 uColor;
-        uniform float uTime;
+        uniform vec3 uColor; uniform float uTime; uniform float uSeed;
+        uniform float uBands; uniform float uBandMix; uniform float uFeat;
         varying vec3 vN; varying vec3 vV; varying vec3 vP;
-        void main() {
+
+        float hash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+        float vnoise(vec3 x){
+          vec3 i = floor(x); vec3 f = fract(x); f = f*f*(3.0-2.0*f);
+          return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),
+                         mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+                     mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
+                         mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y), f.z);
+        }
+        float fbm(vec3 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vnoise(p); p=p*2.03+vec3(1.7); a*=0.5; } return s; }
+
+        void main(){
           vec3 n = normalize(vN);
-          float fres = pow(1.0 - max(dot(n, normalize(vV)), 0.0), 2.4);
-          float bands = 0.5 + 0.5 * sin(vP.y * 9.0 + uTime * 0.6);
-          float streak = 0.5 + 0.5 * sin((vP.x + vP.z) * 6.0 - uTime * 0.3);
-          vec3 body = uColor * (0.10 + 0.16 * bands + 0.06 * streak);
-          float lit = clamp(dot(n, normalize(vec3(-0.5, 0.85, 0.6))), 0.0, 1.0);
-          body *= (0.5 + 0.7 * lit);
-          vec3 col = body + uColor * fres * 2.1;   // atmosfera neon na borda
+          vec3 sp = normalize(vP);
+          float nz = fbm(sp * uFeat + vec3(uSeed) + vec3(0.0, uTime * 0.04, 0.0));
+          float band = 0.5 + 0.5 * sin(sp.y * uBands + nz * 2.5 + uTime * 0.25);
+          float surf = pow(mix(nz, band, uBandMix), 1.3);
+          vec3 body = uColor * (0.06 + 0.42 * surf);
+          float lit = clamp(dot(n, normalize(vec3(-0.4, 0.85, 0.5))), 0.0, 1.0);
+          body *= (0.35 + 0.85 * lit);                 // sombreamento pela "estrela"
+          float fres = pow(1.0 - max(dot(n, normalize(vV)), 0.0), 2.6);
+          vec3 col = body + uColor * fres * 2.0;        // atmosfera neon
           gl_FragColor = vec4(col, 1.0);
         }
       `,
@@ -927,45 +958,46 @@ function ArcadeScene(root) {
   portalGroup.position.set(0, 3.6, -3.5);
   const portals = [];
   const cardMeshes = [];   // alvos de raycast = as esferas dos planetas
-  const RADII = [0.95, 1.02, 0.88, 1.04, 0.93];
 
   PORTFOLIO.forEach((item, index) => {
     const color = new THREE.Color(item.color);
-    const radius = RADII[index % RADII.length];
+    const cfg = PLANETS[index % PLANETS.length];
+    const radius = cfg.r;
     const holder = new THREE.Group();
-    const spacing = PORTFOLIO.length >= 5 ? 2.3 : 2.7;
-    const x = (index - (PORTFOLIO.length - 1) / 2) * spacing;
-    holder.position.set(x, 0, -Math.abs(x) * 0.22);
-    holder.userData = { index, baseX: x, baseY: 0, baseZ: holder.position.z, hover: 0, spin: 0.12 + index * 0.03 };
+    holder.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+    holder.userData = { index, baseX: cfg.pos[0], baseY: cfg.pos[1], baseZ: cfg.pos[2], hover: 0, spin: 0.10 + index * 0.025 };
 
-    // atmosfera / halo (fake bloom)
+    // halo de atmosfera (fake bloom)
     const glowMat = track(new THREE.MeshBasicMaterial({
       map: glowTex, color, transparent: true, opacity: 0.5,
       depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
     }));
     const glow = new THREE.Mesh(haloGeo, glowMat);
-    glow.scale.setScalar(radius * 3.6);
+    glow.scale.setScalar(radius * 3.4);
     glow.position.z = -0.05;
     holder.add(glow);
 
-    // planeta
-    const planet = new THREE.Mesh(sphereGeo, makePlanetMaterial(color));
+    // planeta (superfície única por tipo/seed)
+    const planet = new THREE.Mesh(sphereGeo, makePlanetMaterial(color, cfg, index * 11.37 + 3.1));
     planet.scale.setScalar(radius);
-    planet.rotation.z = 0.25;            // leve inclinação de eixo
+    planet.rotation.z = 0.2 + index * 0.07;   // eixos inclinados diferentes
     planet.userData.index = index;
     holder.add(planet);
     cardMeshes.push(planet);
 
-    // anel orbital neon
-    const ringMat = track(new THREE.MeshBasicMaterial({
-      color, transparent: true, opacity: 0.78,
-      depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
-    }));
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.scale.setScalar(radius * 1.6);
-    ring.rotation.x = 1.15 + index * 0.06;
-    ring.rotation.y = 0.2;
-    holder.add(ring);
+    // anel (só em alguns mundos)
+    let ring = null;
+    if (cfg.ring) {
+      const ringMat = track(new THREE.MeshBasicMaterial({
+        color, transparent: true, opacity: 0.8,
+        depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
+      }));
+      ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.scale.setScalar(radius * 1.7);
+      ring.rotation.x = cfg.ringTilt;
+      ring.rotation.y = 0.22;
+      holder.add(ring);
+    }
 
     // nome flutuante
     const labelMat = track(new THREE.MeshBasicMaterial({
@@ -990,7 +1022,26 @@ function ArcadeScene(root) {
   const sunMidBase = new THREE.Color(0xff5fa2);   // base do pulso do sol (evita drift acumulativo)
   const grid = buildGrid();
   const stars = buildStars();
-  scene.add(sun, grid.mesh, stars, portalGroup);
+
+  // nebulosas — nuvens coloridas ao fundo dão profundidade de galáxia
+  const nebula = new THREE.Group();
+  [
+    [-32, 16, -80, 66, 0x9b5cff, 0.16],
+    [ 34, 24, -92, 78, 0x18e0ff, 0.12],
+    [-16, -8, -64, 52, 0xff2d9b, 0.13],
+    [ 44,  2, -104, 92, 0x6a3cff, 0.10],
+  ].forEach(([x, y, z, s, c, o]) => {
+    const m = new THREE.Mesh(haloGeo, track(new THREE.MeshBasicMaterial({
+      map: glowTex, color: new THREE.Color(c), transparent: true, opacity: o,
+      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
+    })));
+    m.scale.setScalar(s);
+    m.position.set(x, y, z);
+    m.renderOrder = -3;
+    nebula.add(m);
+  });
+
+  scene.add(nebula, sun, grid.mesh, stars, portalGroup);
 
   /* ---------- Interação ---------- */
   let pointerMoved = false;   // evita raycast redundante em frames sem movimento
@@ -1040,16 +1091,16 @@ function ArcadeScene(root) {
     const many = PORTFOLIO.length >= 5;   // cluster mais largo -> aperta escala/foco
     // No desktop a câmera olha quase reto e o foco 3D vive à direita,
     // deixando a coluna de texto livre à esquerda. No mobile, tudo centralizado.
-    const focalX  = isMobile ? 0 : (many ? 4.55 : 4.3);   // posição do cluster de planetas
-    const sunX    = isMobile ? 0 : 3.2;   // sol um pouco à esquerda do cluster
+    const focalX  = isMobile ? 0 : (many ? 4.4 : 4.3);    // posição do cluster de planetas
+    const sunX    = isMobile ? 0 : 3.0;   // sol um pouco à esquerda do cluster
     const camX    = isMobile ? 0 : 0.0;   // câmera centrada
     const lookX   = isMobile ? 0 : 0.6;   // leve viés à direita
     camera.aspect = w / h;
     cameraHome.set(camX, isMobile ? 3.6 : 3.5, isMobile ? 15.5 : 13);
     lookHome.set(lookX, isMobile ? 3.0 : 3.1, -12);
-    // No mobile os planetas sobem para a faixa superior, livres do texto do hero.
-    portalGroup.position.set(focalX, isMobile ? 7.2 : 4.25, -3.5);
-    portalGroup.scale.setScalar(isMobile ? (many ? 0.52 : 0.6) : (many ? 0.78 : 0.82));
+    // No mobile a constelação sobe para a faixa superior, livre do texto do hero.
+    portalGroup.position.set(focalX, isMobile ? 6.9 : 4.3, -3.5);
+    portalGroup.scale.setScalar(isMobile ? (many ? 0.42 : 0.6) : (many ? 0.6 : 0.82));
     sun.position.x = sunX;
     camera.updateProjectionMatrix();
     // Mobile tem teto de DPR menor: os shaders aditivos são limitados por fill-rate.
@@ -1143,16 +1194,17 @@ function ArcadeScene(root) {
       // giro do planeta + bandas vivas + anel
       d.planet.rotation.y += dt * d.spin;
       d.planet.material.uniforms.uTime.value = t;
-      d.ring.rotation.z += dt * 0.12;
+      if (d.ring) d.ring.rotation.z += dt * 0.12;
 
       // atmosfera acende no hover; nome sempre encara a câmera
       d.glow.material.opacity = 0.45 + d.hover * 0.6;
       d.label.quaternion.copy(camera.quaternion);
     }
 
-    // pulsar leve do sol (sempre a partir da base — sem drift acumulativo) e estrelas
+    // pulsar leve do sol (sempre a partir da base — sem drift acumulativo) e cintilar das estrelas
     sun.material.uniforms.uMid.value.copy(sunMidBase).offsetHSL(0, 0, Math.sin(t * 0.6) * 0.03);
-    stars.material.opacity = 0.7 + Math.sin(t * 0.8) * 0.15;
+    if (stars.children[0]) stars.children[0].material.opacity = 0.78 + Math.sin(t * 0.8) * 0.1;
+    if (stars.children[1]) stars.children[1].material.opacity = 0.9 + Math.sin(t * 1.1 + 1.0) * 0.08;
 
     renderer.render(scene, camera);
     rafId = requestAnimationFrame(frame);
