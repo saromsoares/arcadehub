@@ -857,11 +857,11 @@ function ArcadeScene(root) {
   // Config por planeta (segue a ordem do PORTFOLIO): posição espalhada (x,y,z),
   // raio, tipo de superfície (bandMix: 0 rochoso/manchado .. 1 gasoso/faixas) e anel.
   const PLANETS = [
-    { pos: [-4.4, -0.7,  1.2], r: 1.30, bands: 3.2, bandMix: 0.85, feat: 2.0, ring: true,  ringTilt: 1.15 }, // PeptiBoard — gigante gasoso anelado
-    { pos: [-1.6,  2.1,  0.2], r: 0.88, bands: 0.0, bandMix: 0.08, feat: 5.0, ring: false, ringTilt: 0    }, // Giro na Máxima — rochoso
-    { pos: [ 1.2, -0.7, -0.3], r: 1.12, bands: 5.5, bandMix: 0.62, feat: 3.0, ring: true,  ringTilt: 1.5  }, // PrivaBR — faixas, anelado
-    { pos: [ 3.9,  1.7, -0.7], r: 0.80, bands: 0.0, bandMix: 0.22, feat: 6.5, ring: false, ringTilt: 0    }, // Coben Life OS — gelado/rochoso
-    { pos: [ 6.3, -0.5, -1.1], r: 1.02, bands: 4.0, bandMix: 0.70, feat: 2.6, ring: true,  ringTilt: 0.8  }, // Kanbia — tempestuoso anelado
+    { pos: [-5.0, -0.7,  1.2], r: 1.30, bands: 3.2, bandMix: 0.85, feat: 2.0, bright: 1.0,  ring: true,  ringTilt: 1.15 },                // PeptiBoard — gigante gasoso anelado
+    { pos: [-1.9,  2.2,  0.2], r: 0.90, bands: 0.0, bandMix: 0.10, feat: 5.0, bright: 1.6,  ring: false, ringTilt: 0    },                // Giro na Máxima — rochoso (mais claro)
+    { pos: [ 1.4, -0.7, -0.3], r: 1.12, bands: 5.5, bandMix: 0.62, feat: 3.0, bright: 1.05, ring: true,  ringTilt: 1.5  },                // PrivaBR — faixas, anelado
+    { pos: [ 4.6,  1.7, -0.7], r: 0.84, bands: 0.0, bandMix: 0.22, feat: 6.5, bright: 1.6,  ring: false, ringTilt: 0,    moon: true },    // Coben Life OS — rochoso (com lua)
+    { pos: [ 7.6, -0.5, -1.1], r: 1.04, bands: 4.0, bandMix: 0.70, feat: 2.6, bright: 1.05, ring: true,  ringTilt: 0.8  },                // Kanbia — tempestuoso anelado
   ];
 
   // Material do planeta: superfície procedural (FBM) única por seed/tipo + atmosfera neon
@@ -875,6 +875,7 @@ function ArcadeScene(root) {
         uBands: { value: cfg.bands },
         uBandMix: { value: cfg.bandMix },
         uFeat: { value: cfg.feat },
+        uBright: { value: cfg.bright != null ? cfg.bright : 1.0 },
       },
       vertexShader: `
         varying vec3 vN; varying vec3 vV; varying vec3 vP;
@@ -889,7 +890,7 @@ function ArcadeScene(root) {
       fragmentShader: `
         precision highp float;
         uniform vec3 uColor; uniform float uTime; uniform float uSeed;
-        uniform float uBands; uniform float uBandMix; uniform float uFeat;
+        uniform float uBands; uniform float uBandMix; uniform float uFeat; uniform float uBright;
         varying vec3 vN; varying vec3 vV; varying vec3 vP;
 
         float hash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
@@ -907,12 +908,12 @@ function ArcadeScene(root) {
           vec3 sp = normalize(vP);
           float nz = fbm(sp * uFeat + vec3(uSeed) + vec3(0.0, uTime * 0.04, 0.0));
           float band = 0.5 + 0.5 * sin(sp.y * uBands + nz * 2.5 + uTime * 0.25);
-          float surf = pow(mix(nz, band, uBandMix), 1.3);
-          vec3 body = uColor * (0.06 + 0.42 * surf);
+          float surf = pow(mix(nz, band, uBandMix), 1.2);
+          vec3 body = uColor * (0.14 + 0.52 * surf) * uBright;
           float lit = clamp(dot(n, normalize(vec3(-0.4, 0.85, 0.5))), 0.0, 1.0);
-          body *= (0.35 + 0.85 * lit);                 // sombreamento pela "estrela"
+          body *= (0.52 + 0.78 * lit);                 // sombreamento pela "estrela" (lado escuro menos preto)
           float fres = pow(1.0 - max(dot(n, normalize(vV)), 0.0), 2.6);
-          vec3 col = body + uColor * fres * 2.0;        // atmosfera neon
+          vec3 col = body + uColor * fres * 1.9;        // atmosfera neon
           gl_FragColor = vec4(col, 1.0);
         }
       `,
@@ -997,6 +998,19 @@ function ArcadeScene(root) {
       ring.rotation.x = cfg.ringTilt;
       ring.rotation.y = 0.22;
       holder.add(ring);
+    }
+
+    // lua orbitando (só em alguns mundos)
+    if (cfg.moon) {
+      const moon = new THREE.Mesh(
+        sphereGeo,
+        makePlanetMaterial(new THREE.Color(0xc2cad8), { bands: 0, bandMix: 0.12, feat: 9.0, bright: 1.4 }, index * 11.37 + 10.0)
+      );
+      moon.scale.setScalar(radius * 0.24);
+      holder.add(moon);
+      holder.userData.moon = moon;
+      holder.userData.moonOrbit = radius * 1.9;
+      holder.userData.moonAngle = index * 1.7;
     }
 
     // nome flutuante
@@ -1091,8 +1105,8 @@ function ArcadeScene(root) {
     const many = PORTFOLIO.length >= 5;   // cluster mais largo -> aperta escala/foco
     // No desktop a câmera olha quase reto e o foco 3D vive à direita,
     // deixando a coluna de texto livre à esquerda. No mobile, tudo centralizado.
-    const focalX  = isMobile ? 0 : (many ? 4.4 : 4.3);    // posição do cluster de planetas
-    const sunX    = isMobile ? 0 : 3.0;   // sol um pouco à esquerda do cluster
+    const focalX  = isMobile ? 0 : (many ? 4.0 : 4.3);    // posição do cluster de planetas
+    const sunX    = isMobile ? 0 : 2.8;   // sol um pouco à esquerda do cluster
     const camX    = isMobile ? 0 : 0.0;   // câmera centrada
     const lookX   = isMobile ? 0 : 0.6;   // leve viés à direita
     camera.aspect = w / h;
@@ -1100,7 +1114,7 @@ function ArcadeScene(root) {
     lookHome.set(lookX, isMobile ? 3.0 : 3.1, -12);
     // No mobile a constelação sobe para a faixa superior, livre do texto do hero.
     portalGroup.position.set(focalX, isMobile ? 6.9 : 4.3, -3.5);
-    portalGroup.scale.setScalar(isMobile ? (many ? 0.42 : 0.6) : (many ? 0.6 : 0.82));
+    portalGroup.scale.setScalar(isMobile ? (many ? 0.4 : 0.6) : (many ? 0.56 : 0.82));
     sun.position.x = sunX;
     camera.updateProjectionMatrix();
     // Mobile tem teto de DPR menor: os shaders aditivos são limitados por fill-rate.
@@ -1191,10 +1205,16 @@ function ArcadeScene(root) {
       const s = 1 + d.hover * 0.12;        // cresce no hover
       h.scale.lerp(tmpScale.set(s, s, s), 0.16);
 
-      // giro do planeta + bandas vivas + anel
+      // giro do planeta + bandas vivas + anel + lua
       d.planet.rotation.y += dt * d.spin;
       d.planet.material.uniforms.uTime.value = t;
       if (d.ring) d.ring.rotation.z += dt * 0.12;
+      if (d.moon) {
+        d.moonAngle += dt * 0.6;
+        const mr = d.moonOrbit;
+        d.moon.position.set(Math.cos(d.moonAngle) * mr, Math.sin(d.moonAngle) * mr * 0.33, Math.sin(d.moonAngle) * mr * 0.55);
+        d.moon.rotation.y += dt * 0.4;
+      }
 
       // atmosfera acende no hover; nome sempre encara a câmera
       d.glow.material.opacity = 0.45 + d.hover * 0.6;
