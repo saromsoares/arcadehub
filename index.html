@@ -131,7 +131,7 @@ html, body {
   padding: 26px clamp(20px, 4vw, 60px) 22px;
   pointer-events: none;
 }
-.topbar, .hero, .dock, .footer-meta { pointer-events: auto; }
+.topbar, .hero, .detail, .dock, .footer-meta { pointer-events: auto; }
 
 /* Topbar */
 .topbar {
@@ -296,6 +296,66 @@ h1 {
   outline: none;
 }
 
+/* Painel "Projeto em foco" — resumo do projeto sob o cursor (desktop) */
+.detail {
+  justify-self: start;
+  width: min(540px, 100%);
+  margin-bottom: 18px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--detail-accent, var(--neon-cyan));
+  border-radius: 14px;
+  background: var(--glass-strong);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 0 28px -10px var(--detail-accent, transparent);
+}
+.detail-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
+.detail-name {
+  margin: 7px 0 3px;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--detail-accent, var(--text));
+}
+.detail-seg {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.detail-summary {
+  margin: 11px 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.56;
+}
+.detail-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--detail-accent, var(--neon-cyan));
+  text-decoration: none;
+}
+.detail-cta:hover, .detail-cta:focus-visible { text-decoration: underline; outline: none; }
+
+/* Resumo inline no card do dock — só aparece no mobile (no desktop usa o painel) */
+.dock-summary { display: none; }
+
 /* Dock — lançadores das empresas, sincronizados com os portais 3D */
 .dock {
   display: grid;
@@ -428,23 +488,30 @@ body.no-webgl::before {
   .dock { width: min(720px, 100%); }
 }
 @media (max-width: 760px) {
-  .shell { padding: 16px 16px 14px; }
+  /* No mobile a página rola sobre o canvas 3D fixo (cena vira plano de fundo imersivo) */
+  html, body { overflow-y: auto; overflow-x: hidden; }
+  #arcade-canvas { touch-action: pan-y; }
+  .shell { display: flex; flex-direction: column; min-height: 100svh; padding: 16px 16px 28px; }
   /* Nav permanece acessível no mobile (compacta), nunca display:none */
   .topbar { flex-wrap: wrap; gap: 12px; }
   .nav { gap: 2px; padding: 3px; }
   .nav a { padding: 7px 9px; font-size: 11px; }
   .brand img { width: 40px; height: 40px; }
-  .hero { align-self: end; padding-bottom: 7vh; }
+  .hero { align-self: stretch; padding-top: 34vh; }   /* espaço para a faixa de portais fixa no topo */
   .hero::before {
     inset: -36px -22px -28px -22px;
     background: linear-gradient(180deg, transparent, rgba(5, 1, 13, 0.86) 24%, rgba(5, 1, 13, 0.94));
   }
-  .hero p { max-width: 360px; }
+  .hero p { max-width: none; }
   .actions { margin-top: 22px; }
   .button { min-height: 44px; padding: 0 16px; font-size: 12.5px; }
-  .dock { gap: 8px; margin-bottom: 10px; }
-  .dock-item { min-height: 64px; padding: 10px 11px; }
-  .dock-item strong { font-size: 12.5px; }
+  /* O resumo aparece direto em cada card (lista vertical rolável); painel some */
+  .detail { display: none; }
+  .dock { grid-template-columns: 1fr; gap: 10px; width: 100%; margin: 26px 0 0; }
+  .dock-item { min-height: 0; padding: 14px 15px; }
+  .dock-item strong { font-size: 14.5px; }
+  .dock-summary { display: block; margin-top: 7px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .footer-meta { margin-top: 20px; }
   .system-readout { display: none; }
 }
 
@@ -485,6 +552,14 @@ body.no-webgl::before {
     </nav>
   </div>
 
+  <aside class="detail" aria-live="polite" style="--detail-accent:#18e0ff">
+    <span class="detail-eyebrow">Projeto em foco</span>
+    <h2 class="detail-name" id="detail-name">PeptiBoard</h2>
+    <span class="detail-seg" id="detail-seg">Saúde &amp; Protocolos</span>
+    <p class="detail-summary" id="detail-summary">Plataforma inteligente que centraliza protocolos de peptídeos, exames e monitoramento contínuo de pacientes — tecnologia de ponta a serviço da saúde clínica e da longevidade.</p>
+    <a class="detail-cta" id="detail-cta" href="https://peptiboard.com/" target="_blank" rel="noopener noreferrer">Visitar site →</a>
+  </aside>
+
   <nav class="dock" id="portfolio" aria-label="Empresas do portfólio">
     <!-- Preenchido por JS a partir de PORTFOLIO; este markup é o fallback acessível -->
   </nav>
@@ -507,17 +582,45 @@ const PORTFOLIO = [
   // assetReady: deixe false para usar a arte procedural neon (default).
   //   Ao adicionar o arquivo real em assets/, mude para true e a imagem entra via TextureLoader.
   // url: quando a empresa tiver site próprio, preencha aqui; vazio cai no contato por e-mail.
-  { title: "PeptiBoard",     segment: "Saúde & Protocolos",       glyph: "PB", color: "#18e0ff", asset: "assets/peptiboard.jpg",      assetReady: false, url: "https://peptiboard.com/" },
-  { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", asset: "assets/giro-na-maxima.jpg",  assetReady: false, url: "https://gironamaxima.com.br/" },
-  { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", asset: "assets/privabr.jpg",        assetReady: false, url: "https://www.privabr.com.br/" },
-  { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", asset: "assets/coben-life-os.jpg",   assetReady: false, url: "https://cobenlifeos.com/" },
-  { title: "Kanbia",         segment: "Pós-venda & IA",           glyph: "KB", color: "#2ee6a3", asset: "assets/kanbia.jpg",          assetReady: false, url: "https://www.instagram.com/kanbia.oficial/", logo: "kanbia" },
+  { title: "PeptiBoard",     segment: "Saúde & Protocolos",       glyph: "PB", color: "#18e0ff", url: "https://peptiboard.com/",
+    summary: "Plataforma inteligente que centraliza protocolos de peptídeos, exames e monitoramento contínuo de pacientes — tecnologia de ponta a serviço da saúde clínica e da longevidade.",
+    asset: "assets/peptiboard.jpg", assetReady: false },
+  { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", url: "https://gironamaxima.com.br/",
+    summary: "Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.",
+    asset: "assets/giro-na-maxima.jpg", assetReady: false },
+  { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", url: "https://www.privabr.com.br/",
+    summary: "Seus dados pessoais estão espalhados por bases que você nunca autorizou. A PrivaBR mapeia, notifica e remove suas informações de onde elas não deveriam estar. Privacidade não é luxo — é direito.",
+    asset: "assets/privabr.jpg", assetReady: false },
+  { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", url: "https://cobenlifeos.com/",
+    summary: "O sistema operacional da sua vida: integra rotina, metas, hábitos e decisões em uma única plataforma inteligente que evolui com você.",
+    asset: "assets/coben-life-os.jpg", assetReady: false },
+  { title: "Kanbia",         segment: "Pós-venda & IA",           glyph: "KB", color: "#2ee6a3", url: "https://www.instagram.com/kanbia.oficial/", logo: "kanbia",
+    summary: "IA de pós-venda no WhatsApp: resolve garantias, faz a triagem e coleta documentos automaticamente. Mais agilidade, organização e satisfação no atendimento — com solução white label.",
+    asset: "assets/kanbia.jpg", assetReady: false },
 ];
 
 // CTA de cada empresa: site próprio se houver, senão contato direcionado por e-mail.
 const companyHref = (item) =>
   item.url ? item.url
            : "mailto:suporte@arcadehub.tech?subject=" + encodeURIComponent("Arcade Hub — " + item.title);
+
+// Atualiza o painel "Projeto em foco" com o resumo do projeto selecionado.
+function applyDetail(i) {
+  const item = PORTFOLIO[i];
+  if (!item) return;
+  const panel = document.querySelector(".detail");
+  if (panel) panel.style.setProperty("--detail-accent", item.color);
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set("detail-name", item.title);
+  set("detail-seg", item.segment);
+  set("detail-summary", item.summary);
+  const cta = document.getElementById("detail-cta");
+  if (cta) {
+    cta.href = companyHref(item);
+    if (item.url) { cta.target = "_blank"; cta.rel = "noopener noreferrer"; }
+    else { cta.removeAttribute("target"); cta.removeAttribute("rel"); }
+  }
+}
 
 const CONFIG = {
   maxPixelRatio: 1.8,        // teto de DPR — evita travar em telas Retina/4K
@@ -1018,8 +1121,16 @@ function ArcadeScene(root) {
   }
 
   let dockHoverIndex = -1;
-  const onDockEnter = (i) => { dockHoverIndex = i; };
+  const onDockEnter = (i) => { dockHoverIndex = i; selectProject(i); };
   const onDockLeave = () => { dockHoverIndex = -1; };
+
+  // Painel "Projeto em foco" — persiste o último selecionado (não esconde no leave).
+  let selectedProject = -1;
+  function selectProject(i) {
+    if (i < 0 || i === selectedProject) return;
+    selectedProject = i;
+    applyDetail(i);
+  }
 
   /* ---------- Resize com debounce ---------- */
   let resizeTimer = null;
@@ -1104,6 +1215,7 @@ function ArcadeScene(root) {
     const rayIndex = pointerActive ? lastRayIndex : -1;
     activeIndex = rayIndex >= 0 ? rayIndex : dockHoverIndex;
     setDockActive(activeIndex);
+    if (activeIndex >= 0) selectProject(activeIndex);   // resumo acompanha o hover
 
     // cursor de "clicável" quando há um portal sob o mouse
     if ((rayIndex >= 0) !== cursorIsPointer) {
@@ -1184,7 +1296,8 @@ function ArcadeScene(root) {
       el.innerHTML =
         '<span class="dock-head"><strong>' + item.title + '</strong>' +
         '<span class="dock-play" aria-hidden="true">▶ PLAY</span></span>' +
-        '<span class="seg">' + item.segment + '</span>';
+        '<span class="seg">' + item.segment + '</span>' +
+        '<span class="dock-summary">' + item.summary + '</span>';
       el.addEventListener("mouseenter", () => onDockEnter(i));
       el.addEventListener("mouseleave", onDockLeave);
       el.addEventListener("focus", () => onDockEnter(i));
@@ -1211,6 +1324,7 @@ function ArcadeScene(root) {
 
   function init() {
     buildDock();
+    selectProject(0);   // projeto em foco inicial
     on(window, "pointermove", onPointerMove, { passive: true });
     on(window, "pointerdown", onPointerMove, { passive: true });
     on(window, "pointerup", onPointerUp, { passive: true });
@@ -1282,6 +1396,7 @@ if (_countEl) {
   _countEl.textContent =
     String(PORTFOLIO.length).padStart(2, "0") + " empresas em operação · Brasil";
 }
+applyDetail(0);   // garante o painel preenchido mesmo no fallback sem-WebGL
 
 function bootstrapDockFallback() {
   const dockEl = document.querySelector(".dock");
@@ -1296,7 +1411,8 @@ function bootstrapDockFallback() {
     el.setAttribute("aria-label", "Saiba mais sobre " + item.title + " — " + item.segment);
     el.innerHTML =
       '<span class="dock-head"><strong>' + item.title + '</strong></span>' +
-      '<span class="seg">' + item.segment + '</span>';
+      '<span class="seg">' + item.segment + '</span>' +
+      '<span class="dock-summary">' + item.summary + '</span>';
     frag.appendChild(el);
   });
   dockEl.appendChild(frag);
