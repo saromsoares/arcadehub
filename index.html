@@ -299,9 +299,9 @@ h1 {
 /* Dock — lançadores das empresas, sincronizados com os portais 3D */
 .dock {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
   gap: 10px;
-  width: min(840px, 100%);
+  width: min(1040px, 100%);
   align-self: end;
   margin-bottom: 16px;
 }
@@ -425,7 +425,7 @@ body.no-webgl::before {
 }
 
 @media (max-width: 1080px) {
-  .dock { width: min(660px, 100%); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dock { width: min(720px, 100%); }
 }
 @media (max-width: 760px) {
   .shell { padding: 16px 16px 14px; }
@@ -511,6 +511,7 @@ const PORTFOLIO = [
   { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", asset: "assets/giro-na-maxima.jpg",  assetReady: false, url: "" },
   { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", asset: "assets/privabr.jpg",        assetReady: false, url: "" },
   { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", asset: "assets/coben-life-os.jpg",   assetReady: false, url: "" },
+  { title: "Kanbia",         segment: "Produtividade & Gestão",   glyph: "KB", color: "#3df2a6", asset: "assets/kanbia.jpg",          assetReady: false, url: "https://www.instagram.com/kanbia.oficial/" },
 ];
 
 // CTA de cada empresa: site próprio se houver, senão contato direcionado por e-mail.
@@ -882,7 +883,8 @@ function ArcadeScene(root) {
   PORTFOLIO.forEach((item, index) => {
     const color = new THREE.Color(item.color);
     const holder = new THREE.Group();
-    const x = (index - (PORTFOLIO.length - 1) / 2) * 2.62;
+    const spacing = PORTFOLIO.length >= 5 ? 2.32 : 2.62;
+    const x = (index - (PORTFOLIO.length - 1) / 2) * spacing;
     holder.position.set(x, 0, -Math.abs(x) * 0.32);
     holder.rotation.y = -x * 0.045;
     holder.userData = { index, baseX: x, baseY: 0, baseRotY: holder.rotation.y, baseZ: holder.position.z, hover: 0 };
@@ -965,9 +967,10 @@ function ArcadeScene(root) {
     const w = window.innerWidth, h = window.innerHeight;
     if (w === 0 || h === 0) return;   // evita aspect NaN / textura 0x0
     const isMobile = w < 760;
+    const many = PORTFOLIO.length >= 5;   // cluster mais largo -> aperta escala/foco
     // No desktop a câmera olha quase reto e o foco 3D vive à direita,
     // deixando a coluna de texto livre à esquerda. No mobile, tudo centralizado.
-    const focalX  = isMobile ? 0 : 4.3;   // posição do cluster de portais
+    const focalX  = isMobile ? 0 : (many ? 4.55 : 4.3);   // posição do cluster de portais
     const sunX    = isMobile ? 0 : 3.2;   // sol um pouco à esquerda do cluster
     const camX    = isMobile ? 0 : 0.0;   // câmera centrada
     const lookX   = isMobile ? 0 : 0.6;   // leve viés à direita
@@ -976,7 +979,7 @@ function ArcadeScene(root) {
     lookHome.set(lookX, isMobile ? 3.0 : 3.1, -12);
     // No mobile os portais sobem para a faixa superior, livres do texto do hero.
     portalGroup.position.set(focalX, isMobile ? 7.2 : 3.7, -3.5);
-    portalGroup.scale.setScalar(isMobile ? 0.72 : 1);
+    portalGroup.scale.setScalar(isMobile ? (many ? 0.55 : 0.72) : (many ? 0.88 : 1));
     sun.position.x = sunX;
     // Cada portal encara a câmera central (corrige o ângulo oblíquo do cluster à direita)
     portals.forEach((h) => {
@@ -1108,6 +1111,7 @@ function ArcadeScene(root) {
       const el = document.createElement("a");
       el.className = "dock-item";
       el.href = companyHref(item);
+      if (item.url) { el.target = "_blank"; el.rel = "noopener noreferrer"; }
       el.style.setProperty("--accent", item.color);
       el.setAttribute("aria-label", "Saiba mais sobre " + item.title + " — " + item.segment);
       el.innerHTML =
@@ -1219,6 +1223,7 @@ function bootstrapDockFallback() {
     const el = document.createElement("a");
     el.className = "dock-item";
     el.href = companyHref(item);
+    if (item.url) { el.target = "_blank"; el.rel = "noopener noreferrer"; }
     el.style.setProperty("--accent", item.color);
     el.setAttribute("aria-label", "Saiba mais sobre " + item.title + " — " + item.segment);
     el.innerHTML =
