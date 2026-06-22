@@ -8,7 +8,7 @@
   script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob:;
-  connect-src 'self';
+  connect-src 'self' https://*.supabase.co;
   base-uri 'self';
   form-action 'self';
   object-src 'none';
@@ -559,7 +559,7 @@ body.no-webgl::before {
     <p>Arcade Hub cria, opera e escala produtos digitais para mercados onde privacidade, saúde, inteligência artificial e produtividade precisam sair do discurso e virar sistema.</p>
     <nav class="actions" aria-label="Ações principais">
       <a class="button primary" href="#portfolio">Ver portfólio</a>
-      <a class="button" href="mailto:suporte@arcadehub.tech">Falar com a Arcade Hub</a>
+      <a class="button" href="#" onclick="abrirContato();return false;">Falar com a Arcade Hub</a>
     </nav>
   </div>
 
@@ -584,6 +584,88 @@ body.no-webgl::before {
   </div>
 </main>
 
+<!-- Modal "Falar com a Arcade Hub" -->
+<style>
+.modal-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(3,1,13,0.80);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-card{width:100%;max-width:460px;background:linear-gradient(180deg,#0d1030,#0a0a18);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 40px rgba(0,229,255,0.08);max-height:92vh;overflow-y:auto;}
+.modal-card h3{margin:0 0 4px;font-size:20px;font-weight:800;color:#fff;}
+.modal-card p.sub{margin:0 0 18px;font-size:13px;color:var(--quiet);line-height:1.5;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--quiet);margin-bottom:5px;}
+.modal-field input,.modal-field select,.modal-field textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
+.modal-field textarea{resize:vertical;min-height:92px;}
+.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{outline:none;border-color:var(--neon-cyan);}
+.modal-field option{background:#0d1030;color:#fff;}
+.modal-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.modal-actions button{flex:1;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit;}
+.modal-cancel{background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid var(--line);}
+.modal-send{background:var(--neon-cyan);color:#04121a;}
+.modal-send:disabled{opacity:0.6;cursor:default;}
+.modal-msg{margin-top:12px;font-size:13px;text-align:center;min-height:18px;color:var(--quiet);}
+</style>
+<div class="modal-overlay" id="contato-modal" role="dialog" aria-modal="true" aria-labelledby="contato-title">
+  <div class="modal-card">
+    <h3 id="contato-title">Falar com a Arcade Hub</h3>
+    <p class="sub">Conte o que você precisa e selecione o projeto. Retornamos pelo contato informado.</p>
+    <form id="contato-form" onsubmit="return enviarContato(event)">
+      <div class="modal-field"><label for="ct-nome">Nome*</label><input type="text" id="ct-nome" required maxlength="120" /></div>
+      <div class="modal-field"><label for="ct-email">E-mail</label><input type="email" id="ct-email" maxlength="160" /></div>
+      <div class="modal-field"><label for="ct-whatsapp">WhatsApp</label><input type="tel" id="ct-whatsapp" maxlength="40" placeholder="(DDD) 9 0000-0000" /></div>
+      <div class="modal-field"><label for="ct-projeto">Projeto</label>
+        <select id="ct-projeto">
+          <option value="Geral / Arcade Hub">Geral / Arcade Hub</option>
+          <option>PeptiBoard</option>
+          <option>Giro na Máxima</option>
+          <option>PrivaBR</option>
+          <option>Coben Life OS</option>
+          <option>Kanbia</option>
+          <option>Croqui.ai</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="modal-field"><label for="ct-mensagem">Mensagem*</label><textarea id="ct-mensagem" required maxlength="4000"></textarea></div>
+      <input class="modal-hp" type="text" id="ct-website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+      <div class="modal-actions">
+        <button type="button" class="modal-cancel" onclick="fecharContato()">Cancelar</button>
+        <button type="submit" class="modal-send" id="ct-send">Enviar</button>
+      </div>
+      <div class="modal-msg" id="ct-msg" role="status"></div>
+    </form>
+  </div>
+</div>
+<script>
+function abrirContato(){ document.getElementById('contato-modal').classList.add('open'); setTimeout(function(){ var n=document.getElementById('ct-nome'); if(n) n.focus(); }, 50); }
+function fecharContato(){ document.getElementById('contato-modal').classList.remove('open'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') fecharContato(); });
+document.addEventListener('click', function(e){ if(e.target && e.target.id==='contato-modal') fecharContato(); });
+async function enviarContato(ev){
+  ev.preventDefault();
+  var btn=document.getElementById('ct-send'), msg=document.getElementById('ct-msg');
+  var nome=document.getElementById('ct-nome').value.trim();
+  var email=document.getElementById('ct-email').value.trim();
+  var whatsapp=document.getElementById('ct-whatsapp').value.trim();
+  var projeto=document.getElementById('ct-projeto').value;
+  var mensagem=document.getElementById('ct-mensagem').value.trim();
+  var website=document.getElementById('ct-website').value;
+  if(!nome||!mensagem){ msg.style.color='#ff6b6b'; msg.textContent='Preencha nome e mensagem.'; return false; }
+  if(!email&&!whatsapp){ msg.style.color='#ff6b6b'; msg.textContent='Informe e-mail ou WhatsApp.'; return false; }
+  btn.disabled=true; btn.textContent='Enviando...'; msg.style.color='var(--quiet)'; msg.textContent='';
+  try{
+    var r=await fetch('https://zdwgwpvlwqtsdgervcof.supabase.co/functions/v1/contato',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':'sb_publishable_8yfc-M-6SZl5RTkLdMKe5w_9colNPe-'},
+      body:JSON.stringify({nome:nome,email:email,whatsapp:whatsapp,projeto:projeto,mensagem:mensagem,website:website})
+    });
+    var d=await r.json();
+    if(d && d.ok){ msg.style.color='#2ee6a3'; msg.textContent='Mensagem enviada! Em breve retornamos.'; document.getElementById('contato-form').reset(); setTimeout(fecharContato, 1900); }
+    else { msg.style.color='#ff6b6b'; msg.textContent=(d && d.error) || 'Não foi possível enviar.'; }
+  }catch(e){ msg.style.color='#ff6b6b'; msg.textContent='Falha de conexão. Tente novamente.'; }
+  btn.disabled=false; btn.textContent='Enviar';
+  return false;
+}
+</script>
 <script type="importmap">
 {
   "imports": {
