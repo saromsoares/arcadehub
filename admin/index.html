@@ -633,11 +633,12 @@
               </div>
               <div>
                 <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Tipo</label>
-                <select class="inp" id="ce-tipo" style="text-align:left;">
+                <select class="inp" id="ce-tipo" style="text-align:left;" onchange="atualizarHintTipo()">
                   <option value="variavel">🔁 Variável (pontual / sob demanda)</option>
                   <option value="fixo">📌 Fixo (recorrente / estrutural)</option>
                 </select>
               </div>
+              <div id="ce-tipo-hint" style="display:none;grid-column:1 / -1;font-size:11px;color:#6D28D9;background:#EDE9FE;border-radius:6px;padding:7px 10px;"></div>
               <div>
                 <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Descrição</label>
                 <input class="inp" type="text" id="ce-descricao" placeholder="Ex: VPS Europa, Domínio...">
@@ -1441,6 +1442,7 @@ async function saveCustoExtra(custo) {
     mes: custo.mes, empresa_id: custo.empresa_id,
     categoria: custo.categoria || 'Outros Custos',
     tipo: custo.tipo === 'fixo' ? 'fixo' : 'variavel',
+    recorrencia_id: custo.recorrencia_id || null,
     descricao: custo.descricao || '', valor: custo.valor || 0,
     pagador: custo.pagador || '', meio_pagamento: custo.meio_pagamento || '',
     updated_at: new Date().toISOString()
@@ -1453,9 +1455,62 @@ async function saveCustoExtra(custo) {
   }
   showSaving('saving-lanc');
 }
+// Cria um custo FIXO recorrente: replica do mês lançado até o mês corrente (não projeta futuro).
+async function criarCustoFixoRecorrente(base, mesInicio) {
+  const rid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+            : ('rec-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+  const startIdx = MONTHS.indexOf(mesInicio);
+  const nowIdx = new Date().getMonth(); // 0=Jan … 11=Dez
+  const endIdx = Math.max(startIdx, nowIdx); // se lançar num mês futuro, fica só naquele mês
+  for (let i = startIdx; i <= endIdx; i++) {
+    const custo = {
+      mes: MONTHS[i], empresa_id: selCompany,
+      categoria: base.categoria, tipo: 'fixo', recorrencia_id: rid,
+      descricao: base.descricao, valor: base.valor,
+      pagador: base.pagador, meio_pagamento: base.meio_pagamento,
+    };
+    await saveCustoExtra(custo);
+    custosExtras.push(custo);
+  }
+  return endIdx - startIdx + 1;
+}
+
+function atualizarHintTipo() {
+  const el = document.getElementById('ce-tipo-hint');
+  if (!el) return;
+  const tipo = document.getElementById('ce-tipo').value;
+  const editId = document.getElementById('lanc-custo-extra-form').dataset.editId;
+  if (tipo === 'fixo' && editId) {
+    el.style.display = 'block';
+    el.innerHTML = '📌 Editando um custo fixo: a alteração vale só para este mês.';
+  } else if (tipo === 'fixo') {
+    const startIdx = MONTHS.indexOf(selMonth);
+    const endIdx = Math.max(startIdx, new Date().getMonth());
+    const meses = MONTHS.slice(startIdx, endIdx + 1);
+    el.style.display = 'block';
+    el.innerHTML = `📌 Custo fixo: será lançado em <strong>${meses.join(', ')}</strong> (${meses.length} ${meses.length > 1 ? 'meses' : 'mês'}) e repetido automaticamente nos próximos.`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 async function deleteCustoExtra(id) {
-  await sb.from('custos_extras').delete().eq('id', id);
-  custosExtras = custosExtras.filter(c => c.id !== id);
+  const c = custosExtras.find(x => String(x.id) === String(id));
+  if (c && c.recorrencia_id) {
+    const todos = confirm('Este é um custo FIXO recorrente.\n\nOK = excluir de TODOS os meses\nCancelar = excluir só deste mês');
+    if (todos) {
+      const serie = custosExtras.filter(x => x.recorrencia_id === c.recorrencia_id);
+      for (const x of serie) { if (x.id) await sb.from('custos_extras').delete().eq('id', x.id); }
+      custosExtras = custosExtras.filter(x => x.recorrencia_id !== c.recorrencia_id);
+    } else {
+      await sb.from('custos_extras').delete().eq('id', id);
+      custosExtras = custosExtras.filter(x => x.id !== id);
+    }
+  } else {
+    if (!confirm('Excluir este custo?')) return;
+    await sb.from('custos_extras').delete().eq('id', id);
+    custosExtras = custosExtras.filter(x => x.id !== id);
+  }
   renderLancamentos();
   renderAll();
 }
@@ -1850,6 +1905,7 @@ function abrirFormCustoExtra(id) {
     document.getElementById('ce-btn-salvar').textContent = 'Salvar Custo';
     document.getElementById('ce-btn-outro').style.display = '';
   }
+  atualizarHintTipo();
   document.getElementById('ce-descricao').focus();
 }
 function fecharFormCustoExtra() {
@@ -1870,6 +1926,8 @@ async function salvarCustoExtra() {
       Object.assign(existente, { categoria, tipo, descricao, valor, pagador, meio_pagamento });
       await saveCustoExtra(existente);
     }
+  } else if (tipo === 'fixo') {
+    await criarCustoFixoRecorrente({ categoria, descricao, valor, pagador, meio_pagamento }, selMonth);
   } else {
     const custo = { mes: selMonth, empresa_id: selCompany, categoria, tipo, descricao, valor, pagador, meio_pagamento };
     await saveCustoExtra(custo);
@@ -1887,9 +1945,13 @@ async function salvarELancarOutro() {
   const pagador = document.getElementById('ce-pagador').value;
   const meio_pagamento = document.getElementById('ce-meio').value;
   if (!descricao || valor <= 0) { alert('Preencha a descrição e o valor.'); return; }
-  const custo = { mes: selMonth, empresa_id: selCompany, categoria, tipo, descricao, valor, pagador, meio_pagamento };
-  await saveCustoExtra(custo);
-  custosExtras.push(custo);
+  if (tipo === 'fixo') {
+    await criarCustoFixoRecorrente({ categoria, descricao, valor, pagador, meio_pagamento }, selMonth);
+  } else {
+    const custo = { mes: selMonth, empresa_id: selCompany, categoria, tipo, descricao, valor, pagador, meio_pagamento };
+    await saveCustoExtra(custo);
+    custosExtras.push(custo);
+  }
   renderCustosExtrasTable();
   renderAll();
   // Limpa o form para o próximo lançamento (mantém categoria para agilizar)
@@ -1927,7 +1989,7 @@ function renderCustosExtrasTable() {
         <td style="font-size:11px;color:#6B7280;">${escapeHtml(meioLabels[c.meio_pagamento]||c.meio_pagamento||'—')}</td>
         <td style="white-space:nowrap;">
           <button onclick="abrirFormCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#1E6FFF;cursor:pointer;font-size:14px;margin-right:4px;" title="Editar">✏️</button>
-          <button onclick="if(confirm('Excluir este custo?'))deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button>
+          <button onclick="deleteCustoExtra(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;" title="Excluir">🗑</button>
         </td>
       </tr>`;
     }).join('') +
