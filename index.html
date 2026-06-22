@@ -438,6 +438,19 @@ h1 {
   letter-spacing: 0.6px;
 }
 .system-readout { text-align: right; color: var(--neon-cyan); }
+.footer-legal {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--quiet);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-align: center;
+  line-height: 1.7;
+}
+.footer-legal a { color: var(--neon-cyan); text-decoration: none; }
+.footer-legal a:hover { text-decoration: underline; }
 
 /* ============================================================
    Fallback sem WebGL — a cena some, a CSS sustenta a estética
@@ -566,6 +579,9 @@ body.no-webgl::before {
     <span id="company-count">04 empresas em operação · Brasil</span>
     <span class="system-readout" id="system-readout">ARCADE://ECOSYSTEM · ONLINE</span>
   </footer>
+  <div class="footer-legal">
+    © 2026 ArcadeHub.tech · CNPJ 66.910.447/0001-06 · <a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a> · Todos os direitos reservados
+  </div>
 </main>
 
 <script type="importmap">
