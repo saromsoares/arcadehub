@@ -829,7 +829,7 @@
     <div class="table-wrap" style="margin-bottom:22px;">
       <table>
         <thead><tr>
-          <th>Sócio</th><th>Aportes Totais</th><th>Pagou c/ Pessoal</th><th>Total Contribuído</th><th>Saldo (Empresa deve)</th>
+          <th>Sócio</th><th>Participação</th><th>Aportes Totais</th><th>Pagou c/ Pessoal</th><th>Total Contribuído</th><th>Saldo (Empresa deve)</th>
         </tr></thead>
         <tbody id="balanco-socios-table"></tbody>
       </table>
@@ -1080,7 +1080,9 @@ const INV_CATS = ['Desenvolvimento','Branding','Legal e Contábil','Tecnologia',
 const CUSTO_CATS = ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'];
 
 // Sócios e meios de pagamento
-const SOCIOS = ['SAROM','RICARDO','BERVAL','MARCOS'];
+const SOCIOS = ['SAROM','GLADIOMIR','BERNARDO'];
+// Participação societária (%) padrão — editável no Balanço dos Sócios (salva em estrutura.metas.participacao)
+const DEFAULT_PARTICIPACAO = { SAROM:90, GLADIOMIR:5, BERNARDO:5 };
 const MEIOS_PAGAMENTO = [
   {id:'cartao_pessoal', label:'Cartão Pessoal'},
   {id:'cartao_empresa', label:'Cartão Empresa'},
@@ -1321,6 +1323,17 @@ function getAporteMetaSocio(socio) {
 }
 function getTotalAporteMeta() {
   return SOCIOS.reduce((a,s)=>a+getAporteMetaSocio(s),0);
+}
+// Participação societária (%) por sócio
+function getParticipacaoSocio(socio) {
+  const p = estrutura.metas?.participacao || {};
+  return p[socio] !== undefined && p[socio] !== null ? p[socio] : (DEFAULT_PARTICIPACAO[socio] || 0);
+}
+function setParticipacaoSocio(socio, val) {
+  if (!estrutura.metas) estrutura.metas = {};
+  if (!estrutura.metas.participacao) estrutura.metas.participacao = { ...DEFAULT_PARTICIPACAO };
+  estrutura.metas.participacao[socio] = parseFloat(val) || 0;
+  saveEstrutura();
 }
 function setAporteMetaSocio(socio, val) {
   if (!estrutura.metas) estrutura.metas = {};
@@ -2277,7 +2290,7 @@ function renderEstrutura(totals) {
   });
 
   // Tabela de aportes por socio
-  const socioColors = { SAROM:'#1E6FFF', RICARDO:'#8B5CF6', BERVAL:'#10B981', MARCOS:'#F59E0B' };
+  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', BERNARDO:'#10B981' };
   document.getElementById('aportes-table').innerHTML =
     SOCIOS.map(socio => {
       const sColor = socioColors[socio] || '#6B7280';
@@ -2390,7 +2403,7 @@ function renderEstrutura(totals) {
 // ─── BALANÇO DOS SÓCIOS ──────────────────────────────────────────────────────
 function renderBalancoSocios() {
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const socioColors = { SAROM:'#1E6FFF', RICARDO:'#8B5CF6', BERVAL:'#10B981', MARCOS:'#F59E0B' };
+  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', BERNARDO:'#10B981' };
 
   // Calcular gastos pessoais por socio (quando pagador = socio E meio != cartao_empresa)
   const gastosPessoais = {};
@@ -2437,8 +2450,9 @@ function renderBalancoSocios() {
   const totalAportado = SOCIOS.reduce((a, s) => a + getAporteSocioTotal(s), 0);
   const totalPessoal = SOCIOS.reduce((a, s) => a + gastosPessoais[s], 0);
   const totalContribuido = totalAportado + totalPessoal;
+  const totalParticipacao = SOCIOS.reduce((a, s) => a + getParticipacaoSocio(s), 0);
   document.getElementById('balanco-kpis').innerHTML = [
-    kpiCard('Total Aportado', fmt(totalAportado), 'pelos 4 sócios', '#8B5CF6'),
+    kpiCard('Total Aportado', fmt(totalAportado), 'pelos sócios', '#8B5CF6'),
     kpiCard('Pago c/ Pessoal', fmt(totalPessoal), 'cartão/pix pessoal', '#EF4444'),
     kpiCard('Total Contribuído', fmt(totalContribuido), 'aportes + pessoal', '#1E6FFF'),
     kpiCard('Empresa Deve', fmt(totalPessoal), 'reembolso pendente', '#F59E0B'),
@@ -2453,6 +2467,7 @@ function renderBalancoSocios() {
       const sColor = socioColors[socio] || '#6B7280';
       return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
         <td><span class="dot" style="background:${sColor}"></span><strong>${socio}</strong></td>
+        <td style="white-space:nowrap;"><input class="inp" type="number" min="0" max="100" step="0.5" value="${getParticipacaoSocio(socio)}" oninput="setParticipacaoSocio('${socio}',this.value)" style="width:64px;display:inline-block;" /> %</td>
         <td style="color:#8B5CF6;font-weight:600">${fmt(aporte)}</td>
         <td style="color:#EF4444;font-weight:600">${fmt(pessoal)}</td>
         <td style="font-weight:700">${fmt(total)}</td>
@@ -2461,6 +2476,7 @@ function renderBalancoSocios() {
     }).join('') +
     `<tr class="table-total">
       <td>TOTAL</td>
+      <td style="font-weight:700;color:${totalParticipacao===100?'#059669':'#EF4444'}">${totalParticipacao}%</td>
       <td>${fmt(totalAportado)}</td>
       <td>${fmt(totalPessoal)}</td>
       <td>${fmt(totalContribuido)}</td>
