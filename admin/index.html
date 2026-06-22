@@ -518,6 +518,7 @@
     <button class="nav-item active" onclick="showTab('painel',this)">📊 Painel Fintech</button>
     <button class="nav-item" onclick="showTab('dashboard',this)">📈 Dashboard</button>
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
+    <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
 
     <div class="nav-section">Operações</div>
     <button class="nav-item" onclick="showTab('lancamentos',this)">📝 Lançamentos</button>
@@ -940,6 +941,31 @@
     <div id="empresa-individual-content"></div>
   </div>
 
+  <!-- MERCADO PAGO -->
+  <div id="tab-mercadopago" class="tab-content">
+    <div class="page-title" id="pt-mercadopago">Mercado Pago
+      <span id="mp-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
+    </div>
+    <div class="page-sub" id="ps-mercadopago">Saldo da conta e recebimentos em tempo real. O saldo é consultado sob demanda; os recebimentos chegam por webhook.</div>
+
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:12px;">
+      <span id="mp-saldo-ts" style="font-size:11px;color:#9CA3AF;"></span>
+      <button id="mp-btn-refresh" onclick="carregarSaldoMP()" style="background:#1E6FFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Atualizar saldo</button>
+    </div>
+
+    <div class="kpi-grid" id="mp-kpis"></div>
+
+    <div class="section-title"><span>Recebimentos</span></div>
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table style="min-width:760px;">
+        <thead><tr>
+          <th>Data</th><th>Descrição</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+        </tr></thead>
+        <tbody id="mp-receb-body"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div><!-- /main -->
 
 <script>
@@ -1095,6 +1121,13 @@ let saveTimer = null;
 let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp = null;
 let currentEmpresaId = null;
 let selBalancoSocio = 'TODOS';
+// ─── Mercado Pago ───
+let mpRecebimentos = [];      // recebimentos carregados da tabela mp_recebimentos
+let mpSaldo = null;           // último retorno da Edge Function mp-saldo
+let mpSaldoTs = null;         // quando o saldo foi consultado
+let mpSaldoLoading = false;
+let mpRealtimeOn = false;     // evita múltiplas subscriptions
+let mpPollTimer = null;
 let custosExtras = []; // Array de custos extras carregados do Supabase
 let acoesCal = [];     // Array de acoes do calendario operacional
 let calExtraDates = []; // Datas vazias adicionadas manualmente (sem acoes)
@@ -1479,17 +1512,19 @@ async function saveEstrutura() {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
     sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
+    sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
   ]);
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
   if (acData) acoesCal = acData;
+  if (mpData) mpRecebimentos = mpData;
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -1521,6 +1556,7 @@ function renderAll() {
   renderEmpresasGeral(companiesYTD);
   renderBalancoSocios();
   renderCalendario();
+  renderMercadoPago();
   renderNavEmpresas();
   setTimeout(makeAllEditable, 50);
 }
@@ -1910,6 +1946,129 @@ function renderCustosExtrasTable() {
       <td style="color:#EF4444;font-size:12px;">${fmt(totalExtras)}</td>
       <td colspan="3"></td>
     </tr>`;
+}
+
+// ─── MERCADO PAGO ────────────────────────────────────────────────────────────
+function mpNum(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+// Extrai saldo disponível / a liberar do retorno do MP (endpoint não-oficial, formato varia).
+function mpParseSaldo(s){
+  if(!s) return { disp:null, pend:null, total:null };
+  const disp = mpNum(s.available_balance ?? s.available ?? s.availableBalance);
+  const pend = mpNum(s.unavailable_balance ?? s.unavailable ?? s.unavailableBalance ?? s.pending);
+  let total = mpNum(s.total_amount ?? s.total ?? s.totalBalance);
+  if(total === null && (disp !== null || pend !== null)) total = (disp||0) + (pend||0);
+  return { disp, pend, total };
+}
+
+async function carregarSaldoMP(){
+  if(mpSaldoLoading) return;
+  mpSaldoLoading = true;
+  const btn = document.getElementById('mp-btn-refresh');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Consultando...'; }
+  try {
+    const { data, error } = await sb.functions.invoke('mp-saldo');
+    if(error) throw error;
+    mpSaldo = data;
+    mpSaldoTs = new Date();
+  } catch(e){
+    mpSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
+  } finally {
+    mpSaldoLoading = false;
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 Atualizar saldo'; }
+    renderMercadoPago();
+  }
+}
+
+function iniciarRealtimeMP(){
+  if(mpRealtimeOn) return;
+  mpRealtimeOn = true;
+  try {
+    sb.channel('mp-recebimentos-rt')
+      .on('postgres_changes', { event:'*', schema:'public', table:'mp_recebimentos' }, (payload)=>{
+        const row = payload.new || payload.old;
+        if(!row) return;
+        if(payload.eventType === 'DELETE'){
+          mpRecebimentos = mpRecebimentos.filter(r => r.id !== row.id);
+        } else {
+          const i = mpRecebimentos.findIndex(r => r.id === row.id);
+          if(i >= 0) mpRecebimentos[i] = row; else mpRecebimentos.unshift(row);
+        }
+        mpRecebimentos.sort((a,b)=> new Date(b.date_approved||b.created_at||0) - new Date(a.date_approved||a.created_at||0));
+        renderMercadoPago();
+      })
+      .subscribe((status)=>{
+        const dot = document.getElementById('mp-live-dot');
+        if(dot) dot.style.display = (status === 'SUBSCRIBED') ? 'inline' : 'none';
+      });
+  } catch(_e){ mpRealtimeOn = false; }
+  if(!mpPollTimer){
+    mpPollTimer = setInterval(()=>{
+      const tab = document.getElementById('tab-mercadopago');
+      if(tab && tab.classList.contains('active')) carregarSaldoMP();
+    }, 60000);
+  }
+}
+
+function renderMercadoPago(){
+  iniciarRealtimeMP();
+  // dispara a primeira consulta de saldo automaticamente
+  if(mpSaldo === null && !mpSaldoLoading){ carregarSaldoMP(); }
+
+  const aprovados = mpRecebimentos.filter(r => r.status === 'approved');
+  const valLiq = (r)=> mpNum(r.valor_liquido) ?? mpNum(r.valor) ?? 0;
+  const totalReceb = aprovados.reduce((a,r)=> a + valLiq(r), 0);
+  const now = new Date();
+  const mesAtual = aprovados.filter(r=>{ const d = r.date_approved ? new Date(r.date_approved) : null; return d && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
+  const totalMes = mesAtual.reduce((a,r)=> a + valLiq(r), 0);
+
+  let kpis = '';
+  if(mpSaldo && mpSaldo.ok){
+    const s = mpParseSaldo(mpSaldo.saldo);
+    if(mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)){
+      kpis += kpiCard('Saldo disponível', fmt(s.disp ?? s.total ?? 0), escapeHtml(mpSaldo.conta?.nickname||''), '#10B981');
+      if(s.pend !== null) kpis += kpiCard('A liberar', fmt(s.pend), 'liberação futura', '#F59E0B');
+    } else {
+      kpis += kpiCard('Saldo disponível', '—', 'endpoint de saldo indisponível p/ esta conta', '#9CA3AF');
+    }
+  } else if(mpSaldo && !mpSaldo.ok){
+    kpis += kpiCard('Saldo', 'erro', escapeHtml(mpSaldo.error||'falha na consulta'), '#EF4444');
+  } else {
+    kpis += kpiCard('Saldo disponível', '…', 'consultando', '#9CA3AF');
+  }
+  kpis += kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#1E6FFF');
+  kpis += kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
+  document.getElementById('mp-kpis').innerHTML = kpis;
+
+  const tsEl = document.getElementById('mp-saldo-ts');
+  if(tsEl) tsEl.textContent = mpSaldoTs ? ('Saldo consultado às '+mpSaldoTs.toLocaleTimeString('pt-BR')) : '';
+
+  const body = document.getElementById('mp-receb-body');
+  if(!mpRecebimentos.length){
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhum recebimento ainda. Assim que um pagamento cair no Mercado Pago, ele aparece aqui automaticamente.</td></tr>`;
+    return;
+  }
+  const statusInfo = (st)=>({
+    approved:{l:'Aprovado',c:'#10B981'}, pending:{l:'Pendente',c:'#F59E0B'},
+    in_process:{l:'Em análise',c:'#F59E0B'}, rejected:{l:'Recusado',c:'#EF4444'},
+    cancelled:{l:'Cancelado',c:'#9CA3AF'}, refunded:{l:'Estornado',c:'#EF4444'},
+    charged_back:{l:'Chargeback',c:'#EF4444'}
+  }[st] || { l: st||'—', c:'#6B7280' });
+  body.innerHTML = mpRecebimentos.map((r,i)=>{
+    const d = r.date_approved || r.date_created;
+    const dataFmt = d ? new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+    const st = statusInfo(r.status);
+    const liq = mpNum(r.valor_liquido);
+    return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
+      <td style="font-size:11px;white-space:nowrap;">${dataFmt}</td>
+      <td style="font-size:12px;">${escapeHtml(r.descricao||'—')}</td>
+      <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.payer_nome||r.payer_email||'—')}</td>
+      <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.tipo_pagamento||'—')}</td>
+      <td><span style="background:${st.c}22;color:${st.c};border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;">${escapeHtml(st.l)}</span></td>
+      <td style="font-weight:600;color:#059669;font-size:12px;white-space:nowrap;">${fmt(mpNum(r.valor)||0)}</td>
+      <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${liq!==null?fmt(liq):'—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ─── PLANEJADO ───────────────────────────────────────────────────────────────
