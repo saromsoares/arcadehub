@@ -531,8 +531,16 @@
     <button class="nav-item" id="nav-empresas" onclick="showTab('empresas',this)">🏢 Visão Geral</button>
     <div id="nav-empresas-list"></div>
   </div>
-  <!-- Email & Logout -->
+  <!-- Salvar / Email & Logout -->
   <div style="padding:10px 16px;border-top:1px solid rgba(255,255,255,0.07);">
+    <button onclick="salvarTudoAgora()" id="btn-salvar-tudo" style="
+      display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 12px;
+      background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.3);
+      border-radius:8px;color:#10B981;font-size:12px;font-weight:700;
+      cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;margin-bottom:8px;
+    " onmouseover="this.style.background='rgba(16,185,129,0.22)'" onmouseout="this.style.background='rgba(16,185,129,0.14)'">
+      <span style="font-size:15px;">&#x1F4BE;</span> Salvar tudo
+    </button>
     <a href="https://mail.hostinger.com" target="_blank" rel="noopener" style="
       display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;
       background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.15);
@@ -1433,6 +1441,48 @@ function toast(msg) {
 function showSaving(id) {
   const el = document.getElementById(id);
   if (el) { el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1500); }
+}
+
+// Salva imediatamente TODO o estado em memória (lançamentos, planejado, estrutura).
+// O app já salva sozinho ao editar (com atraso); este botão força o flush e dá feedback.
+async function salvarTudoAgora() {
+  const btn = document.getElementById('btn-salvar-tudo');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Salvando...'; }
+  clearTimeout(saveTimer);
+  try {
+    const now = new Date().toISOString();
+    const lancRows = Object.values(lancamentos).filter(e => e && e.mes && e.empresa_id).map(e => ({
+      mes: e.mes, empresa_id: e.empresa_id,
+      receita: e.receita||0, custos_diretos: e.custos_diretos||0, folha: e.folha||0,
+      impostos: e.impostos||0, despesas_adm: e.despesas_adm||0, outras_despesas: e.outras_despesas||0,
+      headcount: e.headcount||0, obs: e.obs||'', pagador: e.pagador||'', meio_pagamento: e.meio_pagamento||'',
+      updated_at: now
+    }));
+    if (lancRows.length) await sb.from('lancamentos').upsert(lancRows, { onConflict: 'mes,empresa_id' });
+
+    const planRows = Object.values(planejado).filter(p => p && p.mes && p.empresa_id).map(p => ({
+      mes: p.mes, empresa_id: p.empresa_id,
+      receita_p: p.receita_p||0, custos_diretos_p: p.custos_diretos_p||0, folha_p: p.folha_p||0,
+      impostos_p: p.impostos_p||0, despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
+      headcount_p: p.headcount_p||0, updated_at: now
+    }));
+    if (planRows.length) await sb.from('planejado').upsert(planRows, { onConflict: 'mes,empresa_id' });
+
+    const payload = {
+      caixa_inicial: estrutura.caixa_inicial||0, data_inicio: '01/04/2025',
+      investimento: estrutura.investimento, custos_mensais: estrutura.custos_mensais,
+      custos_por_mes: estrutura.custos_por_mes, aportes: estrutura.aportes,
+      metas: estrutura.metas, updated_at: now
+    };
+    if (estrutura_id) await sb.from('estrutura').update(payload).eq('id', estrutura_id);
+    else { const { data } = await sb.from('estrutura').insert(payload).select().single(); if (data) estrutura_id = data.id; }
+
+    if (btn) { btn.innerHTML = '✓ Tudo salvo!'; setTimeout(()=>{ btn.disabled=false; btn.innerHTML = orig; }, 1800); }
+  } catch (e) {
+    console.error('salvarTudoAgora:', e);
+    if (btn) { btn.innerHTML = '⚠ Erro ao salvar'; setTimeout(()=>{ btn.disabled=false; btn.innerHTML = orig; }, 2800); }
+  }
 }
 
 // ─── SUPABASE OPS ─────────────────────────────────────────────────────────────
