@@ -519,6 +519,7 @@
     <button class="nav-item" onclick="showTab('dashboard',this)">📈 Dashboard</button>
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
     <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
+    <button class="nav-item" onclick="showTab('contatos',this)">✉️ Contatos <span id="nav-contatos-badge" style="display:none;background:#EF4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;"></span></button>
 
     <div class="nav-section">Operações</div>
     <button class="nav-item" onclick="showTab('lancamentos',this)">📝 Lançamentos</button>
@@ -950,6 +951,15 @@
     <div id="empresa-individual-content"></div>
   </div>
 
+  <!-- CONTATOS DO SITE -->
+  <div id="tab-contatos" class="tab-content">
+    <div class="page-title" id="pt-contatos">Contatos do Site
+      <span id="contatos-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
+    </div>
+    <div class="page-sub" id="ps-contatos">Mensagens enviadas pelo formulário "Falar com a Arcade Hub" do site público.</div>
+    <div id="contatos-list"></div>
+  </div>
+
   <!-- MERCADO PAGO -->
   <div id="tab-mercadopago" class="tab-content">
     <div class="page-title" id="pt-mercadopago">Mercado Pago
@@ -1142,6 +1152,9 @@ let mpSaldoTs = null;         // quando o saldo foi consultado
 let mpSaldoLoading = false;
 let mpRealtimeOn = false;     // evita múltiplas subscriptions
 let mpPollTimer = null;
+// ─── Contatos do site ───
+let contatos = [];
+let contatosRealtimeOn = false;
 let custosExtras = []; // Array de custos extras carregados do Supabase
 let acoesCal = [];     // Array de acoes do calendario operacional
 let calExtraDates = []; // Datas vazias adicionadas manualmente (sem acoes)
@@ -1633,19 +1646,21 @@ async function saveEstrutura() {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
     sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
+    sb.from('contatos').select('*').order('created_at', { ascending: false }),
   ]);
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
   if (acData) acoesCal = acData;
   if (mpData) mpRecebimentos = mpData;
+  if (ctData) contatos = ctData;
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -1678,6 +1693,7 @@ function renderAll() {
   renderBalancoSocios();
   renderCalendario();
   renderMercadoPago();
+  renderContatos();
   renderNavEmpresas();
   setTimeout(makeAllEditable, 50);
 }
@@ -2196,6 +2212,87 @@ function renderMercadoPago(){
       <td style="font-weight:600;color:#059669;font-size:12px;white-space:nowrap;">${fmt(mpNum(r.valor)||0)}</td>
       <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${liq!==null?fmt(liq):'—'}</td>
     </tr>`;
+  }).join('');
+}
+
+// ─── CONTATOS DO SITE ────────────────────────────────────────────────────────
+function iniciarRealtimeContatos(){
+  if(contatosRealtimeOn) return;
+  contatosRealtimeOn = true;
+  try {
+    sb.channel('contatos-rt')
+      .on('postgres_changes', { event:'*', schema:'public', table:'contatos' }, (payload)=>{
+        const row = payload.new || payload.old;
+        if(!row) return;
+        if(payload.eventType === 'DELETE'){
+          contatos = contatos.filter(c => c.id !== row.id);
+        } else {
+          const i = contatos.findIndex(c => c.id === row.id);
+          if(i>=0) contatos[i] = row; else contatos.unshift(row);
+        }
+        contatos.sort((a,b)=> new Date(b.created_at||0) - new Date(a.created_at||0));
+        renderContatos();
+      })
+      .subscribe((status)=>{
+        const dot = document.getElementById('contatos-live-dot');
+        if(dot) dot.style.display = (status==='SUBSCRIBED') ? 'inline' : 'none';
+      });
+  } catch(_e){ contatosRealtimeOn = false; }
+}
+
+function updateContatosBadge(){
+  const naoLidos = contatos.filter(c => !c.lido).length;
+  const b = document.getElementById('nav-contatos-badge');
+  if(b){ if(naoLidos>0){ b.style.display='inline'; b.textContent=naoLidos; } else { b.style.display='none'; } }
+}
+
+async function marcarContatoLido(id, lido){
+  const c = contatos.find(x => String(x.id)===String(id));
+  if(!c) return;
+  c.lido = lido;
+  await sb.from('contatos').update({ lido }).eq('id', id);
+  renderContatos();
+}
+
+async function excluirContato(id){
+  if(!confirm('Excluir esta mensagem?')) return;
+  await sb.from('contatos').delete().eq('id', id);
+  contatos = contatos.filter(x => String(x.id)!==String(id));
+  renderContatos();
+}
+
+function renderContatos(){
+  iniciarRealtimeContatos();
+  updateContatosBadge();
+  const box = document.getElementById('contatos-list');
+  if(!box) return;
+  if(!contatos.length){
+    box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">Nenhuma mensagem ainda. Quando alguém enviar pelo site, aparece aqui.</div>`;
+    return;
+  }
+  box.innerHTML = contatos.map(c => {
+    const d = c.created_at ? new Date(c.created_at) : null;
+    const data = d ? d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    const contato = [c.email, c.whatsapp].filter(Boolean).join(' · ') || '—';
+    const naoLido = !c.lido;
+    const safeId = encodeURIComponent(String(c.id||''));
+    return `<div style="background:#fff;border:1px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-left:4px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:14px;color:#0A1628;">${escapeHtml(c.nome||'—')}</strong>
+          ${naoLido?'<span style="background:#1E6FFF;color:#fff;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:700;margin-left:6px;vertical-align:middle;">NOVO</span>':''}
+          <span style="display:inline-block;background:#EEF2FF;color:#1E6FFF;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px;">${escapeHtml(c.projeto||'Geral')}</span>
+        </div>
+        <span style="font-size:11px;color:#9CA3AF;white-space:nowrap;">${data}</span>
+      </div>
+      <div style="font-size:12px;color:#6B7280;margin:6px 0 8px;">${escapeHtml(contato)}</div>
+      <div style="font-size:13px;color:#374151;white-space:pre-wrap;line-height:1.5;">${escapeHtml(c.mensagem||'')}</div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+        <button onclick="marcarContatoLido(decodeURIComponent('${safeId}'), ${naoLido?'true':'false'})" style="background:${naoLido?'#10B981':'#E5E7EB'};color:${naoLido?'#fff':'#374151'};border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${naoLido?'✓ Marcar lido':'↩ Não lido'}</button>
+        ${c.email?`<a href="mailto:${escapeHtml(c.email)}?subject=${encodeURIComponent('Arcade Hub — '+(c.projeto||''))}" style="background:#1E6FFF;color:#fff;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">Responder</a>`:''}
+        <button onclick="excluirContato(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
