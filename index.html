@@ -72,6 +72,7 @@ html, body {
   min-height: 100%;
   margin: 0;
   overflow: hidden;
+  scroll-behavior: smooth;
   color: var(--text);
   font-family: var(--font-sans);
   background:
@@ -538,7 +539,7 @@ body.no-webgl::before {
 <div class="fx-vignette" aria-hidden="true"></div>
 
 <main class="shell" aria-label="Arcade Hub">
-  <header class="topbar">
+  <header class="topbar" id="top">
     <a class="brand" href="/" aria-label="Arcade Hub — início">
       <img src="logo.webp" alt="" width="44" height="44" onerror="this.onerror=null;this.src='logo.png'" />
       <span class="brand-copy">
@@ -547,8 +548,9 @@ body.no-webgl::before {
       </span>
     </a>
     <nav class="nav" aria-label="Navegação principal">
+      <a href="#top">Início</a>
       <a href="#portfolio">Portfólio</a>
-      <a href="mailto:suporte@arcadehub.tech">Contato</a>
+      <a href="#" onclick="abrirContato();return false;">Contato</a>
       <a href="/admin/">Admin</a>
     </nav>
   </header>
