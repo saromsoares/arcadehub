@@ -1022,9 +1022,9 @@
 
     <div class="section-title"><span>Recebimentos</span></div>
     <div class="table-wrap" style="overflow-x:auto;">
-      <table style="min-width:760px;">
+      <table style="min-width:900px;">
         <thead><tr>
-          <th>Data</th><th>Descrição</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+          <th>Data</th><th>Descrição</th><th>Empresa</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
         </tr></thead>
         <tbody id="mp-receb-body"></tbody>
       </table>
@@ -1326,6 +1326,21 @@ function getLanc(m, cid) {
 function getPlan(m, cid) {
   return planejado[`${m}:${cid}`] || { receita_p:0,custos_diretos_p:0,folha_p:0,impostos_p:0,despesas_adm_p:0,outras_despesas_p:0,headcount_p:0 };
 }
+// Receita realizada via Mercado Pago vinculada a uma empresa, por mês (valor bruto dos aprovados).
+// Camada separada: NÃO é somada em getLanc (que é editável), só nas agregações de receita.
+function getMpReceita(m, cid) {
+  const list = (typeof mpRecebimentos !== 'undefined' && mpRecebimentos) ? mpRecebimentos : [];
+  if (!cid || !list.length) return 0;
+  let soma = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || r.empresa_id !== cid) continue;
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || MONTHS[d.getMonth()] !== m) continue;
+    soma += mpNum(r.valor) || 0;
+  }
+  return soma;
+}
 function calcRes(e) {
   return (e.receita||0)-(e.custos_diretos||0)-(e.folha||0)-(e.impostos||0)-(e.despesas_adm||0)-(e.outras_despesas||0);
 }
@@ -1435,8 +1450,9 @@ function getConsolidado() {
     COMPANIES.forEach(c => {
       const e = getLanc(m, c.id), p = getPlan(m, c.id);
       const extras = getTotalCustosExtras(m, c.id);
-      receita += e.receita||0; custos += calcCustos(e) + extras;
-      resultado += calcRes(e) - extras; headcount += e.headcount||0;
+      const recMp = getMpReceita(m, c.id);
+      receita += (e.receita||0) + recMp; custos += calcCustos(e) + extras;
+      resultado += calcRes(e) + recMp - extras; headcount += e.headcount||0;
       receitaP += p.receita_p||0; resultadoP += calcResP(p);
     });
     return {mes:m, receita, custos, resultado, headcount, receitaP, resultadoP};
@@ -1456,7 +1472,8 @@ function getCompaniesYTD() {
     MONTHS.forEach(m => {
       const e=getLanc(m,c.id),p=getPlan(m,c.id);
       const extras = getTotalCustosExtras(m, c.id);
-      receita+=e.receita||0; custos+=calcCustos(e)+extras; resultado+=calcRes(e)-extras;
+      const recMp = getMpReceita(m, c.id);
+      receita+=(e.receita||0)+recMp; custos+=calcCustos(e)+extras; resultado+=calcRes(e)+recMp-extras;
       receitaP+=p.receita_p||0; resultadoP+=calcResP(p); hc+=e.headcount||0;
     });
     const atR=receitaP>0?receita/receitaP:0, atRe=resultadoP!==0?resultado/resultadoP:0;
@@ -1469,7 +1486,8 @@ function getEmpresaYTD(cid) {
   MONTHS.forEach(m => {
     const e=getLanc(m,cid);
     const extras = getTotalCustosExtras(m, cid);
-    receita+=e.receita||0; custos+=calcCustos(e)+extras; resultado+=calcRes(e)-extras; hc+=e.headcount||0;
+    const recMp = getMpReceita(m, cid);
+    receita+=(e.receita||0)+recMp; custos+=calcCustos(e)+extras; resultado+=calcRes(e)+recMp-extras; hc+=e.headcount||0;
   });
   return {receita,custos,resultado,hcAvg:hc/12};
 }
@@ -2238,7 +2256,7 @@ function renderMercadoPago(){
 
   const body = document.getElementById('mp-receb-body');
   if(!mpRecebimentos.length){
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhum recebimento ainda. Assim que um pagamento cair no Mercado Pago, ele aparece aqui automaticamente.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhum recebimento ainda. Assim que um pagamento cair no Mercado Pago, ele aparece aqui automaticamente.</td></tr>`;
     return;
   }
   const statusInfo = (st)=>({
@@ -2255,6 +2273,7 @@ function renderMercadoPago(){
     return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
       <td style="font-size:11px;white-space:nowrap;">${dataFmt}</td>
       <td style="font-size:12px;">${escapeHtml(r.descricao||'—')}</td>
+      <td>${mpEmpresaSelect(r)}</td>
       <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.payer_nome||r.payer_email||'—')}</td>
       <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.tipo_pagamento||'—')}</td>
       <td><span style="background:${st.c}22;color:${st.c};border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;">${escapeHtml(st.l)}</span></td>
@@ -2262,6 +2281,25 @@ function renderMercadoPago(){
       <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${liq!==null?fmt(liq):'—'}</td>
     </tr>`;
   }).join('');
+}
+
+// Seletor de empresa por recebimento (vincula a receita à empresa no painel).
+function mpEmpresaSelect(r){
+  const cur = r.empresa_id || '';
+  const opts = ['<option value="">— não atribuído —</option>']
+    .concat(COMPANIES.map(c => `<option value="${c.id}"${cur===c.id?' selected':''}>${escapeHtml(c.emoji+' '+c.name)}</option>`))
+    .join('');
+  const naoAtrib = !cur;
+  return `<select onchange="atribuirEmpresaMP('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:140px;background:${naoAtrib?'#FFFBEB':'#fff'};">${opts}</select>`;
+}
+
+async function atribuirEmpresaMP(id, empresaId){
+  const r = mpRecebimentos.find(x=>String(x.id)===String(id));
+  if(r) r.empresa_id = empresaId || null;
+  const { error } = await sb.from('mp_recebimentos').update({ empresa_id: empresaId || null }).eq('id', id);
+  if(error){ toast('Erro ao vincular: '+(error.message||error)); return; }
+  toast(empresaId ? 'Recebimento vinculado.' : 'Vínculo removido.');
+  renderAll();
 }
 
 // ─── CONTATOS DO SITE ────────────────────────────────────────────────────────
