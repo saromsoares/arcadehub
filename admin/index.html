@@ -520,6 +520,7 @@
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
     <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
     <button class="nav-item" onclick="showTab('contatos',this)">✉️ Contatos <span id="nav-contatos-badge" style="display:none;background:#EF4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;"></span></button>
+    <button class="nav-item" onclick="showTab('email',this)">📧 E-mail</button>
 
     <div class="nav-section">Operações</div>
     <button class="nav-item" onclick="showTab('lancamentos',this)">📝 Lançamentos</button>
@@ -958,6 +959,43 @@
     </div>
     <div class="page-sub" id="ps-contatos">Mensagens enviadas pelo formulário "Falar com a Arcade Hub" do site público.</div>
     <div id="contatos-list"></div>
+  </div>
+
+  <!-- E-MAIL -->
+  <div id="tab-email" class="tab-content">
+    <div class="page-title" id="pt-email">E-mail
+      <span id="email-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
+    </div>
+    <div class="page-sub" id="ps-email">Envie e-mails pela caixa da Arcade Hub (Hostinger). Os enviados ficam registrados abaixo.</div>
+
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
+      <div style="display:grid;gap:10px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Para <span style="color:#9CA3AF;font-weight:400;">(separe vários por vírgula)</span></label>
+          <input id="email-to" type="text" placeholder="destinatario@exemplo.com" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+        <div id="email-cc-row" style="display:none;">
+          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Cc</label>
+          <input id="email-cc" type="text" placeholder="copia@exemplo.com" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Assunto</label>
+          <input id="email-subject" type="text" placeholder="Assunto" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Mensagem</label>
+          <textarea id="email-body" rows="8" placeholder="Escreva sua mensagem..." style="width:100%;padding:10px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <button id="email-send-btn" onclick="enviarEmail()" style="background:#1E6FFF;color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">✉️ Enviar</button>
+          <button onclick="toggleCc()" style="background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:600;cursor:pointer;">+ Cc</button>
+          <span id="email-feedback" style="font-size:12px;font-weight:600;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>Enviados</span></div>
+    <div id="emails-list"></div>
   </div>
 
   <!-- MERCADO PAGO -->
@@ -1646,7 +1684,7 @@ async function saveEstrutura() {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
@@ -1654,6 +1692,7 @@ async function loadAll() {
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
+    sb.from('emails').select('*').order('created_at', { ascending: false }).limit(200),
   ]);
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
@@ -1661,6 +1700,7 @@ async function loadAll() {
   if (acData) acoesCal = acData;
   if (mpData) mpRecebimentos = mpData;
   if (ctData) contatos = ctData;
+  if (emData) emails = emData;
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -1694,6 +1734,7 @@ function renderAll() {
   renderCalendario();
   renderMercadoPago();
   renderContatos();
+  renderEmails();
   renderNavEmpresas();
   setTimeout(makeAllEditable, 50);
 }
@@ -2291,6 +2332,105 @@ function renderContatos(){
         <button onclick="marcarContatoLido(decodeURIComponent('${safeId}'), ${naoLido?'true':'false'})" style="background:${naoLido?'#10B981':'#E5E7EB'};color:${naoLido?'#fff':'#374151'};border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${naoLido?'✓ Marcar lido':'↩ Não lido'}</button>
         ${c.email?`<a href="mailto:${escapeHtml(c.email)}?subject=${encodeURIComponent('Arcade Hub — '+(c.projeto||''))}" style="background:#1E6FFF;color:#fff;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">Responder</a>`:''}
         <button onclick="excluirContato(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── E-MAIL ──────────────────────────────────────────────────────────────────
+let emails = [];
+let emailsRealtimeOn = false;
+
+function toggleCc(){
+  const r = document.getElementById('email-cc-row');
+  if(r) r.style.display = (r.style.display==='none' || !r.style.display) ? 'block' : 'none';
+}
+
+async function enviarEmail(){
+  const to = document.getElementById('email-to').value.trim();
+  const cc = document.getElementById('email-cc').value.trim();
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value.trim();
+  const fb = document.getElementById('email-feedback');
+  const btn = document.getElementById('email-send-btn');
+  if(!to){ fb.style.color='#EF4444'; fb.textContent='Informe o destinatário.'; return; }
+  if(!subject){ fb.style.color='#EF4444'; fb.textContent='Informe o assunto.'; return; }
+  if(!body){ fb.style.color='#EF4444'; fb.textContent='Escreva a mensagem.'; return; }
+  btn.disabled = true; const orig = btn.textContent; btn.textContent='⏳ Enviando...';
+  fb.style.color='#6B7280'; fb.textContent='';
+  try {
+    const { data, error } = await sb.functions.invoke('email-send', { body:{ to, cc, subject, text: body } });
+    if(error) throw error;
+    if(data && data.ok===false) throw new Error(data.error||'Falha no envio.');
+    fb.style.color='#10B981'; fb.textContent='✓ Enviado!';
+    document.getElementById('email-to').value='';
+    document.getElementById('email-cc').value='';
+    document.getElementById('email-subject').value='';
+    document.getElementById('email-body').value='';
+    await recarregarEmails();
+  } catch(e){
+    fb.style.color='#EF4444'; fb.textContent='Erro: '+((e&&e.message)?e.message:String(e));
+  } finally {
+    btn.disabled=false; btn.textContent=orig;
+  }
+}
+
+async function recarregarEmails(){
+  const { data } = await sb.from('emails').select('*').order('created_at',{ascending:false}).limit(200);
+  if(data){ emails = data; renderEmails(); }
+}
+
+async function excluirEmail(id){
+  if(!confirm('Excluir este e-mail do histórico?')) return;
+  await sb.from('emails').delete().eq('id', id);
+  emails = emails.filter(x=>String(x.id)!==String(id));
+  renderEmails();
+}
+
+function iniciarRealtimeEmails(){
+  if(emailsRealtimeOn) return;
+  emailsRealtimeOn = true;
+  try {
+    sb.channel('emails-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'emails'},(payload)=>{
+        const row = payload.new||payload.old; if(!row) return;
+        if(payload.eventType==='DELETE'){ emails = emails.filter(e=>e.id!==row.id); }
+        else { const i=emails.findIndex(e=>e.id===row.id); if(i>=0) emails[i]=row; else emails.unshift(row); }
+        emails.sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
+        renderEmails();
+        const dot=document.getElementById('email-live-dot'); if(dot) dot.style.display='inline';
+      })
+      .subscribe();
+  } catch(_e){ emailsRealtimeOn=false; }
+}
+
+function renderEmails(){
+  iniciarRealtimeEmails();
+  const box = document.getElementById('emails-list');
+  if(!box) return;
+  const enviados = emails.filter(e=>e.direcao!=='in');
+  if(!enviados.length){
+    box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">Nenhum e-mail enviado ainda.</div>`;
+    return;
+  }
+  box.innerHTML = enviados.map(e=>{
+    const d = e.created_at ? new Date(e.created_at) : null;
+    const data = d ? d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+    const falhou = e.status==='falha';
+    const safeId = encodeURIComponent(String(e.id||''));
+    return `<div style="background:#fff;border:1px solid ${falhou?'#EF4444':'#E5E7EB'};border-left:4px solid ${falhou?'#EF4444':'#10B981'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:14px;color:#0A1628;">${escapeHtml(e.assunto||'(sem assunto)')}</strong>
+          <span style="display:inline-block;background:${falhou?'#FEE2E2':'#D1FAE5'};color:${falhou?'#B91C1C':'#065F46'};border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px;">${falhou?'FALHOU':'ENVIADO'}</span>
+        </div>
+        <span style="font-size:11px;color:#9CA3AF;white-space:nowrap;">${data}</span>
+      </div>
+      <div style="font-size:12px;color:#6B7280;margin:6px 0 8px;">Para: ${escapeHtml(e.para||'—')}${e.cc?' · Cc: '+escapeHtml(e.cc):''}</div>
+      <div style="font-size:13px;color:#374151;white-space:pre-wrap;line-height:1.5;max-height:120px;overflow:auto;">${escapeHtml(e.corpo_texto||'')}</div>
+      ${falhou&&e.erro?`<div style="font-size:11px;color:#B91C1C;margin-top:6px;">⚠ ${escapeHtml(e.erro)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+        <button onclick="excluirEmail(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
       </div>
     </div>`;
   }).join('');
