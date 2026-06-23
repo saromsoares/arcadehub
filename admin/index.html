@@ -759,7 +759,7 @@
     <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios − Custos Consumidos (realizado dos lançamentos, Abr–Dez). O caixa começa com o capital que os sócios efetivamente aportaram e vai sendo abatido conforme os custos são lançados.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses Jan/Fev/Mar = pré-operação (bloqueados).</p>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses Jan/Fev/Mar = pré-operação (bloqueados). Aportes recebidos via Mercado Pago aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba 💳 Mercado Pago).</p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1000px;">
         <thead><tr>
@@ -2732,7 +2732,7 @@ function renderEstrutura(totals) {
       const meta = getAporteMetaSocio(socio);
       const pct = meta>0 ? confirmado/meta : 0;
       const pctColor = pct>=1 ? '#059669' : (confirmado>0 ? '#F59E0B' : '#9CA3AF');
-      return `<tr><td><strong style="color:${sColor}">● ${socio}</strong></td>` +
+      const rowSocio = `<tr><td><strong style="color:${sColor}">● ${socio}</strong></td>` +
         MONTHS_ALL.map(mm => {
           const isOp = MONTHS_OP.includes(mm);
           const val = getAporteSocioMes(socio, mm) || '';
@@ -2745,6 +2745,14 @@ function renderEstrutura(totals) {
         `<td style="padding:4px 6px;background:#F5F3FF;"><input class="inp" type="number" value="${meta||''}" placeholder="30000" style="width:80px;"
             oninput="setAporteMetaSocio('${socio}',this.value)" /></td>` +
         `<td style="font-weight:700;color:${pctColor};">${meta>0?fmtPct(pct):'—'}</td></tr>`;
+      // Linha read-only: aportes recebidos via Mercado Pago (somam no Confirmado, não na grade editável)
+      const mpTot = getMpAporte(socio);
+      const mpRow = mpTot > 0
+        ? `<tr style="background:#FAF5FF"><td style="font-size:11px;color:#7C3AED;padding-left:16px;" title="Aporte recebido via Mercado Pago — vinculado nos recebimentos">↳ 💳 via Mercado Pago</td>` +
+          MONTHS_ALL.map(mm => { const v = getMpAporte(socio, mm); return `<td style="font-size:11px;color:#7C3AED;text-align:center;">${v>0?fmt(v):''}</td>`; }).join('') +
+          `<td style="font-size:11px;font-weight:700;color:#7C3AED;">${fmt(mpTot)}</td><td></td><td></td></tr>`
+        : '';
+      return rowSocio + mpRow;
     }).join('') +
     // Linha TOTAL
     `<tr class="table-total"><td>TOTAL</td>` +
