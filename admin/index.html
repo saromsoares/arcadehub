@@ -1024,7 +1024,7 @@
     <div class="table-wrap" style="overflow-x:auto;">
       <table style="min-width:900px;">
         <thead><tr>
-          <th>Data</th><th>Descrição</th><th>Empresa</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+          <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
         </tr></thead>
         <tbody id="mp-receb-body"></tbody>
       </table>
@@ -1341,6 +1341,24 @@ function getMpReceita(m, cid) {
   }
   return soma;
 }
+// Aporte de sócio realizado via Mercado Pago (recebimento marcado como "aporte:SOCIO").
+// Camada separada: NÃO entra em getAporteSocioMes (grade editável), só nas agregações de aporte/caixa.
+function getMpAporte(socio, mes) {
+  const list = (typeof mpRecebimentos !== 'undefined' && mpRecebimentos) ? mpRecebimentos : [];
+  if (!socio || !list.length) return 0;
+  const tag = 'aporte:' + socio;
+  let soma = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || r.empresa_id !== tag) continue;
+    if (mes) {
+      const dRaw = r.date_approved || r.date_created;
+      const d = dRaw ? new Date(dRaw) : null;
+      if (!d || isNaN(d.getTime()) || MONTHS[d.getMonth()] !== mes) continue;
+    }
+    soma += mpNum(r.valor) || 0;
+  }
+  return soma;
+}
 function calcRes(e) {
   return (e.receita||0)-(e.custos_diretos||0)-(e.folha||0)-(e.impostos||0)-(e.despesas_adm||0)-(e.outras_despesas||0);
 }
@@ -1385,21 +1403,22 @@ function getCategoriasComCusto(cid) {
 function getTotalAportes() {
   // Suporta formato novo {SOCIO: {Mes: val}} e legado {Mes: val}
   const ap = estrutura.aportes || {};
+  const MM = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  let base;
   if (SOCIOS.some(s => ap[s] !== undefined && typeof ap[s] === 'object')) {
-    return SOCIOS.reduce((total, s) => {
-      return total + ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-        .reduce((a, m) => a + (ap[s]?.[m] || 0), 0);
-    }, 0);
+    base = SOCIOS.reduce((total, s) => total + MM.reduce((a, m) => a + (ap[s]?.[m] || 0), 0), 0);
+  } else {
+    base = MM.reduce((a,m)=>a+(ap[m]||0),0); // Legado
   }
-  // Legado
-  return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].reduce((a,m)=>a+(ap[m]||0),0);
+  const mp = SOCIOS.reduce((a,s)=>a+getMpAporte(s), 0); // aportes via Mercado Pago
+  return base + mp;
 }
 function getAporteSocioMes(socio, mes) {
   return estrutura.aportes?.[socio]?.[mes] || 0;
 }
 function getAporteSocioTotal(socio) {
   return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-    .reduce((a, m) => a + getAporteSocioMes(socio, m), 0);
+    .reduce((a, m) => a + getAporteSocioMes(socio, m), 0) + getMpAporte(socio);
 }
 // Meta de aporte por sócio (default 30k). Editável; 0 = sócio não aporta.
 function getAporteMetaSocio(socio) {
@@ -1427,7 +1446,7 @@ function setAporteMetaSocio(socio, val) {
   saveEstrutura();
 }
 function getAporteMesTotal(mes) {
-  return SOCIOS.reduce((a, s) => a + getAporteSocioMes(s, mes), 0);
+  return SOCIOS.reduce((a, s) => a + getAporteSocioMes(s, mes) + getMpAporte(s, mes), 0);
 }
 function getStatus(real, plan, invert=false) {
   if (!plan || plan===0) return 'SEM DADOS';
@@ -2283,14 +2302,18 @@ function renderMercadoPago(){
   }).join('');
 }
 
-// Seletor de empresa por recebimento (vincula a receita à empresa no painel).
+// Seletor de destino por recebimento: empresa (vira receita) ou aporte de sócio (vira caixa).
+function socioLabel(s){ return s.charAt(0) + s.slice(1).toLowerCase(); }
 function mpEmpresaSelect(r){
   const cur = r.empresa_id || '';
-  const opts = ['<option value="">— não atribuído —</option>']
-    .concat(COMPANIES.map(c => `<option value="${c.id}"${cur===c.id?' selected':''}>${escapeHtml(c.emoji+' '+c.name)}</option>`))
-    .join('');
+  const empOpts = COMPANIES.map(c => `<option value="${c.id}"${cur===c.id?' selected':''}>${escapeHtml(c.emoji+' '+c.name)}</option>`).join('');
+  const apOpts = SOCIOS.map(s => `<option value="aporte:${s}"${cur==='aporte:'+s?' selected':''}>💰 Aporte — ${escapeHtml(socioLabel(s))}</option>`).join('');
   const naoAtrib = !cur;
-  return `<select onchange="atribuirEmpresaMP('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:140px;background:${naoAtrib?'#FFFBEB':'#fff'};">${opts}</select>`;
+  return `<select onchange="atribuirEmpresaMP('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:150px;background:${naoAtrib?'#FFFBEB':'#fff'};">`
+    + `<option value="">— não atribuído —</option>`
+    + `<optgroup label="Receita de empresa">${empOpts}</optgroup>`
+    + `<optgroup label="Aporte de sócio (caixa)">${apOpts}</optgroup>`
+    + `</select>`;
 }
 
 async function atribuirEmpresaMP(id, empresaId){
