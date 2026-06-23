@@ -966,9 +966,17 @@
     <div class="page-title" id="pt-email">E-mail
       <span id="email-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
     </div>
-    <div class="page-sub" id="ps-email">Envie e-mails pela caixa da Arcade Hub (Hostinger). Os enviados ficam registrados abaixo.</div>
+    <div class="page-sub" id="ps-email">Caixa de e-mail da Arcade Hub (Hostinger): mensagens recebidas e enviadas.</div>
 
-    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button id="ev-in-btn" onclick="setEmailView('in')" style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">📥 Recebidos <span id="email-unread-badge" style="display:none;background:#fff;color:#1E6FFF;border-radius:9px;padding:0 6px;font-size:10px;margin-left:3px;"></span></button>
+      <button id="ev-out-btn" onclick="setEmailView('out')" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">📤 Enviados</button>
+      <button onclick="abrirCompositor()" style="background:#10B981;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">✏️ Escrever</button>
+      <button id="email-sync-btn" onclick="sincronizarEmails()" style="margin-left:auto;background:#0A1628;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Sincronizar</button>
+      <span id="email-sync-info" style="font-size:11px;color:#9CA3AF;width:100%;text-align:right;"></span>
+    </div>
+
+    <div id="email-compositor" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
       <div style="display:grid;gap:10px;">
         <div>
           <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Para <span style="color:#9CA3AF;font-weight:400;">(separe vários por vírgula)</span></label>
@@ -994,7 +1002,7 @@
       </div>
     </div>
 
-    <div class="section-title"><span>Enviados</span></div>
+    <div class="section-title"><span id="email-list-title">Recebidos</span></div>
     <div id="emails-list"></div>
   </div>
 
@@ -2340,10 +2348,52 @@ function renderContatos(){
 // ─── E-MAIL ──────────────────────────────────────────────────────────────────
 let emails = [];
 let emailsRealtimeOn = false;
+let emailView = 'in';
 
 function toggleCc(){
   const r = document.getElementById('email-cc-row');
   if(r) r.style.display = (r.style.display==='none' || !r.style.display) ? 'block' : 'none';
+}
+
+function updateEmailToggle(){
+  const inb = document.getElementById('ev-in-btn');
+  const outb = document.getElementById('ev-out-btn');
+  if(inb){ inb.style.background = emailView==='in'?'#1E6FFF':'#EEF2FF'; inb.style.color = emailView==='in'?'#fff':'#1E6FFF'; }
+  if(outb){ outb.style.background = emailView==='out'?'#1E6FFF':'#EEF2FF'; outb.style.color = emailView==='out'?'#fff':'#1E6FFF'; }
+  const t = document.getElementById('email-list-title');
+  if(t) t.textContent = emailView==='in' ? 'Recebidos' : 'Enviados';
+}
+
+function setEmailView(v){
+  emailView = v;
+  const comp = document.getElementById('email-compositor');
+  if(comp && v==='in') comp.style.display='none';
+  renderEmails();
+}
+
+function abrirCompositor(){
+  emailView = 'out';
+  const comp = document.getElementById('email-compositor');
+  if(comp) comp.style.display='block';
+  renderEmails();
+  const to = document.getElementById('email-to'); if(to) to.focus();
+}
+
+async function sincronizarEmails(){
+  const btn = document.getElementById('email-sync-btn');
+  const info = document.getElementById('email-sync-info');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Sincronizando...'; }
+  try {
+    const { data, error } = await sb.functions.invoke('email-sync');
+    if(error) throw error;
+    if(data && data.ok===false) throw new Error(data.error||'Falha na sincronização.');
+    await recarregarEmails();
+    if(info){ const n = (data && typeof data.novos==='number') ? data.novos : 0; info.style.color='#10B981'; info.textContent = n>0 ? `✓ ${n} novo(s) e-mail(s) recebido(s)` : '✓ Caixa atualizada'; }
+  } catch(e){
+    if(info){ info.style.color='#EF4444'; info.textContent='Erro: '+((e&&e.message)?e.message:String(e)); }
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='🔄 Sincronizar'; }
+  }
 }
 
 async function enviarEmail(){
@@ -2368,6 +2418,8 @@ async function enviarEmail(){
     document.getElementById('email-subject').value='';
     document.getElementById('email-body').value='';
     await recarregarEmails();
+    emailView = 'out';
+    renderEmails();
   } catch(e){
     fb.style.color='#EF4444'; fb.textContent='Erro: '+((e&&e.message)?e.message:String(e));
   } finally {
@@ -2376,8 +2428,16 @@ async function enviarEmail(){
 }
 
 async function recarregarEmails(){
-  const { data } = await sb.from('emails').select('*').order('created_at',{ascending:false}).limit(200);
+  const { data } = await sb.from('emails').select('*').order('created_at',{ascending:false}).limit(300);
   if(data){ emails = data; renderEmails(); }
+}
+
+async function marcarEmailLido(id, lido){
+  const e = emails.find(x=>String(x.id)===String(id));
+  if(!e) return;
+  e.lido = lido;
+  await sb.from('emails').update({ lido }).eq('id', id);
+  renderEmails();
 }
 
 async function excluirEmail(id){
@@ -2404,20 +2464,43 @@ function iniciarRealtimeEmails(){
   } catch(_e){ emailsRealtimeOn=false; }
 }
 
+function updateEmailBadge(){
+  const naoLidos = emails.filter(e=>e.direcao==='in' && !e.lido).length;
+  const b = document.getElementById('email-unread-badge');
+  if(b){ if(naoLidos>0){ b.style.display='inline'; b.textContent=naoLidos; } else b.style.display='none'; }
+}
+
 function renderEmails(){
   iniciarRealtimeEmails();
+  updateEmailBadge();
+  updateEmailToggle();
   const box = document.getElementById('emails-list');
   if(!box) return;
-  const enviados = emails.filter(e=>e.direcao!=='in');
-  if(!enviados.length){
-    box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">Nenhum e-mail enviado ainda.</div>`;
+  const lista = emails.filter(e => emailView==='in' ? e.direcao==='in' : e.direcao!=='in');
+  if(!lista.length){
+    box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">${emailView==='in'?'Nenhum e-mail recebido. Clique em <strong>🔄 Sincronizar</strong> para buscar na caixa.':'Nenhum e-mail enviado ainda.'}</div>`;
     return;
   }
-  box.innerHTML = enviados.map(e=>{
+  box.innerHTML = lista.map(e=>{
     const d = e.created_at ? new Date(e.created_at) : null;
     const data = d ? d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
-    const falhou = e.status==='falha';
     const safeId = encodeURIComponent(String(e.id||''));
+    if(emailView==='in'){
+      const naoLido = !e.lido;
+      return `<div style="background:#fff;border:1px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-left:4px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div><strong style="font-size:14px;color:#0A1628;">${escapeHtml(e.assunto||'(sem assunto)')}</strong>
+          ${naoLido?'<span style="background:#1E6FFF;color:#fff;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:700;margin-left:6px;vertical-align:middle;">NOVO</span>':''}</div>
+          <span style="font-size:11px;color:#9CA3AF;white-space:nowrap;">${data}</span>
+        </div>
+        <div style="font-size:12px;color:#6B7280;margin:6px 0 0;">De: ${escapeHtml(e.de||'—')}</div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+          <button onclick="marcarEmailLido(decodeURIComponent('${safeId}'), ${naoLido?'true':'false'})" style="background:${naoLido?'#10B981':'#E5E7EB'};color:${naoLido?'#fff':'#374151'};border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${naoLido?'✓ Marcar lido':'↩ Não lido'}</button>
+          <button onclick="excluirEmail(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
+        </div>
+      </div>`;
+    }
+    const falhou = e.status==='falha';
     return `<div style="background:#fff;border:1px solid ${falhou?'#EF4444':'#E5E7EB'};border-left:4px solid ${falhou?'#EF4444':'#10B981'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
         <div>
