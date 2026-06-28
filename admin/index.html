@@ -704,15 +704,15 @@
     <div style="background:#fff;border-radius:12px;border:1px solid #E5E7EB;padding:18px;margin-bottom:20px;display:flex;gap:20px;">
       <div style="flex:1;">
         <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Runway Mínimo (meses)</label>
-        <input class="inp" type="number" id="meta-runway" value="6" oninput="saveEstrutura()" />
+        <input class="inp" type="number" id="meta-runway" data-meta="runway" value="6" oninput="saveEstrutura(this)" />
       </div>
       <div style="flex:1;">
         <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Margem Mínima (ex: 0.15 = 15%)</label>
-        <input class="inp" type="number" step="0.01" id="meta-margem" value="0.15" oninput="saveEstrutura()" />
+        <input class="inp" type="number" step="0.01" id="meta-margem" data-meta="margem" value="0.15" oninput="saveEstrutura(this)" />
       </div>
       <div style="flex:1;">
         <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;text-transform:uppercase;">Burn Rate Máximo (R$)</label>
-        <input class="inp" type="number" id="meta-burnrate" value="0" oninput="saveEstrutura()" />
+        <input class="inp" type="number" id="meta-burnrate" data-meta="burnRateMax" value="0" oninput="saveEstrutura(this)" />
       </div>
     </div>
     <div class="section-title"><span id="plan-section-title">Planejado por Empresa</span></div>
@@ -746,12 +746,12 @@
   <!-- ESTRUTURA DE CUSTOS (Arcade Hub Mae) -->
   <div id="tab-estrutura" class="tab-content">
     <div class="page-title" id="pt-estrutura">Estrutura de Custos — Arcade Hub <span class="saving" id="saving-estr">Salvando...</span></div>
-    <div class="page-sub" id="ps-estrutura">Custos gerais de manutencao da empresa mae Arcade Hub. Periodo operacional: <strong>01/04/2025</strong> em diante.</div>
+    <div class="page-sub" id="ps-estrutura">Custos gerais de manutenção da empresa mãe Arcade Hub. Período operacional: <strong>01/04/2025</strong> em diante.</div>
 
     <div class="caixa-block">
       <div class="caixa-input-wrap">
-        <div class="caixa-label">Inicio da Operacao</div>
-        <div class="caixa-desc">Data de abertura do periodo</div>
+        <div class="caixa-label">Início da Operação</div>
+        <div class="caixa-desc">Data de abertura do período</div>
         <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);">01/04/2025</div>
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
@@ -775,8 +775,8 @@
       </table>
     </div>
 
-    <div class="section-title"><span>Gestao de Custos Mes a Mes</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrao. Preencha o mes para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados. <strong style="color:#059669;">▸ valor</strong> = <strong>Realizado</strong> (soma dos custos lançados em Lançamentos, todas as empresas, por categoria/mês). Verde = dentro do planejado, vermelho = acima.</p>
+    <div class="section-title"><span>Gestão de Custos Mês a Mês</span></div>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrão. Preencha o mês para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados. <strong style="color:#059669;">▸ valor</strong> = <strong>Realizado</strong> (soma dos custos lançados em Lançamentos, todas as empresas, por categoria/mês). Verde = dentro do planejado, vermelho = acima.</p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1200px;">
         <thead><tr>
@@ -797,13 +797,13 @@
     <div class="two-col">
       <div>
         <div class="section-title"><span>Investimento Inicial</span></div>
-        <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Gastos unicos de estruturacao (nao recorrentes).</p>
+        <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Gastos únicos de estruturação (não recorrentes).</p>
         <div class="table-wrap">
           <table><thead><tr><th>Categoria</th><th>Valor Gasto (R$)</th></tr></thead>
           <tbody id="inv-table"></tbody></table>
         </div>
         <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:9px 14px;margin-top:10px;font-size:11px;color:#92400E;">
-          O investimento inicial e apenas um registro historico e nao e deduzido automaticamente do caixa.
+          O investimento inicial é apenas um registro histórico e não é deduzido automaticamente do caixa.
         </div>
       </div>
       <div>
@@ -813,16 +813,16 @@
           <div style="font-family:sans-serif;font-weight:700;font-size:13px;margin-bottom:12px;color:#111827;">Metas Globais</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Runway Minimo (meses)</label>
-              <input class="inp" type="number" id="meta-runway" value="6" oninput="saveEstrutura()" />
+              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Runway Mínimo (meses)</label>
+              <input class="inp" type="number" data-meta="runway" value="6" oninput="saveEstrutura(this)" />
             </div>
             <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Margem Minima (ex: 0.15 = 15%)</label>
-              <input class="inp" type="number" step="0.01" id="meta-margem" value="0.15" oninput="saveEstrutura()" />
+              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Margem Mínima (ex: 0.15 = 15%)</label>
+              <input class="inp" type="number" step="0.01" data-meta="margem" value="0.15" oninput="saveEstrutura(this)" />
             </div>
             <div>
-              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Burn Rate Maximo (R$)</label>
-              <input class="inp" type="number" id="meta-burnrate" value="0" oninput="saveEstrutura()" />
+              <label style="font-size:11px;color:#6B7280;font-weight:600;display:block;margin-bottom:4px;">Burn Rate Máximo (R$)</label>
+              <input class="inp" type="number" data-meta="burnRateMax" value="0" oninput="saveEstrutura(this)" />
             </div>
           </div>
         </div>
@@ -860,7 +860,7 @@
   <!-- CALENDÁRIO OPERACIONAL -->
   <div id="tab-calendario" class="tab-content">
     <div class="page-title" id="pt-calendario">Calendário Operacional</div>
-    <div class="page-sub" id="ps-calendario">Acompanhe acoes e responsaveis por data — modelo Trello. Adicione datas e organize tarefas do dia a dia.</div>
+    <div class="page-sub" id="ps-calendario">Acompanhe ações e responsáveis por data — modelo Trello. Adicione datas e organize tarefas do dia a dia.</div>
 
     <div class="cal-toolbar">
       <input type="date" id="cal-new-date" />
@@ -875,7 +875,7 @@
           Hoje <span class="cal-filter-count" id="cal-count-hoje">0</span>
         </button>
         <button class="cal-filter-quick" id="cal-qf-semana" onclick="toggleCalQuickFilter('semana')">
-          Proximos 7 dias <span class="cal-filter-count" id="cal-count-semana">0</span>
+          Próximos 7 dias <span class="cal-filter-count" id="cal-count-semana">0</span>
         </button>
       </div>
     </div>
@@ -887,7 +887,7 @@
           <div class="cal-filter-title">Status</div>
           <label class="cal-filter-check"><input type="checkbox" value="todo" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#9CA3AF"></span>A fazer <span class="cal-filter-count" id="cal-count-todo">0</span></label>
           <label class="cal-filter-check"><input type="checkbox" value="doing" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#3B82F6"></span>Em andamento <span class="cal-filter-count" id="cal-count-doing">0</span></label>
-          <label class="cal-filter-check"><input type="checkbox" value="done" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#10B981"></span>Concluido <span class="cal-filter-count" id="cal-count-done">0</span></label>
+          <label class="cal-filter-check"><input type="checkbox" value="done" onchange="onCalFilterChange()" checked><span class="cal-filter-dot" style="background:#10B981"></span>Concluído <span class="cal-filter-count" id="cal-count-done">0</span></label>
         </div>
 
         <div class="cal-filter-section">
@@ -905,16 +905,16 @@
   <!-- Modal de Acao -->
   <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="if(event.target===this)closeCalModal()">
     <div class="cal-modal">
-      <h3 id="cal-modal-title">Nova Acao</h3>
+      <h3 id="cal-modal-title">Nova Ação</h3>
       <input type="hidden" id="cal-modal-id" />
       <input type="hidden" id="cal-modal-data" />
-      <label>Titulo</label>
-      <input type="text" id="cal-modal-titulo" placeholder="Ex: Reuniao com cliente X" />
-      <label>Descricao (opcional)</label>
-      <textarea id="cal-modal-descricao" placeholder="Detalhes da acao..."></textarea>
-      <label>Responsaveis (selecione um ou mais)</label>
+      <label>Título</label>
+      <input type="text" id="cal-modal-titulo" placeholder="Ex: Reunião com cliente X" />
+      <label>Descrição (opcional)</label>
+      <textarea id="cal-modal-descricao" placeholder="Detalhes da ação..."></textarea>
+      <label>Responsáveis (selecione um ou mais)</label>
       <div id="cal-modal-responsaveis" class="cal-resp-picker"></div>
-      <label>Tempo de execucao (dias)</label>
+      <label>Tempo de execução (dias)</label>
       <input type="number" id="cal-modal-dias" min="1" step="1" value="1" />
       <div id="cal-modal-deadline-hint" style="font-size:11px;color:#6B7280;margin-top:4px;"></div>
 
@@ -922,7 +922,7 @@
       <select id="cal-modal-status">
         <option value="todo">A fazer</option>
         <option value="doing">Em andamento</option>
-        <option value="done">Concluido</option>
+        <option value="done">Concluído</option>
       </select>
       <div class="cal-modal-actions">
         <button class="btn-cancel" onclick="closeCalModal()">Cancelar</button>
@@ -1692,15 +1692,31 @@ async function savePlan(mes, empresa_id) {
   }, { onConflict: 'mes,empresa_id' });
   showSaving('saving-plan');
 }
-async function saveEstrutura() {
+// Lê/espelha as metas de KPI, que têm inputs gêmeos nas abas Planejado e Estrutura
+function metaVal(name, def){
+  const el = document.querySelector('[data-meta="'+name+'"]');
+  const v = el ? parseFloat(el.value) : NaN;
+  return isNaN(v) ? def : v;
+}
+function setMetaInputs(m){
+  const map = { runway:(m&&m.runway)||6, margem:(m&&m.margem)||0.15, burnRateMax:(m&&m.burnRateMax)||0 };
+  Object.keys(map).forEach(name=>{
+    document.querySelectorAll('[data-meta="'+name+'"]').forEach(el=>{ if(document.activeElement!==el) el.value = map[name]; });
+  });
+}
+async function saveEstrutura(src) {
+  // Espelha o valor digitado no input gêmeo da outra aba (mesmo data-meta)
+  if(src && src.dataset && src.dataset.meta){
+    document.querySelectorAll('[data-meta="'+src.dataset.meta+'"]').forEach(el=>{ if(el!==src) el.value = src.value; });
+  }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     // Preserva campos existentes de metas (ex: aporteMetas) ao gravar os 3 inputs de KPI
     const metas = {
       ...(estrutura.metas || {}),
-      runway: parseFloat(document.getElementById('meta-runway')?.value)||6,
-      margem: parseFloat(document.getElementById('meta-margem')?.value)||0.15,
-      burnRateMax: parseFloat(document.getElementById('meta-burnrate')?.value)||0,
+      runway: metaVal('runway', 6),
+      margem: metaVal('margem', 0.15),
+      burnRateMax: metaVal('burnRateMax', 0),
     };
     estrutura.metas = metas;
     // caixa_inicial (capital próprio) foi descontinuado da UI; o caixa agora deriva dos aportes.
@@ -2519,7 +2535,17 @@ function iniciarRealtimeEmails(){
       .on('postgres_changes',{event:'*',schema:'public',table:'emails'},(payload)=>{
         const row = payload.new||payload.old; if(!row) return;
         if(payload.eventType==='DELETE'){ emails = emails.filter(e=>e.id!==row.id); }
-        else { const i=emails.findIndex(e=>e.id===row.id); if(i>=0) emails[i]=row; else emails.unshift(row); }
+        else {
+          const i=emails.findIndex(e=>e.id===row.id);
+          if(i>=0){
+            // Preserva o corpo carregado sob demanda (não vem em todo evento realtime)
+            const prev = emails[i];
+            emails[i] = { ...row,
+              corpo_texto: row.corpo_texto || prev.corpo_texto,
+              corpo_html: row.corpo_html || prev.corpo_html,
+              _corpoErro: prev._corpoErro };
+          } else emails.unshift(row);
+        }
         emails.sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
         renderEmails();
         const dot=document.getElementById('email-live-dot'); if(dot) dot.style.display='inline';
@@ -2601,11 +2627,12 @@ function responderEmail(id){
   if(comp && comp.scrollIntoView) comp.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function preencherIframesEmail(){
+  // Preenche todo iframe de e-mail presente no DOM (o render só o cria quando deve exibir HTML)
   emailsAbertos.forEach(id=>{
-    if(!emailsHtmlView.has(id)) return;
-    const e = emails.find(x=>String(x.id)===String(id));
     const fr = document.getElementById('email-html-frame-'+id);
-    if(e && fr && e.corpo_html){ fr.srcdoc = e.corpo_html; }
+    if(!fr) return;
+    const e = emails.find(x=>String(x.id)===String(id));
+    if(e && e.corpo_html){ fr.srcdoc = e.corpo_html; }
   });
 }
 
@@ -2694,13 +2721,7 @@ function renderPlanejado() {
   ).join('');
   document.getElementById('plan-section-title').textContent = `Planejado por Empresa · ${selPlanMonth}`;
 
-  const m = estrutura.metas;
-  const ri=document.getElementById('meta-runway');
-  const mi=document.getElementById('meta-margem');
-  const bi=document.getElementById('meta-burnrate');
-  if(ri&&document.activeElement!==ri) ri.value=m.runway||6;
-  if(mi&&document.activeElement!==mi) mi.value=m.margem||0.15;
-  if(bi&&document.activeElement!==bi) bi.value=m.burnRateMax||0;
+  setMetaInputs(estrutura.metas);
 
   const cols = ['Empresa','Receita Plan.','Custos Dir. Plan.','Folha Plan.','Impostos Plan.','Desp.Adm Plan.','Outras Desp. Plan.','Resultado Plan.','Margem Plan.','Headcount Plan.'];
   document.getElementById('plan-header').innerHTML = cols.map(c=>`<th>${c}</th>`).join('');
@@ -2797,11 +2818,7 @@ function renderEstrutura(totals) {
   const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const aportePct = totalAporteMeta>0 ? totalAportes/totalAporteMeta : 0;
 
-  const mt = estrutura.metas;
-  const ri=document.getElementById('meta-runway'), mi=document.getElementById('meta-margem'), bi=document.getElementById('meta-burnrate');
-  if(ri&&document.activeElement!==ri) ri.value=mt.runway||6;
-  if(mi&&document.activeElement!==mi) mi.value=mt.margem||0.15;
-  if(bi&&document.activeElement!==bi) bi.value=mt.burnRateMax||0;
+  setMetaInputs(estrutura.metas);
 
   document.getElementById('caixa-cards').innerHTML = [
     {label:'Aportes Confirmados', val:fmt(totalAportes), color:'#8B5CF6', sub:`de ${fmt(totalAporteMeta)} previstos · ${fmtPct(aportePct)}`},
@@ -3640,7 +3657,7 @@ function renderCalendario() {
 
   if (dates.length === 0) {
     const msg = temFiltroAtivo
-      ? 'Nenhuma acao corresponde aos filtros selecionados.'
+      ? 'Nenhuma ação corresponde aos filtros selecionados.'
       : 'Nenhuma data no calendario. Use o botao acima para adicionar.';
     board.innerHTML = `<div class="cal-empty-state">${msg}</div>`;
     return;
@@ -3655,7 +3672,7 @@ function renderCalendario() {
 
     const cardsHtml = cards.length
       ? cards.map(c => calCardHtml(c)).join('')
-      : '<div style="padding:18px 8px;text-align:center;color:#9CA3AF;font-size:11px;">Nenhuma acao</div>';
+      : '<div style="padding:18px 8px;text-align:center;color:#9CA3AF;font-size:11px;">Nenhuma ação</div>';
 
     return `
       <div class="cal-column${clsExtras}" data-date="${date}" ondragover="calDragOver(event)" ondrop="calDrop(event,'${date}')">
@@ -3667,7 +3684,7 @@ function renderCalendario() {
           <div class="cal-col-count">${cards.length}</div>
         </div>
         <div class="cal-cards">${cardsHtml}</div>
-        <button class="cal-add-btn" onclick="openCalModal(null,'${date}')">+ Adicionar acao</button>
+        <button class="cal-add-btn" onclick="openCalModal(null,'${date}')">+ Adicionar ação</button>
       </div>
     `;
   }).join('');
@@ -3679,7 +3696,7 @@ function renderCalendario() {
 
 function calCardHtml(c) {
   const resps = calNormResp(c.responsavel);
-  const statusLabel = { todo:'A fazer', doing:'Em and.', done:'Concluido' }[c.status||'todo'];
+  const statusLabel = { todo:'A fazer', doing:'Em and.', done:'Concluído' }[c.status||'todo'];
   const descHtml = c.descricao ? `<div class="cal-card-desc">${escapeHtml(c.descricao)}</div>` : '';
 
   const dias = Math.max(1, c.dias_execucao || 1);
@@ -3794,7 +3811,7 @@ function openCalModal(id, date) {
   if (id) {
     const a = acoesCal.find(x => x.id === id);
     if (!a) return;
-    titleEl.textContent = 'Editar Acao';
+    titleEl.textContent = 'Editar Ação';
     idEl.value = a.id;
     dataEl.value = a.data;
     tEl.value = a.titulo || '';
@@ -3803,7 +3820,7 @@ function openCalModal(id, date) {
     diasEl.value = Math.max(1, a.dias_execucao || 1);
     selected = calNormResp(a.responsavel);
   } else {
-    titleEl.textContent = 'Nova Acao';
+    titleEl.textContent = 'Nova Ação';
     idEl.value = '';
     dataEl.value = date || calTodayISO();
     tEl.value = '';
@@ -3882,7 +3899,7 @@ async function saveCalModal() {
 }
 
 async function deleteCalAcao(id) {
-  if (!confirm('Excluir esta acao?')) return;
+  if (!confirm('Excluir esta ação?')) return;
   await sb.from('calendario_acoes').delete().eq('id', id);
   acoesCal = acoesCal.filter(a => a.id !== id);
   renderCalendario();
