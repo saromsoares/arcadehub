@@ -1147,9 +1147,9 @@ const INV_CATS = ['Desenvolvimento','Branding','Legal e Contábil','Tecnologia',
 const CUSTO_CATS = ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'];
 
 // Sócios e meios de pagamento
-const SOCIOS = ['SAROM','GLADIOMIR','BERNARDO'];
+const SOCIOS = ['SAROM','GLADIOMIR','LUIZ'];
 // Participação societária (%) padrão — editável no Balanço dos Sócios (salva em estrutura.metas.participacao)
-const DEFAULT_PARTICIPACAO = { SAROM:90, GLADIOMIR:5, BERNARDO:5 };
+const DEFAULT_PARTICIPACAO = { SAROM:90, GLADIOMIR:5, LUIZ:5 };
 const MEIOS_PAGAMENTO = [
   {id:'cartao_pessoal', label:'Cartão Pessoal'},
   {id:'cartao_empresa', label:'Cartão Empresa'},
@@ -2831,7 +2831,7 @@ function renderEstrutura(totals) {
   });
 
   // Tabela de aportes por socio
-  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', BERNARDO:'#10B981' };
+  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', LUIZ:'#10B981' };
   document.getElementById('aportes-table').innerHTML =
     SOCIOS.map(socio => {
       const sColor = socioColors[socio] || '#6B7280';
@@ -2952,7 +2952,7 @@ function renderEstrutura(totals) {
 // ─── BALANÇO DOS SÓCIOS ──────────────────────────────────────────────────────
 function renderBalancoSocios() {
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', BERNARDO:'#10B981' };
+  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', LUIZ:'#10B981' };
 
   // Calcular gastos pessoais por socio (quando pagador = socio E meio != cartao_empresa)
   const gastosPessoais = {};
