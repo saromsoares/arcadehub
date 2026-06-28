@@ -2410,6 +2410,9 @@ function renderContatos(){
 let emails = [];
 let emailsRealtimeOn = false;
 let emailView = 'in';
+let emailsAbertos = new Set();   // ids com corpo expandido
+let emailsHtmlView = new Set();  // ids exibindo versão HTML
+let emailsCarregando = new Set();// ids buscando corpo
 
 function toggleCc(){
   const r = document.getElementById('email-cc-row');
@@ -2531,6 +2534,81 @@ function updateEmailBadge(){
   if(b){ if(naoLidos>0){ b.style.display='inline'; b.textContent=naoLidos; } else b.style.display='none'; }
 }
 
+function extrairEmailAddr(de){
+  if(!de) return '';
+  const m = String(de).match(/<([^>]+)>/);
+  if(m) return m[1].trim();
+  const m2 = String(de).match(/[^\s,;<>"]+@[^\s,;<>"]+/);
+  return m2 ? m2[0].trim() : '';
+}
+async function toggleEmailCorpo(id){
+  const e = emails.find(x=>String(x.id)===String(id));
+  if(!e) return;
+  if(emailsAbertos.has(String(id))){
+    emailsAbertos.delete(String(id));
+    renderEmails();
+    return;
+  }
+  emailsAbertos.add(String(id));
+  if(!e.lido){ marcarEmailLido(id, true); } // abrir = ler (já re-renderiza)
+  else { renderEmails(); }
+  const temCorpo = (e.corpo_texto && e.corpo_texto.length) || (e.corpo_html && e.corpo_html.length);
+  if(!temCorpo){ carregarCorpoEmail(id); }
+}
+async function carregarCorpoEmail(id){
+  const e = emails.find(x=>String(x.id)===String(id));
+  if(!e || emailsCarregando.has(String(id))) return;
+  emailsCarregando.add(String(id));
+  renderEmails();
+  try{
+    const { data, error } = await sb.functions.invoke('email-body', { body:{ id: e.id, uid_imap: e.uid_imap } });
+    if(error) throw error;
+    if(data && data.ok){
+      e.corpo_texto = data.corpo_texto || '';
+      e.corpo_html = data.corpo_html || '';
+      if(e.corpo_html && !e.corpo_texto) emailsHtmlView.add(String(id));
+    } else {
+      e._corpoErro = (data && data.error) || 'Falha ao carregar.';
+    }
+  }catch(err){ e._corpoErro = (err && err.message) || 'Falha ao carregar.'; }
+  finally{ emailsCarregando.delete(String(id)); renderEmails(); }
+}
+function toggleEmailHtml(id){
+  const k = String(id);
+  if(emailsHtmlView.has(k)) emailsHtmlView.delete(k); else emailsHtmlView.add(k);
+  renderEmails();
+}
+function responderEmail(id){
+  const e = emails.find(x=>String(x.id)===String(id));
+  if(!e) return;
+  const addr = extrairEmailAddr(e.de);
+  emailView = 'out';
+  const comp = document.getElementById('email-compositor');
+  if(comp) comp.style.display = 'block';
+  const to = document.getElementById('email-to'); if(to) to.value = addr;
+  const subEl = document.getElementById('email-subject');
+  let assunto = e.assunto || '';
+  if(!/^re:/i.test(assunto.trim())) assunto = 'Re: ' + assunto;
+  if(subEl) subEl.value = assunto;
+  const d = e.created_at ? new Date(e.created_at).toLocaleString('pt-BR') : '';
+  const orig = (e.corpo_texto && e.corpo_texto.length) ? e.corpo_texto : (e.corpo_html ? e.corpo_html.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim() : '');
+  const quote = orig ? orig.split('\n').map(l=>'> '+l).join('\n') : '';
+  const bodyEl = document.getElementById('email-body');
+  if(bodyEl){ bodyEl.value = '\n\n--- Em '+d+', '+(e.de||'')+' escreveu: ---\n'+quote; }
+  renderEmails();
+  const fb = document.getElementById('email-feedback'); if(fb){ fb.textContent=''; }
+  if(bodyEl){ bodyEl.focus(); bodyEl.setSelectionRange(0,0); }
+  if(comp && comp.scrollIntoView) comp.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function preencherIframesEmail(){
+  emailsAbertos.forEach(id=>{
+    if(!emailsHtmlView.has(id)) return;
+    const e = emails.find(x=>String(x.id)===String(id));
+    const fr = document.getElementById('email-html-frame-'+id);
+    if(e && fr && e.corpo_html){ fr.srcdoc = e.corpo_html; }
+  });
+}
+
 function renderEmails(){
   iniciarRealtimeEmails();
   updateEmailBadge();
@@ -2548,17 +2626,45 @@ function renderEmails(){
     const safeId = encodeURIComponent(String(e.id||''));
     if(emailView==='in'){
       const naoLido = !e.lido;
+      const idk = String(e.id||'');
+      const aberto = emailsAbertos.has(idk);
+      const carregando = emailsCarregando.has(idk);
+      const temTexto = !!(e.corpo_texto && e.corpo_texto.length);
+      const temHtml = !!(e.corpo_html && e.corpo_html.length);
+      const htmlView = emailsHtmlView.has(idk);
+      let corpoBox = '';
+      if(aberto){
+        let inner = '';
+        if(carregando){
+          inner = `<div style="color:#9CA3AF;font-size:13px;padding:8px 0;">Carregando mensagem…</div>`;
+        } else if(e._corpoErro){
+          inner = `<div style="color:#B91C1C;font-size:12px;padding:6px 0;">⚠ ${escapeHtml(e._corpoErro)} <button onclick="carregarCorpoEmail(decodeURIComponent('${safeId}'))" style="margin-left:8px;background:#1E6FFF;color:#fff;border:none;padding:3px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Tentar de novo</button></div>`;
+        } else if(temTexto || temHtml){
+          const toggle = (temTexto && temHtml) ? `<button onclick="toggleEmailHtml(decodeURIComponent('${safeId}'))" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;margin-bottom:8px;">${htmlView?'📄 Ver texto':'🖥 Ver HTML'}</button>` : '';
+          const mostrarHtml = temHtml && (htmlView || !temTexto);
+          const view = mostrarHtml
+            ? `<iframe id="email-html-frame-${idk}" sandbox referrerpolicy="no-referrer" style="width:100%;height:420px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;"></iframe>`
+            : `<div style="font-size:13px;color:#374151;white-space:pre-wrap;line-height:1.55;max-height:460px;overflow:auto;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px;">${escapeHtml(e.corpo_texto||'')}</div>`;
+          inner = toggle + view;
+        } else {
+          inner = `<div style="color:#9CA3AF;font-size:13px;padding:8px 0;">(Mensagem sem conteúdo de texto.)</div>`;
+        }
+        corpoBox = `<div style="margin-top:12px;border-top:1px solid #F1F5F9;padding-top:12px;">${inner}</div>`;
+      }
       return `<div style="background:#fff;border:1px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-left:4px solid ${naoLido?'#1E6FFF':'#E5E7EB'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;cursor:pointer;" onclick="toggleEmailCorpo(decodeURIComponent('${safeId}'))">
           <div><strong style="font-size:14px;color:#0A1628;">${escapeHtml(e.assunto||'(sem assunto)')}</strong>
           ${naoLido?'<span style="background:#1E6FFF;color:#fff;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:700;margin-left:6px;vertical-align:middle;">NOVO</span>':''}</div>
           <span style="font-size:11px;color:#9CA3AF;white-space:nowrap;">${data}</span>
         </div>
-        <div style="font-size:12px;color:#6B7280;margin:6px 0 0;">De: ${escapeHtml(e.de||'—')}</div>
-        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+        <div style="font-size:12px;color:#6B7280;margin:6px 0 0;cursor:pointer;" onclick="toggleEmailCorpo(decodeURIComponent('${safeId}'))">De: ${escapeHtml(e.de||'—')}</div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="toggleEmailCorpo(decodeURIComponent('${safeId}'))" style="background:#0A1628;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${aberto?'📕 Fechar':'📖 Abrir'}</button>
+          <button onclick="responderEmail(decodeURIComponent('${safeId}'))" style="background:#1E6FFF;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">↩ Responder</button>
           <button onclick="marcarEmailLido(decodeURIComponent('${safeId}'), ${naoLido?'true':'false'})" style="background:${naoLido?'#10B981':'#E5E7EB'};color:${naoLido?'#fff':'#374151'};border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${naoLido?'✓ Marcar lido':'↩ Não lido'}</button>
           <button onclick="excluirEmail(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
         </div>
+        ${corpoBox}
       </div>`;
     }
     const falhou = e.status==='falha';
@@ -2578,6 +2684,7 @@ function renderEmails(){
       </div>
     </div>`;
   }).join('');
+  preencherIframesEmail();
 }
 
 // ─── PLANEJADO ───────────────────────────────────────────────────────────────
