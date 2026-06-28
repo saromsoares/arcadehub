@@ -3432,17 +3432,21 @@ function irParaLancamentos(cid, mes) {
 // ─── CALENDÁRIO OPERACIONAL (Trello-style) ──────────────────────────────────
 const CAL_EXECUTORES = [
   { nome:'SAROM',   color:'#1E6FFF' },
-  { nome:'BERNARDO',color:'#10B981' },
   { nome:'LUIZ',    color:'#EC4899' },
   { nome:'GLAD',    color:'#14B8A6' },
 ];
 const CAL_SOCIO_COLORS = Object.fromEntries(CAL_EXECUTORES.map(e => [e.nome, e.color]));
 
+// Aliases: nomes que são a mesma pessoa no calendário (BERNARDO = LUIZ)
+const CAL_RESP_ALIAS = { BERNARDO:'LUIZ' };
+
 // Normaliza responsavel vindo do banco (pode vir como array, string antiga ou null)
 function calNormResp(r) {
-  if (Array.isArray(r)) return r.filter(Boolean);
-  if (typeof r === 'string' && r.trim()) return [r.trim()];
-  return [];
+  let arr;
+  if (Array.isArray(r)) arr = r.filter(Boolean);
+  else if (typeof r === 'string' && r.trim()) arr = [r.trim()];
+  else return [];
+  return [...new Set(arr.map(x => CAL_RESP_ALIAS[x] || x))]; // aplica alias + dedup
 }
 
 // Estado de filtros do calendario
