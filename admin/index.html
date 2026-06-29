@@ -3078,7 +3078,7 @@ function renderEstrutura(totals) {
     {label:'Aportes Confirmados', val:fmt(totalAportes), color:'#8B5CF6', sub:`de ${fmt(totalAporteMeta)} previstos · ${fmtPct(aportePct)}`},
     {label:'Consumido (Abr–Dez)', val:fmt(totalRealizadoAcum), color:'#EF4444', sub:'custos realmente lançados'},
     {label:'Caixa Atual', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444', sub:'aportes − consumido'},
-    {label:'Runway', val:`${fmtNum(totals.runway)} m`, color:totals.runway>=(mt.runway||6)?'#10B981':'#F59E0B', sub:'no ritmo de consumo atual'},
+    {label:'Runway', val:`${fmtNum(totals.runway)} m`, color:totals.runway>=(estrutura.metas?.runway||6)?'#10B981':'#F59E0B', sub:'no ritmo de consumo atual'},
   ].map(({label,val,color,sub})=>`
     <div class="caixa-mini" style="border-left:3px solid ${color}">
       <div class="caixa-mini-label">${label}</div>
