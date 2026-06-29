@@ -190,6 +190,26 @@
     display: flex; align-items: center; gap: 8px;
   }
 
+  /* Cartão de dados cadastrais (aba Dados da Empresa) */
+  .emp-card {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+    padding: 2px 22px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .emp-row {
+    display: grid; grid-template-columns: 250px 1fr; gap: 12px 22px;
+    padding: 14px 0; border-bottom: 1px solid #F1F3F5;
+  }
+  .emp-row:last-child { border-bottom: none; }
+  .emp-row dt {
+    margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    text-transform: uppercase; color: #6B7280; align-self: center;
+  }
+  .emp-row dd { margin: 0; font-size: 14.5px; font-weight: 600; color: #111827; line-height: 1.5; }
+  .emp-row dd a { color: #1E6FFF; text-decoration: none; }
+  .emp-row dd a:hover { text-decoration: underline; }
+  .emp-row dd .sub { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; color: #9CA3AF; }
+  @media (max-width: 640px) { .emp-row { grid-template-columns: 1fr; gap: 3px; padding: 12px 0; } }
+
   /* Chart container */
   .chart-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 18px; }
 
@@ -531,6 +551,7 @@
 
     <div class="nav-section">Empresas Filhas</div>
     <button class="nav-item" id="nav-empresas" onclick="showTab('empresas',this)">🏢 Visão Geral</button>
+    <button class="nav-item" onclick="showTab('empresa',this)">🏛️ Dados</button>
     <div id="nav-empresas-list"></div>
   </div>
   <!-- Salvar / Email & Logout -->
@@ -1029,6 +1050,40 @@
         <tbody id="mp-receb-body"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- DADOS DA EMPRESA -->
+  <div id="tab-empresa" class="tab-content">
+    <div class="page-title" id="pt-empresa">Dados da Empresa</div>
+    <div class="page-sub" id="ps-empresa">Informações cadastrais da pessoa jurídica responsável pelo ecossistema Arcade Hub.</div>
+
+    <div class="section-title"><span>Identificação</span></div>
+    <dl class="emp-card">
+      <div class="emp-row"><dt>Razão social</dt><dd>CB AI SOLUTIONS LTDA</dd></div>
+      <div class="emp-row"><dt>Nome fantasia</dt><dd>Arcadehub.tech</dd></div>
+      <div class="emp-row"><dt>CNPJ</dt><dd>66.910.447/0001-06</dd></div>
+      <div class="emp-row"><dt>Responsável / Representante</dt><dd>Sarom Soares de Carvalho</dd></div>
+    </dl>
+
+    <div class="section-title"><span>Contato</span></div>
+    <dl class="emp-card">
+      <div class="emp-row"><dt>E-mail</dt><dd><a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a></dd></div>
+      <div class="emp-row"><dt>Telefone / WhatsApp</dt><dd><a href="https://wa.me/5575991902244" target="_blank" rel="noopener noreferrer">+55 75 99190-2244</a></dd></div>
+    </dl>
+
+    <div class="section-title"><span>Endereço</span></div>
+    <dl class="emp-card">
+      <div class="emp-row"><dt>Logradouro</dt><dd>Avenida Paulista, nº 726, Sala 1202</dd></div>
+      <div class="emp-row"><dt>Bairro</dt><dd>Bela Vista</dd></div>
+      <div class="emp-row"><dt>Cidade / UF</dt><dd>São Paulo — SP</dd></div>
+      <div class="emp-row"><dt>CEP</dt><dd>01310-910</dd></div>
+      <div class="emp-row"><dt>País</dt><dd>Brasil</dd></div>
+    </dl>
+
+    <div class="section-title"><span>Atividade econômica</span></div>
+    <dl class="emp-card">
+      <div class="emp-row"><dt>Atividade principal</dt><dd>Atividades de intermediação e agenciamento de serviços e negócios em geral, exceto imobiliários<span class="sub">CNAE principal: 74.90-1/04</span></dd></div>
+    </dl>
   </div>
 
 </div><!-- /main -->
