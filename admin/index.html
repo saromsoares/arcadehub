@@ -638,11 +638,11 @@
             <div id="ce-form-title" style="font-size:12px;font-weight:700;color:#0A1628;margin-bottom:10px;text-transform:uppercase;">Novo Custo</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Categoria</label>
+                <label for="ce-categoria" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Categoria</label>
                 <select class="inp" id="ce-categoria" style="text-align:left;"></select>
               </div>
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Tipo</label>
+                <label for="ce-tipo" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Tipo</label>
                 <select class="inp" id="ce-tipo" style="text-align:left;" onchange="atualizarHintTipo()">
                   <option value="variavel">🔁 Variável (pontual / sob demanda)</option>
                   <option value="fixo">📌 Fixo (recorrente / estrutural)</option>
@@ -650,19 +650,19 @@
               </div>
               <div id="ce-tipo-hint" style="display:none;grid-column:1 / -1;font-size:11px;color:#6D28D9;background:#EDE9FE;border-radius:6px;padding:7px 10px;"></div>
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Descrição</label>
+                <label for="ce-descricao" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Descrição</label>
                 <input class="inp" type="text" id="ce-descricao" placeholder="Ex: VPS Europa, Domínio...">
               </div>
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Valor (R$)</label>
+                <label for="ce-valor" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Valor (R$)</label>
                 <input class="inp" type="number" id="ce-valor" placeholder="0">
               </div>
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Quem Pagou</label>
+                <label for="ce-pagador" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Quem Pagou</label>
                 <select class="inp" id="ce-pagador" style="text-align:left;"></select>
               </div>
               <div>
-                <label style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Meio de Pagamento</label>
+                <label for="ce-meio" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Meio de Pagamento</label>
                 <select class="inp" id="ce-meio" style="text-align:left;"></select>
               </div>
             </div>
@@ -904,21 +904,21 @@
 
   <!-- Modal de Acao -->
   <div class="cal-modal-overlay" id="cal-modal-overlay" onclick="if(event.target===this)closeCalModal()">
-    <div class="cal-modal">
+    <div class="cal-modal" role="dialog" aria-modal="true" aria-labelledby="cal-modal-title">
       <h3 id="cal-modal-title">Nova Ação</h3>
       <input type="hidden" id="cal-modal-id" />
       <input type="hidden" id="cal-modal-data" />
-      <label>Título</label>
+      <label for="cal-modal-titulo">Título</label>
       <input type="text" id="cal-modal-titulo" placeholder="Ex: Reunião com cliente X" />
-      <label>Descrição (opcional)</label>
+      <label for="cal-modal-descricao">Descrição (opcional)</label>
       <textarea id="cal-modal-descricao" placeholder="Detalhes da ação..."></textarea>
-      <label>Responsáveis (selecione um ou mais)</label>
-      <div id="cal-modal-responsaveis" class="cal-resp-picker"></div>
-      <label>Tempo de execução (dias)</label>
+      <label id="cal-modal-resp-label">Responsáveis (selecione um ou mais)</label>
+      <div id="cal-modal-responsaveis" class="cal-resp-picker" role="group" aria-labelledby="cal-modal-resp-label"></div>
+      <label for="cal-modal-dias">Tempo de execução (dias)</label>
       <input type="number" id="cal-modal-dias" min="1" step="1" value="1" />
       <div id="cal-modal-deadline-hint" style="font-size:11px;color:#6B7280;margin-top:4px;"></div>
 
-      <label>Status</label>
+      <label for="cal-modal-status">Status</label>
       <select id="cal-modal-status">
         <option value="todo">A fazer</option>
         <option value="doing">Em andamento</option>
@@ -976,22 +976,22 @@
       <span id="email-sync-info" style="font-size:11px;color:#9CA3AF;width:100%;text-align:right;"></span>
     </div>
 
-    <div id="email-compositor" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
+    <div id="email-compositor" role="region" aria-label="Escrever e-mail" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
       <div style="display:grid;gap:10px;">
         <div>
-          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Para <span style="color:#9CA3AF;font-weight:400;">(separe vários por vírgula)</span></label>
+          <label for="email-to" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Para <span style="color:#9CA3AF;font-weight:400;">(separe vários por vírgula)</span></label>
           <input id="email-to" type="text" placeholder="destinatario@exemplo.com" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
         </div>
         <div id="email-cc-row" style="display:none;">
-          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Cc</label>
+          <label for="email-cc" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Cc</label>
           <input id="email-cc" type="text" placeholder="copia@exemplo.com" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
         </div>
         <div>
-          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Assunto</label>
+          <label for="email-subject" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Assunto</label>
           <input id="email-subject" type="text" placeholder="Assunto" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
         </div>
         <div>
-          <label style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Mensagem</label>
+          <label for="email-body" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Mensagem</label>
           <textarea id="email-body" rows="8" placeholder="Escreva sua mensagem..." style="width:100%;padding:10px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;resize:vertical;line-height:1.5;"></textarea>
         </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -1148,6 +1148,7 @@ const CUSTO_CATS = ['Programador','Designer','Operador','Encargos/Benefícios','
 
 // Sócios e meios de pagamento
 const SOCIOS = ['SAROM','GLADIOMIR','LUIZ'];
+const SOCIO_COLORS = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', LUIZ:'#10B981' };
 // Participação societária (%) padrão — editável no Balanço dos Sócios (salva em estrutura.metas.participacao)
 const DEFAULT_PARTICIPACAO = { SAROM:90, GLADIOMIR:5, LUIZ:5 };
 const MEIOS_PAGAMENTO = [
@@ -2848,7 +2849,7 @@ function renderEstrutura(totals) {
   });
 
   // Tabela de aportes por socio
-  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', LUIZ:'#10B981' };
+  const socioColors = SOCIO_COLORS;
   document.getElementById('aportes-table').innerHTML =
     SOCIOS.map(socio => {
       const sColor = socioColors[socio] || '#6B7280';
@@ -2969,7 +2970,7 @@ function renderEstrutura(totals) {
 // ─── BALANÇO DOS SÓCIOS ──────────────────────────────────────────────────────
 function renderBalancoSocios() {
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const socioColors = { SAROM:'#1E6FFF', GLADIOMIR:'#8B5CF6', LUIZ:'#10B981' };
+  const socioColors = SOCIO_COLORS;
 
   // Calcular gastos pessoais por socio (quando pagador = socio E meio != cartao_empresa)
   const gastosPessoais = {};
@@ -3448,9 +3449,9 @@ function irParaLancamentos(cid, mes) {
 // ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
 // ─── CALENDÁRIO OPERACIONAL (Trello-style) ──────────────────────────────────
 const CAL_EXECUTORES = [
-  { nome:'SAROM',   color:'#1E6FFF' },
-  { nome:'LUIZ',    color:'#EC4899' },
-  { nome:'GLAD',    color:'#14B8A6' },
+  { nome:'SAROM', color:SOCIO_COLORS.SAROM },
+  { nome:'LUIZ',  color:SOCIO_COLORS.LUIZ },
+  { nome:'GLAD',  color:SOCIO_COLORS.GLADIOMIR },
 ];
 const CAL_SOCIO_COLORS = Object.fromEntries(CAL_EXECUTORES.map(e => [e.nome, e.color]));
 
@@ -3839,6 +3840,14 @@ function openCalModal(id, date) {
     diasEl.addEventListener('input', updateCalModalDeadlineHint);
     dataEl.addEventListener('change', updateCalModalDeadlineHint);
     diasEl.dataset.ready = '1';
+  }
+  if (!window._calEscBound) {
+    window._calEscBound = true;
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key !== 'Escape') return;
+      const ov = document.getElementById('cal-modal-overlay');
+      if (ov && getComputedStyle(ov).display !== 'none') closeCalModal();
+    });
   }
   overlay.classList.add('active');
   setTimeout(() => tEl.focus(), 50);
