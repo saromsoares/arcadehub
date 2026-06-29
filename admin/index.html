@@ -1054,36 +1054,91 @@
 
   <!-- DADOS DA EMPRESA -->
   <div id="tab-empresa" class="tab-content">
-    <div class="page-title" id="pt-empresa">Dados da Empresa</div>
-    <div class="page-sub" id="ps-empresa">Informações cadastrais da pessoa jurídica responsável pelo ecossistema Arcade Hub.</div>
+    <div class="page-title" id="pt-empresa">Dados</div>
+    <div class="page-sub" id="ps-empresa">Informações cadastrais da holding e acessos aos painéis das empresas do grupo.</div>
 
-    <div class="section-title"><span>Identificação</span></div>
-    <dl class="emp-card">
-      <div class="emp-row"><dt>Razão social</dt><dd>CB AI SOLUTIONS LTDA</dd></div>
-      <div class="emp-row"><dt>Nome fantasia</dt><dd>Arcadehub.tech</dd></div>
-      <div class="emp-row"><dt>CNPJ</dt><dd>66.910.447/0001-06</dd></div>
-      <div class="emp-row"><dt>Responsável / Representante</dt><dd>Sarom Soares de Carvalho</dd></div>
-    </dl>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <button id="dsub-empresa-btn" onclick="showDadosSub('empresa')" style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">🏛️ Empresa</button>
+      <button id="dsub-acessos-btn" onclick="showDadosSub('acessos')" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">🔑 Acessos</button>
+    </div>
 
-    <div class="section-title"><span>Contato</span></div>
-    <dl class="emp-card">
-      <div class="emp-row"><dt>E-mail</dt><dd><a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a></dd></div>
-      <div class="emp-row"><dt>Telefone / WhatsApp</dt><dd><a href="https://wa.me/5575991902244" target="_blank" rel="noopener noreferrer">+55 75 99190-2244</a></dd></div>
-    </dl>
+    <!-- SUB-ABA: dados cadastrais da holding -->
+    <div id="dsub-empresa">
+      <div class="section-title"><span>Identificação</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Razão social</dt><dd>CB AI SOLUTIONS LTDA</dd></div>
+        <div class="emp-row"><dt>Nome fantasia</dt><dd>Arcadehub.tech</dd></div>
+        <div class="emp-row"><dt>CNPJ</dt><dd>66.910.447/0001-06</dd></div>
+        <div class="emp-row"><dt>Responsável / Representante</dt><dd>Sarom Soares de Carvalho</dd></div>
+      </dl>
 
-    <div class="section-title"><span>Endereço</span></div>
-    <dl class="emp-card">
-      <div class="emp-row"><dt>Logradouro</dt><dd>Avenida Paulista, nº 726, Sala 1202</dd></div>
-      <div class="emp-row"><dt>Bairro</dt><dd>Bela Vista</dd></div>
-      <div class="emp-row"><dt>Cidade / UF</dt><dd>São Paulo — SP</dd></div>
-      <div class="emp-row"><dt>CEP</dt><dd>01310-910</dd></div>
-      <div class="emp-row"><dt>País</dt><dd>Brasil</dd></div>
-    </dl>
+      <div class="section-title"><span>Contato</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>E-mail</dt><dd><a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a></dd></div>
+        <div class="emp-row"><dt>Telefone / WhatsApp</dt><dd><a href="https://wa.me/5575991902244" target="_blank" rel="noopener noreferrer">+55 75 99190-2244</a></dd></div>
+      </dl>
 
-    <div class="section-title"><span>Atividade econômica</span></div>
-    <dl class="emp-card">
-      <div class="emp-row"><dt>Atividade principal</dt><dd>Atividades de intermediação e agenciamento de serviços e negócios em geral, exceto imobiliários<span class="sub">CNAE principal: 74.90-1/04</span></dd></div>
-    </dl>
+      <div class="section-title"><span>Endereço</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Logradouro</dt><dd>Avenida Paulista, nº 726, Sala 1202</dd></div>
+        <div class="emp-row"><dt>Bairro</dt><dd>Bela Vista</dd></div>
+        <div class="emp-row"><dt>Cidade / UF</dt><dd>São Paulo — SP</dd></div>
+        <div class="emp-row"><dt>CEP</dt><dd>01310-910</dd></div>
+        <div class="emp-row"><dt>País</dt><dd>Brasil</dd></div>
+      </dl>
+
+      <div class="section-title"><span>Atividade econômica</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Atividade principal</dt><dd>Atividades de intermediação e agenciamento de serviços e negócios em geral, exceto imobiliários<span class="sub">CNAE principal: 74.90-1/04</span></dd></div>
+      </dl>
+    </div>
+
+    <!-- SUB-ABA: acessos aos painéis das empresas -->
+    <div id="dsub-acessos" style="display:none;">
+      <div class="info-box">🔒 Estas credenciais ficam protegidas no Supabase (acesso restrito à holding) — não vão para o repositório público nem para o HTML do site.</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <div class="section-title" style="margin:0;flex:1;"><span>Acessos das empresas</span></div>
+        <button onclick="abrirFormAcesso()" style="background:#10B981;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">+ Novo acesso</button>
+      </div>
+
+      <div id="acesso-form" role="region" aria-label="Acesso" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:640px;">
+        <input type="hidden" id="acesso-id" />
+        <div style="display:grid;gap:10px;">
+          <div>
+            <label for="acesso-empresa" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Empresa</label>
+            <input id="acesso-empresa" type="text" list="acesso-empresas-list" placeholder="Ex.: PrivaBR" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+            <datalist id="acesso-empresas-list"></datalist>
+          </div>
+          <div>
+            <label for="acesso-rotulo" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Rótulo</label>
+            <input id="acesso-rotulo" type="text" placeholder="Painel admin" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label for="acesso-url" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">URL</label>
+            <input id="acesso-url" type="url" placeholder="https://..." style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label for="acesso-usuario" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Usuário / E-mail</label>
+            <input id="acesso-usuario" type="text" placeholder="admin@empresa.com" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label for="acesso-senha" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Senha</label>
+            <input id="acesso-senha" type="text" placeholder="••••••••" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label for="acesso-obs" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Observações</label>
+            <input id="acesso-obs" type="text" placeholder="(opcional)" style="width:100%;padding:9px 11px;border:1px solid #E5E7EB;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;" />
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button onclick="salvarAcesso()" id="acesso-save-btn" style="background:#1E6FFF;color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+            <button onclick="fecharFormAcesso()" style="background:none;border:none;color:#6B7280;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+            <span id="acesso-feedback" style="font-size:12px;font-weight:600;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="acessos-list"></div>
+    </div>
   </div>
 
 </div><!-- /main -->
@@ -1801,7 +1856,7 @@ async function saveEstrutura(src) {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }, { data: axData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
@@ -1810,7 +1865,9 @@ async function loadAll() {
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
     sb.from('emails').select('*').order('created_at', { ascending: false }).limit(200),
+    sb.from('acessos_empresas').select('*').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
   ]);
+  if (axData) acessosEmpresas = axData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
@@ -1852,6 +1909,7 @@ function renderAll() {
   renderMercadoPago();
   renderContatos();
   renderEmails();
+  renderAcessos();
   renderNavEmpresas();
   setTimeout(makeAllEditable, 50);
 }
@@ -2476,6 +2534,146 @@ function renderContatos(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── DADOS: SUB-ABAS E ACESSOS ───────────────────────────────────────────────
+let acessosEmpresas = [];
+let acessosVisiveis = new Set(); // ids com senha revelada
+
+function showDadosSub(qual){
+  const sub1 = document.getElementById('dsub-empresa');
+  const sub2 = document.getElementById('dsub-acessos');
+  const b1 = document.getElementById('dsub-empresa-btn');
+  const b2 = document.getElementById('dsub-acessos-btn');
+  const on = b => { b.style.background='#1E6FFF'; b.style.color='#fff'; };
+  const off = b => { b.style.background='#EEF2FF'; b.style.color='#1E6FFF'; };
+  if(qual==='acessos'){ sub1.style.display='none'; sub2.style.display='block'; on(b2); off(b1); }
+  else { sub1.style.display='block'; sub2.style.display='none'; on(b1); off(b2); }
+}
+
+function renderAcessos(){
+  // popula datalist de empresas (a partir das filhas conhecidas)
+  const dl = document.getElementById('acesso-empresas-list');
+  if(dl && typeof FILHAS !== 'undefined'){
+    dl.innerHTML = FILHAS.map(c=>`<option value="${escapeHtml(c.name)}">`).join('');
+  }
+  const box = document.getElementById('acessos-list');
+  if(!box) return;
+  if(!acessosEmpresas.length){
+    box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">Nenhum acesso cadastrado. Clique em “+ Novo acesso” para adicionar.</div>`;
+    return;
+  }
+  box.innerHTML = acessosEmpresas.map(a => {
+    const safeId = encodeURIComponent(String(a.id||''));
+    const visivel = acessosVisiveis.has(String(a.id));
+    const senha = a.senha || '';
+    const senhaMostrada = visivel ? escapeHtml(senha) : '•'.repeat(Math.min(Math.max(senha.length,6),14));
+    const cor = (typeof FILHAS!=='undefined' && (FILHAS.find(c=>c.id===a.empresa_id||c.name===a.empresa_nome)||{}).color) || '#1E6FFF';
+    return `<div style="background:#fff;border:1px solid #E5E7EB;border-left:4px solid ${cor};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div>
+          <strong style="font-size:14px;color:#0A1628;">${escapeHtml(a.empresa_nome||a.empresa_id||'—')}</strong>
+          <span style="display:inline-block;background:#EEF2FF;color:#1E6FFF;border-radius:8px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:6px;">${escapeHtml(a.rotulo||'Painel admin')}</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="editarAcesso(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#1E6FFF;cursor:pointer;font-size:13px;" title="Editar">✏️</button>
+          <button onclick="excluirAcesso(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;" title="Excluir">🗑</button>
+        </div>
+      </div>
+      ${a.url?`<div style="font-size:12px;margin:8px 0 4px;"><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer" style="color:#1E6FFF;text-decoration:none;word-break:break-all;">${escapeHtml(a.url)} ↗</a></div>`:''}
+      <div style="display:grid;grid-template-columns:90px 1fr auto;gap:6px 10px;align-items:center;margin-top:8px;font-size:13px;">
+        <span style="color:#9CA3AF;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">Usuário</span>
+        <span style="color:#374151;font-weight:600;word-break:break-all;">${escapeHtml(a.usuario||'—')}</span>
+        <button onclick="copiarAcesso(${JSON.stringify(a.usuario||'').replace(/"/g,'&quot;')},this)" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">Copiar</button>
+        <span style="color:#9CA3AF;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;">Senha</span>
+        <span style="color:#374151;font-weight:600;font-family:ui-monospace,monospace;word-break:break-all;">${senhaMostrada}</span>
+        <span style="display:flex;gap:4px;">
+          <button onclick="toggleSenhaAcesso(decodeURIComponent('${safeId}'))" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">${visivel?'Ocultar':'Mostrar'}</button>
+          <button onclick="copiarAcesso(${JSON.stringify(senha).replace(/"/g,'&quot;')},this)" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">Copiar</button>
+        </span>
+      </div>
+      ${a.obs?`<div style="font-size:12px;color:#6B7280;margin-top:8px;">${escapeHtml(a.obs)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleSenhaAcesso(id){
+  const k = String(id);
+  if(acessosVisiveis.has(k)) acessosVisiveis.delete(k); else acessosVisiveis.add(k);
+  renderAcessos();
+}
+
+async function copiarAcesso(texto, btn){
+  try {
+    await navigator.clipboard.writeText(texto||'');
+    if(btn){ const o = btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=o, 1200); }
+  } catch(e){ alert('Não foi possível copiar. Copie manualmente.'); }
+}
+
+function abrirFormAcesso(){
+  document.getElementById('acesso-id').value = '';
+  ['empresa','url','usuario','senha','obs'].forEach(f=>document.getElementById('acesso-'+f).value='');
+  document.getElementById('acesso-rotulo').value = 'Painel admin';
+  document.getElementById('acesso-feedback').textContent='';
+  document.getElementById('acesso-form').style.display='block';
+}
+
+function fecharFormAcesso(){
+  document.getElementById('acesso-form').style.display='none';
+}
+
+function editarAcesso(id){
+  const a = acessosEmpresas.find(x=>String(x.id)===String(id));
+  if(!a) return;
+  document.getElementById('acesso-id').value = a.id;
+  document.getElementById('acesso-empresa').value = a.empresa_nome||'';
+  document.getElementById('acesso-rotulo').value = a.rotulo||'Painel admin';
+  document.getElementById('acesso-url').value = a.url||'';
+  document.getElementById('acesso-usuario').value = a.usuario||'';
+  document.getElementById('acesso-senha').value = a.senha||'';
+  document.getElementById('acesso-obs').value = a.obs||'';
+  document.getElementById('acesso-feedback').textContent='';
+  document.getElementById('acesso-form').style.display='block';
+  document.getElementById('acesso-form').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function salvarAcesso(){
+  const id = document.getElementById('acesso-id').value;
+  const nome = document.getElementById('acesso-empresa').value.trim();
+  const fb = document.getElementById('acesso-feedback');
+  if(!nome){ fb.style.color='#EF4444'; fb.textContent='Informe a empresa.'; return; }
+  // empresa_id: tenta casar com uma filha conhecida, senão slug do nome
+  let empresa_id = nome.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  if(typeof FILHAS !== 'undefined'){
+    const f = FILHAS.find(c=>c.name.toLowerCase()===nome.toLowerCase());
+    if(f) empresa_id = f.id;
+  }
+  const payload = {
+    empresa_id,
+    empresa_nome: nome,
+    rotulo: document.getElementById('acesso-rotulo').value.trim() || 'Painel admin',
+    url: document.getElementById('acesso-url').value.trim() || null,
+    usuario: document.getElementById('acesso-usuario').value.trim() || null,
+    senha: document.getElementById('acesso-senha').value || null,
+    obs: document.getElementById('acesso-obs').value.trim() || null,
+  };
+  fb.style.color='#6B7280'; fb.textContent='Salvando...';
+  let res;
+  if(id) res = await sb.from('acessos_empresas').update(payload).eq('id', id).select().single();
+  else   res = await sb.from('acessos_empresas').insert(payload).select().single();
+  if(res.error){ fb.style.color='#EF4444'; fb.textContent='Erro: '+res.error.message; return; }
+  if(id) acessosEmpresas = acessosEmpresas.map(x=>String(x.id)===String(id)?res.data:x);
+  else   acessosEmpresas.push(res.data);
+  fecharFormAcesso();
+  renderAcessos();
+}
+
+async function excluirAcesso(id){
+  if(!confirm('Excluir este acesso?')) return;
+  const { error } = await sb.from('acessos_empresas').delete().eq('id', id);
+  if(error){ alert('Erro ao excluir: '+error.message); return; }
+  acessosEmpresas = acessosEmpresas.filter(x=>String(x.id)!==String(id));
+  renderAcessos();
 }
 
 // ─── E-MAIL ──────────────────────────────────────────────────────────────────
