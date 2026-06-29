@@ -2539,6 +2539,25 @@ function renderContatos(){
 // ─── DADOS: SUB-ABAS E ACESSOS ───────────────────────────────────────────────
 let acessosEmpresas = [];
 let acessosVisiveis = new Set(); // ids com senha revelada
+let acessosMestraOk = false;     // sessão já validou a senha mestra
+// Hash SHA-256 da senha mestra (a senha em si NÃO fica no código — repo é público).
+const ACESSOS_MASTER_HASH = '9d2146957f62038c77c8802e17cf734e332b8740b676d1691633b5302a5d2f25';
+
+async function sha256hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+// Pede a senha mestra (uma vez por sessão) antes de revelar/copiar senhas.
+async function verificarMestra(){
+  if(acessosMestraOk) return true;
+  const tent = prompt('Senha mestra para exibir as senhas:');
+  if(tent === null || tent === '') return false;
+  let h = '';
+  try { h = await sha256hex(tent); } catch(_e){ alert('Não foi possível validar (use HTTPS).'); return false; }
+  if(h === ACESSOS_MASTER_HASH){ acessosMestraOk = true; return true; }
+  alert('Senha mestra incorreta.');
+  return false;
+}
 
 function showDadosSub(qual){
   const sub1 = document.getElementById('dsub-empresa');
@@ -2589,7 +2608,7 @@ function renderAcessos(){
         <span style="color:#374151;font-weight:600;font-family:ui-monospace,monospace;word-break:break-all;">${senhaMostrada}</span>
         <span style="display:flex;gap:4px;">
           <button onclick="toggleSenhaAcesso(decodeURIComponent('${safeId}'))" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">${visivel?'Ocultar':'Mostrar'}</button>
-          <button onclick="copiarAcesso(${JSON.stringify(senha).replace(/"/g,'&quot;')},this)" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">Copiar</button>
+          <button onclick="copiarSenhaAcesso(decodeURIComponent('${safeId}'),this)" style="background:#F3F4F6;border:1px solid #E5E7EB;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;color:#374151;cursor:pointer;white-space:nowrap;">Copiar</button>
         </span>
       </div>
       ${a.obs?`<div style="font-size:12px;color:#6B7280;margin-top:8px;">${escapeHtml(a.obs)}</div>`:''}
@@ -2597,9 +2616,11 @@ function renderAcessos(){
   }).join('');
 }
 
-function toggleSenhaAcesso(id){
+async function toggleSenhaAcesso(id){
   const k = String(id);
-  if(acessosVisiveis.has(k)) acessosVisiveis.delete(k); else acessosVisiveis.add(k);
+  if(acessosVisiveis.has(k)){ acessosVisiveis.delete(k); renderAcessos(); return; }
+  if(!(await verificarMestra())) return;
+  acessosVisiveis.add(k);
   renderAcessos();
 }
 
@@ -2608,6 +2629,14 @@ async function copiarAcesso(texto, btn){
     await navigator.clipboard.writeText(texto||'');
     if(btn){ const o = btn.textContent; btn.textContent='✓'; setTimeout(()=>btn.textContent=o, 1200); }
   } catch(e){ alert('Não foi possível copiar. Copie manualmente.'); }
+}
+
+// Copiar senha exige a senha mestra (a senha não fica embutida no HTML).
+async function copiarSenhaAcesso(id, btn){
+  if(!(await verificarMestra())) return;
+  const a = acessosEmpresas.find(x=>String(x.id)===String(id));
+  if(!a) return;
+  copiarAcesso(a.senha||'', btn);
 }
 
 function abrirFormAcesso(){
