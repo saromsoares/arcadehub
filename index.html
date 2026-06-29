@@ -638,9 +638,26 @@ body.no-webgl::before {
   </div>
 </div>
 <script>
-function abrirContato(){ document.getElementById('contato-modal').classList.add('open'); setTimeout(function(){ var n=document.getElementById('ct-nome'); if(n) n.focus(); }, 50); }
-function fecharContato(){ document.getElementById('contato-modal').classList.remove('open'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') fecharContato(); });
+let _contatoTrigger = null;
+function abrirContato(){ _contatoTrigger = document.activeElement; document.getElementById('contato-modal').classList.add('open'); setTimeout(function(){ var n=document.getElementById('ct-nome'); if(n) n.focus(); }, 50); }
+function fecharContato(){ document.getElementById('contato-modal').classList.remove('open'); if(_contatoTrigger && _contatoTrigger.focus){ _contatoTrigger.focus(); } }
+document.addEventListener('keydown', function(e){
+  var modal=document.getElementById('contato-modal');
+  if(!modal || !modal.classList.contains('open')) return;
+  if(e.key==='Escape'){ fecharContato(); return; }
+  if(e.key==='Tab'){
+    var card=modal.querySelector('.modal-card');
+    if(!card) return;
+    var focaveis=Array.prototype.filter.call(
+      card.querySelectorAll('a[href],button,input,textarea,select,[tabindex]'),
+      function(el){ return el.tabIndex!==-1 && el.getAttribute('aria-hidden')!=='true' && el.offsetParent!==null; }
+    );
+    if(!focaveis.length) return;
+    var primeiro=focaveis[0], ultimo=focaveis[focaveis.length-1];
+    if(e.shiftKey && document.activeElement===primeiro){ e.preventDefault(); ultimo.focus(); }
+    else if(!e.shiftKey && document.activeElement===ultimo){ e.preventDefault(); primeiro.focus(); }
+  }
+});
 document.addEventListener('click', function(e){ if(e.target && e.target.id==='contato-modal') fecharContato(); });
 async function enviarContato(ev){
   ev.preventDefault();
