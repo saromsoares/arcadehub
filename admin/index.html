@@ -590,6 +590,19 @@
 <!-- Main content -->
 <div id="main" style="display:none;">
 
+  <!-- Botão voltar (histórico de navegação interno) -->
+  <button id="btn-voltar" onclick="voltarPagina()" style="
+    display:none;align-items:center;gap:6px;margin-bottom:16px;
+    background:#fff;border:1px solid #E5E7EB;border-radius:8px;
+    padding:8px 15px;color:#1E6FFF;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);"
+    onmouseover="this.style.background='#F5F8FF';this.style.borderColor='#1E6FFF'"
+    onmouseout="this.style.background='#fff';this.style.borderColor='#E5E7EB'"
+    title="Voltar para a página anterior">
+    <span style="font-size:16px;line-height:1;">&#8592;</span> Voltar
+  </button>
+
   <!-- PAINEL FINTECH -->
   <div id="tab-painel" class="tab-content active">
     <div class="page-title" id="pt-painel">Painel Fintech</div>
@@ -3455,6 +3468,8 @@ let selEmpresaMonth = 'Jan';
 let empresaCharts = {};
 
 function showEmpresaIndividual(cid, navBtn) {
+  pushHistory({ type:'empresa', cid });
+  currentView = { type:'empresa', cid };
   currentEmpresaId = cid;
   selEmpresaMonth = selEmpresaMonth || 'Jan';
 
@@ -3469,6 +3484,7 @@ function showEmpresaIndividual(cid, navBtn) {
   }
 
   renderEmpresaIndividual(cid);
+  updateBackBtn();
 }
 
 function renderEmpresaIndividual(cid) {
@@ -4220,13 +4236,52 @@ async function calDrop(e, targetDate) {
   renderCalendario();
 }
 
+// ─── HISTÓRICO DE NAVEGAÇÃO INTERNO ─────────────────────────────────────────
+let navHistory = [];
+let currentView = { type:'tab', name:'painel' };
+let navIsBack = false;
+
+function pushHistory(newView) {
+  if (navIsBack) return;
+  const same = currentView.type === newView.type &&
+               (newView.type === 'empresa' ? currentView.cid === newView.cid
+                                           : currentView.name === newView.name);
+  if (same) return;
+  navHistory.push({ ...currentView });
+  if (navHistory.length > 50) navHistory.shift();
+}
+
+function updateBackBtn() {
+  const b = document.getElementById('btn-voltar');
+  if (b) b.style.display = navHistory.length ? 'inline-flex' : 'none';
+}
+
+function voltarPagina() {
+  if (!navHistory.length) return;
+  const prev = navHistory.pop();
+  navIsBack = true;
+  if (prev.type === 'empresa') showEmpresaIndividual(prev.cid);
+  else showTab(prev.name);
+  navIsBack = false;
+  currentView = { ...prev };
+  updateBackBtn();
+}
+
 function showTab(name, btn) {
+  pushHistory({ type:'tab', name });
+  currentView = { type:'tab', name };
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.add('active');
   if (btn) btn.classList.add('active');
-  else if (event && event.target) event.target.classList.add('active');
+  else {
+    const navBtn = Array.from(document.querySelectorAll('.nav-item'))
+      .find(b => (b.getAttribute('onclick')||'').includes(`showTab('${name}'`));
+    if (navBtn) navBtn.classList.add('active');
+    else if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
+  }
   if (name === 'calendario') setTimeout(scrollCalToToday, 80);
+  updateBackBtn();
 }
 
 // ─── WEBSITE EMPRESA ─────────────────────────────────────────────────────────
