@@ -71,7 +71,11 @@ html, body {
   width: 100%;
   min-height: 100%;
   margin: 0;
-  overflow: hidden;
+  /* A cena 3D é fixed (fundo imersivo); o HUD rola quando não cabe na altura
+     da viewport (laptops). Sem isso, overflow:hidden cortava a lista de
+     empresas e o rodapé em telas baixas, sem como acessá-los. */
+  overflow-x: hidden;
+  overflow-y: auto;
   scroll-behavior: smooth;
   color: var(--text);
   font-family: var(--font-sans);
@@ -90,7 +94,9 @@ html, body {
   height: 100%;
 }
 #scene-root { z-index: 0; }
-#arcade-canvas { display: block; outline: none; touch-action: none; }
+/* pan-y: em telas touch, o dedo rola a página sobre o canvas (a cena reage a
+   hover/clique, não a arraste, então liberar o pan vertical não tira função). */
+#arcade-canvas { display: block; outline: none; touch-action: pan-y; }
 
 /* Overlay CRT/scanline + grão — atmosfera cyberpunk (z2, não captura ponteiro) */
 .fx-overlay {
