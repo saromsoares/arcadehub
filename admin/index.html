@@ -651,7 +651,7 @@
   <!-- LANÇAMENTOS -->
   <div id="tab-lancamentos" class="tab-content">
     <div class="page-title" id="pt-lancamentos">Lançamentos Mensais <span class="saving" id="saving-lanc">💾 Salvando...</span></div>
-    <div class="page-sub" id="ps-lancamentos">Base de tudo: lance a receita do mês e cada custo como um item (categoria, quem pagou e como). Alimenta Estrutura, Balanço e Dashboards.</div>
+    <div class="page-sub" id="ps-lancamentos">📌 <strong>Único lugar para lançar contas.</strong> Escolha a empresa (a própria Arcade Hub também é uma opção) e lance a receita do mês e cada custo como um item em <strong>Custos do Mês</strong> — categoria, quem pagou e como. Alimenta Estrutura, Balanço e Dashboards.</div>
     <div class="btn-group" id="lanc-months"></div>
     <div class="btn-group" id="lanc-companies"></div>
     <div class="two-col">
@@ -780,7 +780,7 @@
   <!-- ESTRUTURA DE CUSTOS (Arcade Hub Mae) -->
   <div id="tab-estrutura" class="tab-content">
     <div class="page-title" id="pt-estrutura">Estrutura de Custos — Arcade Hub <span class="saving" id="saving-estr">Salvando...</span></div>
-    <div class="page-sub" id="ps-estrutura">Custos gerais de manutenção da empresa mãe Arcade Hub. Período operacional: <strong>01/04/2025</strong> em diante.</div>
+    <div class="page-sub" id="ps-estrutura">Planejamento de orçamento e visão de caixa do grupo. As contas são lançadas na aba <strong>📝 Lançamentos</strong> — aqui nada é lançado, só planejado e acompanhado. Período operacional: <strong>01/04/2025</strong> em diante.</div>
 
     <div class="caixa-block">
       <div class="caixa-input-wrap">
@@ -809,19 +809,20 @@
       </table>
     </div>
 
-    <div class="section-title"><span>Gestão de Custos Mês a Mês</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">Coluna <strong>Base</strong> = valor padrão. Preencha o mês para sobrescrever. Fundo amarelo = valor personalizado. Jan/Fev/Mar = bloqueados. <strong style="color:#059669;">▸ valor</strong> = <strong>Realizado</strong> (soma dos custos lançados em Lançamentos, todas as empresas, por categoria/mês). Verde = dentro do planejado, vermelho = acima.</p>
+    <div class="section-title"><span>Orçamento × Realizado por Categoria</span></div>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">A coluna <strong>Orçamento/mês</strong> é a sua meta de gasto por categoria (editável). As colunas dos meses mostram o <strong>Realizado</strong> — soma dos custos lançados na aba <strong>📝 Lançamentos</strong> (todas as empresas), <strong>somente leitura</strong>. <span style="color:#059669;font-weight:600;">Verde</span> = dentro do orçado, <span style="color:#EF4444;font-weight:600;">vermelho</span> = acima. Jan/Fev/Mar = pré-operação. <strong>Para lançar uma conta, use a aba Lançamentos.</strong>
+      <button onclick="irParaLancamentos('arcade_hub')" style="margin-left:6px;background:#10B981;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📝 Ir para Lançamentos</button></p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1200px;">
         <thead><tr>
           <th>Categoria</th>
-          <th style="background:#1E3A5F;color:#7DD3FC;min-width:100px;">Base Mensal</th>
+          <th style="background:#1E3A5F;color:#7DD3FC;min-width:100px;">Orçamento/mês</th>
           <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Jan</th>
           <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Fev</th>
           <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Mar</th>
-          <th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th>
-          <th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-          <th>Total Acum.</th>
+          <th title="Realizado (lançado em Lançamentos)">Abr</th><th title="Realizado">Mai</th><th title="Realizado">Jun</th><th title="Realizado">Jul</th>
+          <th title="Realizado">Ago</th><th title="Realizado">Set</th><th title="Realizado">Out</th><th title="Realizado">Nov</th><th title="Realizado">Dez</th>
+          <th>Total ano</th>
         </tr></thead>
         <tbody id="custo-mensal-table"></tbody>
         <tfoot><tr id="custo-mensal-total"></tr></tfoot>
@@ -1249,7 +1250,9 @@ const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev, Mar
 function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 
 // ─── EMPRESAS ─────────────────────────────────────────────────────────────────
-// ARCADE HUB é a empresa mãe (holding) — custos na aba "Estrutura de Custos"
+// ARCADE HUB é a empresa mãe (holding). TODO custo — dela e das filhas — é lançado
+// na aba "Lançamentos" (fonte única, tabela custos_extras). A "Estrutura de Custos"
+// apenas planeja o orçamento por categoria e lê o realizado; não lança nada.
 // Empresas filhas: todas as demais
 const COMPANIES = [
   { id:'arcade_hub',    name:'Arcade Hub',      color:'#1E6FFF', emoji:'🏦', segmento:'Holding / Fintech',       isMae: true,  website:'' },
@@ -3191,56 +3194,46 @@ function renderEstrutura(totals) {
         }).join('') + `<td></td><td></td><td></td></tr>`;
     })();
 
-  // Tabela de custos mes a mes
+  // Tabela Orçamento × Realizado: a coluna "Orçamento/mês" é editável (planejado por
+  // categoria); as colunas dos meses mostram o Realizado (SÓ LEITURA) — soma dos custos
+  // lançados na aba Lançamentos. Aqui não se lança nada; o override manual por mês foi aposentado.
   const custosRows = CUSTO_CATS.map((cat,rIdx)=>{
     const base = estrutura.custos_mensais[cat]||0;
-    const totalAcumCat = MONTHS_OP.reduce((a,mm)=>a+getCustoMes(mm,cat),0);
+    const orcadoAnoCat = base * MONTHS_OP.length;
     const totalRealCat = MONTHS_OP.reduce((a,mm)=>a+getRealizadoCustoMes(mm,cat),0);
     return `<tr style="background:${rIdx%2===0?'#FAFAFA':'#fff'}">
       <td style="font-weight:500">${cat}</td>
       <td style="padding:4px 8px;background:#EFF6FF;">
-        <input class="inp" type="number" value="${base||''}" style="width:90px;background:#EFF6FF;"
+        <input class="inp" type="number" value="${base||''}" placeholder="0" style="width:90px;background:#EFF6FF;"
           oninput="estrutura.custos_mensais['${cat}']=parseFloat(this.value)||0;saveEstrutura()" />
       </td>` +
       MONTHS_ALL.map(mm=>{
         const isOp = MONTHS_OP.includes(mm);
-        const override = estrutura.custos_por_mes?.[mm]?.[cat];
-        const hasOverride = override !== undefined && override !== null && override !== '';
-        const displayVal = hasOverride ? override : '';
-        const plan = isOp ? getCustoMes(mm,cat) : 0;
-        const real = isOp ? getRealizadoCustoMes(mm,cat) : 0;
-        const realColor = real>plan ? '#EF4444' : '#059669';
-        const realHtml = (isOp && real>0)
-          ? `<div style="font-size:9px;font-weight:600;color:${realColor};margin-top:2px;" title="Realizado (lançamentos consolidados)">▸ ${fmt(real)}</div>`
-          : '';
-        return `<td style="padding:4px 6px;text-align:center;background:${!isOp?'#F3F4F6':(hasOverride?'#FFFBEB':'')}">
-          <input class="inp" type="number" value="${displayVal}" placeholder="${isOp?base:''}"
-            style="width:80px;${!isOp?'background:#F3F4F6;color:#9CA3AF;':(hasOverride?'background:#FFFBEB;border-color:#F59E0B;':'')}"
-            ${isOp?`oninput="updateCustoMes('${mm}','${cat}',this.value)"`:' disabled'}
-          />${realHtml}</td>`;
+        if (!isOp) return `<td style="padding:6px;text-align:center;background:#F3F4F6;color:#9CA3AF;">—</td>`;
+        const real = getRealizadoCustoMes(mm,cat);
+        if (real<=0) return `<td style="padding:6px;text-align:center;color:#D1D5DB;" title="Sem custo lançado em ${mm}">·</td>`;
+        const over = base>0 && real>base;
+        return `<td style="padding:6px;text-align:center;font-weight:600;color:${over?'#EF4444':'#059669'};" title="Realizado em ${mm} — lançado na aba Lançamentos${base>0?` · orçado ${fmt(base)}`:''}">${fmt(real)}</td>`;
       }).join('') +
-      `<td style="font-weight:700;color:#F59E0B;text-align:center;">${fmt(totalAcumCat)}${totalRealCat>0?`<div style="font-size:9px;color:${totalRealCat>totalAcumCat?'#EF4444':'#059669'};">▸ ${fmt(totalRealCat)}</div>`:''}</td>
+      `<td style="text-align:center;"><div style="font-weight:700;color:#1E6FFF;" title="Orçado no ano (Abr–Dez)">${fmt(orcadoAnoCat)}</div>${totalRealCat>0?`<div style="font-size:10px;font-weight:600;color:${totalRealCat>orcadoAnoCat?'#EF4444':'#059669'};" title="Realizado no ano">▸ ${fmt(totalRealCat)}</div>`:''}</td>
     </tr>`;
   }).join('');
 
   const totalBase = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0);
-  const totalPorMes = MONTHS_ALL.map(mm=>MONTHS_OP.includes(mm)?getTotalCustoMes(mm):0);
-  const totalAcumGeral = totalPorMes.reduce((a,v)=>a+v,0);
+  const orcadoAnual = totalBase * MONTHS_OP.length;
   const totalRealPorMes = MONTHS_ALL.map(mm=>MONTHS_OP.includes(mm)?getTotalRealizadoMes(mm):0);
   const totalRealAcum = totalRealPorMes.reduce((a,v)=>a+v,0);
 
   document.getElementById('custo-mensal-table').innerHTML = custosRows;
   document.getElementById('custo-mensal-total').innerHTML =
     `<td style="background:#0A1628;color:#fff;font-weight:700;padding:8px 12px;">TOTAL</td>` +
-    `<td style="background:#1E3A5F;color:#7DD3FC;font-weight:700;padding:8px 12px;">${fmt(totalBase)}</td>` +
+    `<td style="background:#1E3A5F;color:#7DD3FC;font-weight:700;padding:8px 12px;text-align:center;" title="Orçamento mensal do grupo">${fmt(totalBase)}</td>` +
     MONTHS_ALL.map((mm,i)=>{
       const isOp = MONTHS_OP.includes(mm);
-      const v = totalPorMes[i];
       const r = totalRealPorMes[i];
-      const realHtml = (isOp && r>0) ? `<div style="font-size:9px;color:${r>v?'#FCA5A5':'#6EE7B7'};font-weight:600;">▸ ${fmt(r)}</div>` : '';
-      return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?'#1E6FFF':'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;text-align:center;">${isOp?fmt(v):'—'}${realHtml}</td>`;
+      return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?(r>0?'#6EE7B7':'rgba(255,255,255,0.3)'):'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;text-align:center;" title="${isOp?('Realizado em '+mm):'pré-operação'}">${isOp?(r>0?fmt(r):'·'):'—'}</td>`;
     }).join('') +
-    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;">${fmt(totalAcumGeral)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>totalAcumGeral?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
+    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;" title="Orçado no ano (Abr–Dez)">${fmt(orcadoAnual)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>orcadoAnual?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
 
   document.getElementById('inv-table').innerHTML = INV_CATS.map((k,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
