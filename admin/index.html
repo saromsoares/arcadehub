@@ -1872,7 +1872,7 @@ async function saveEstrutura(src) {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }, { data: axData }] = await Promise.all([
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }] = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
     sb.from('estrutura').select('*').limit(1).single(),
@@ -1882,8 +1882,10 @@ async function loadAll() {
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
     sb.from('emails').select('*').order('created_at', { ascending: false }).limit(200),
     sb.from('acessos_empresas').select('*').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
+    sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
   ]);
   if (axData) acessosEmpresas = axData;
+  if (plData) planosEmpresas = plData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
@@ -3538,6 +3540,8 @@ function renderEmpresaIndividual(cid) {
       </div>
     </div>
 
+    ${buildPlanosSection(cid)}
+
     <!-- Seletor de mês -->
     <div class="section-title"><span>${editable('Resumo do Mês — '+comp.name+' (somente leitura)', 'onEditText("ed-sec-lanc-'+cid+'")', {id:'ed-sec-lanc-'+cid})}</span></div>
     <div class="btn-group" id="emp-months-${cid}">
@@ -3735,6 +3739,145 @@ function irParaLancamentos(cid, mes) {
   const navBtn = document.querySelector('.nav-item[onclick*="lancamentos"]');
   showTab('lancamentos', navBtn);
   renderLancamentos();
+}
+
+// ─── PLANOS & MARGENS (por empresa) ──────────────────────────────────────────
+// Custo/margem é dado interno de negócio → vive no Supabase (repo é público), tabela planos_empresas.
+let planosEmpresas = [];
+
+function getPlanosEmpresa(cid) {
+  return planosEmpresas
+    .filter(p => p.empresa_id === cid)
+    .sort((a,b) => ((a.ordem||0)-(b.ordem||0)) || ((Number(a.preco_venda)||0)-(Number(b.preco_venda)||0)));
+}
+
+// Aceita "39,90", "1.234,56", "39.90" ou número.
+function parseValorBR(v) {
+  const s = String(v ?? '').trim().replace(/[^\d.,-]/g,'');
+  if (!s) return 0;
+  const n = s.includes(',') ? parseFloat(s.replace(/\./g,'').replace(',', '.')) : parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function buildPlanosSection(cid) {
+  const comp = COMPANIES.find(c => c.id === cid) || {};
+  const planos = getPlanosEmpresa(cid);
+  const inputStyle = 'width:100%;padding:8px 10px;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;';
+  const labelStyle = 'display:block;font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;margin-bottom:4px;';
+  const linhas = planos.length ? planos.map(p => {
+    const venda = Number(p.preco_venda)||0, custo = Number(p.custo)||0;
+    const liq = venda - custo;
+    const margem = venda > 0 ? liq/venda : null;
+    const safeId = encodeURIComponent(String(p.id||''));
+    return `<tr>
+      <td style="font-weight:600;">${escapeHtml(p.nome||'—')}${p.obs?` <span title="${escapeHtml(p.obs)}" style="cursor:help;color:#9CA3AF;">ℹ️</span>`:''}</td>
+      <td style="text-align:right;">${fmt(venda)}</td>
+      <td style="text-align:center;color:#6B7280;">${escapeHtml(p.limite||'—')}</td>
+      <td style="text-align:right;color:#F59E0B;font-weight:600;">${fmt(custo)}</td>
+      <td style="text-align:right;font-weight:700;color:${liq<0?'#DC2626':liq>0?'#059669':'#6B7280'};">${fmt(liq)}</td>
+      <td style="text-align:right;font-weight:600;color:${margem===null?'#9CA3AF':margem>=0?'#059669':'#DC2626'};">${margem===null?'—':fmtPct(margem)}</td>
+      <td style="text-align:center;white-space:nowrap;">
+        <button onclick="editarPlano('${escapeHtml(cid)}',decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#1E6FFF;cursor:pointer;font-size:13px;" title="Editar">✏️</button>
+        <button onclick="excluirPlano('${escapeHtml(cid)}',decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;" title="Excluir">🗑</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="7" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhum plano cadastrado. Clique em “+ Novo plano” para adicionar.</td></tr>`;
+
+  return `
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span>💰 Planos & Margens — ${escapeHtml(comp.name||cid)}</span>
+      <button onclick="abrirFormPlano('${escapeHtml(cid)}')" style="background:#1E6FFF;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">+ Novo plano</button>
+    </div>
+    <div class="table-wrap" style="margin-bottom:20px;">
+      <div id="plano-form" style="display:none;padding:14px 16px;border-bottom:1px solid #E5E7EB;background:#F9FAFB;">
+        <input type="hidden" id="plano-id">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+          <div><label style="${labelStyle}">Plano *</label><input id="plano-nome" style="${inputStyle}" placeholder="ex.: Premium"></div>
+          <div><label style="${labelStyle}">Venda (R$)</label><input id="plano-venda" inputmode="decimal" style="${inputStyle}" placeholder="19,90"></div>
+          <div><label style="${labelStyle}">Custo (R$)</label><input id="plano-custo" inputmode="decimal" style="${inputStyle}" placeholder="2,00"></div>
+          <div><label style="${labelStyle}">Limite</label><input id="plano-limite" style="${inputStyle}" placeholder="ex.: 1 CPF, 5"></div>
+          <div><label style="${labelStyle}">Obs</label><input id="plano-obs" style="${inputStyle}"></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <button onclick="salvarPlano('${escapeHtml(cid)}')" style="background:#10B981;color:#fff;border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Salvar</button>
+          <button onclick="fecharFormPlano()" style="background:#F3F4F6;color:#374151;border:1px solid #E5E7EB;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Cancelar</button>
+          <span id="plano-feedback" style="font-size:12px;"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;min-width:640px;font-size:12px;">
+          <thead><tr>
+            <th style="text-align:left;">Plano</th>
+            <th style="text-align:right;">Venda</th>
+            <th style="text-align:center;">Limite</th>
+            <th style="text-align:right;">Custo</th>
+            <th style="text-align:right;">Líquido</th>
+            <th style="text-align:right;">Margem</th>
+            <th></th>
+          </tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function abrirFormPlano(cid) {
+  document.getElementById('plano-id').value = '';
+  ['nome','venda','custo','limite','obs'].forEach(f => document.getElementById('plano-'+f).value = '');
+  document.getElementById('plano-feedback').textContent = '';
+  document.getElementById('plano-form').style.display = 'block';
+  document.getElementById('plano-nome').focus();
+}
+
+function fecharFormPlano() {
+  const f = document.getElementById('plano-form');
+  if (f) f.style.display = 'none';
+}
+
+function editarPlano(cid, id) {
+  const p = planosEmpresas.find(x => String(x.id) === String(id));
+  if (!p) return;
+  document.getElementById('plano-id').value = p.id;
+  document.getElementById('plano-nome').value = p.nome || '';
+  document.getElementById('plano-venda').value = (Number(p.preco_venda)||0).toFixed(2).replace('.', ',');
+  document.getElementById('plano-custo').value = (Number(p.custo)||0).toFixed(2).replace('.', ',');
+  document.getElementById('plano-limite').value = p.limite || '';
+  document.getElementById('plano-obs').value = p.obs || '';
+  document.getElementById('plano-feedback').textContent = '';
+  document.getElementById('plano-form').style.display = 'block';
+  document.getElementById('plano-form').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+async function salvarPlano(cid) {
+  const id = document.getElementById('plano-id').value;
+  const nome = document.getElementById('plano-nome').value.trim();
+  const fb = document.getElementById('plano-feedback');
+  if (!nome) { fb.style.color = '#EF4444'; fb.textContent = 'Informe o nome do plano.'; return; }
+  const payload = {
+    empresa_id: cid,
+    nome,
+    preco_venda: parseValorBR(document.getElementById('plano-venda').value),
+    custo: parseValorBR(document.getElementById('plano-custo').value),
+    limite: document.getElementById('plano-limite').value.trim() || null,
+    obs: document.getElementById('plano-obs').value.trim() || null,
+  };
+  if (!id) payload.ordem = getPlanosEmpresa(cid).length + 1;
+  fb.style.color = '#6B7280'; fb.textContent = 'Salvando...';
+  let res;
+  if (id) res = await sb.from('planos_empresas').update(payload).eq('id', id).select().single();
+  else    res = await sb.from('planos_empresas').insert(payload).select().single();
+  if (res.error) { fb.style.color = '#EF4444'; fb.textContent = 'Erro: ' + res.error.message; return; }
+  if (id) planosEmpresas = planosEmpresas.map(x => String(x.id) === String(id) ? res.data : x);
+  else    planosEmpresas.push(res.data);
+  renderEmpresaIndividual(cid);
+}
+
+async function excluirPlano(cid, id) {
+  if (!confirm('Excluir este plano?')) return;
+  const { error } = await sb.from('planos_empresas').delete().eq('id', id);
+  if (error) { alert('Erro ao excluir: ' + error.message); return; }
+  planosEmpresas = planosEmpresas.filter(x => String(x.id) !== String(id));
+  renderEmpresaIndividual(cid);
 }
 
 // ─── TAB NAVIGATION ──────────────────────────────────────────────────────────
