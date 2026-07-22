@@ -733,6 +733,9 @@ const PORTFOLIO = [
   { title: "Croqui.ai",      segment: "Arquitetura & IA",         glyph: "CQ", color: "#ff5e57", url: "https://app.croqui.ai/",
     summary: "Do primeiro rabisco ao estudo preliminar: transforma conversas, áudios e referências soltas em planta baixa preliminar, mockup, orçamento conceitual e proposta white-label. Feito para studios que vendem projeto com método, clareza e rapidez.",
     asset: "assets/croqui.jpg", assetReady: false },
+  { title: "CriativoPronto", segment: "Vídeo IA & Criativos",      glyph: "CP", color: "#ffe14d", url: "https://www.criativopronto.com.br/",
+    summary: "Studio de geração de vídeos curtos com atores de IA brasileiros: rosto, voz, roteiro e cenário num só fluxo. Anúncios verticais prontos para marcas, e-commerces e agências — sem gravação, sem set, sem espera.",
+    asset: "assets/criativo-pronto.jpg", assetReady: false },
 ];
 
 // CTA de cada empresa: site próprio se houver, senão contato direcionado por e-mail.
@@ -1042,6 +1045,7 @@ function ArcadeScene(root) {
     { pos: [ 4.6,  1.7, -0.7], r: 0.84, bands: 0.0, bandMix: 0.22, feat: 6.5, bright: 1.6,  ring: false, ringTilt: 0,    moon: true },    // Coben Life OS — rochoso (com lua)
     { pos: [ 7.6, -0.5, -1.1], r: 1.04, bands: 4.0, bandMix: 0.70, feat: 2.6, bright: 1.05, ring: true,  ringTilt: 0.8  },                // Kanbia — tempestuoso anelado
     { pos: [10.6,  1.4,  0.5], r: 0.96, bands: 3.5, bandMix: 0.45, feat: 4.0, bright: 1.2,  ring: false, ringTilt: 0    },                // Croqui.ai — rochoso/misto
+    { pos: [13.4, -0.9,  0.4], r: 1.00, bands: 4.5, bandMix: 0.55, feat: 3.4, bright: 1.15, ring: true,  ringTilt: 1.25 },                // CriativoPronto — gasoso anelado (cinematográfico)
   ];
 
   // Material do planeta: superfície procedural (FBM) única por seed/tipo + atmosfera neon
