@@ -1185,7 +1185,19 @@ function togglePassword() {
 // senha chama doLogin() direto.
 let logoutPendente = null;
 
+let loginEmAndamento = null;
+
+// Enter repetido enfileirava várias tentativas na mesma promessa de logout e todas
+// seguiam juntas — cada login bem-sucedido chama initDashboard, e dois initDashboard
+// concorrentes derrubam os canais um do outro. Uma tentativa por vez.
 async function doLogin() {
+  if (loginEmAndamento) return loginEmAndamento;
+  loginEmAndamento = executarLogin();
+  try { return await loginEmAndamento; }
+  finally { loginEmAndamento = null; }
+}
+
+async function executarLogin() {
   if (logoutPendente) { try { await logoutPendente; } catch(_e){} }
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
