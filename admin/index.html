@@ -1256,14 +1256,23 @@ async function resetState() {
 }
 
 async function doLogout() {
-  await sb.auth.signOut();
-  await resetState();
+  // A tela vai embora PRIMEIRO. A limpeza dos canais pode esperar o timeout do
+  // WebSocket, e até lá os números do grupo (e qualquer senha revelada) ficariam
+  // à mostra para quem já clicou em Sair.
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
   document.getElementById('login-email').value = '';
   document.getElementById('login-password').value = '';
   document.getElementById('login-error').style.display = 'none';
+  const btnEntrar = document.getElementById('login-btn');
+  if (btnEntrar) btnEntrar.disabled = true;      // sem novo login enquanto a limpeza corre
+  try {
+    await sb.auth.signOut();
+    await resetState();
+  } finally {
+    if (btnEntrar) btnEntrar.disabled = false;
+  }
 }
 
 // Enter key on password field
