@@ -1227,8 +1227,20 @@ function resetState() {
   acessosEmpresas = []; planosEmpresas = [];
   if (typeof senhasReveladas !== 'undefined') senhasReveladas.clear();
   if (typeof acessosVisiveis !== 'undefined') acessosVisiveis.clear();
-  acessosMestraOk = false;
+  acessosMestraOk = false; mestraDigitada = null;
   estrutura_id = null;
+  // sem recriar o objeto, o próximo usuário via os aportes e o orçamento do anterior
+  estrutura = {
+    caixa_inicial: 0, data_inicio: DATA_INICIO.label,
+    investimento: Object.fromEntries(INV_CATS.map(k => [k, 0])),
+    custos_mensais: Object.fromEntries(CUSTO_CATS.map(k => [k, 0])),
+    custos_por_mes: {},
+    aportes: Object.fromEntries(SOCIOS.map(sc => [sc, Object.fromEntries(MONTHS.map(m => [m, 0]))])),
+    metas: { runway: 6, margem: 0.15, burnRateMax: 0 },
+  };
+  // flags travadas impediam as subscriptions e o polling de voltar no próximo login
+  mpRealtimeOn = false; contatosRealtimeOn = false;
+  if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
   if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
   [chartPainel, chartPainelEmpresas, chartDash, chartComp].forEach(c => { try { c && c.destroy(); } catch(_e){} });
@@ -1505,6 +1517,23 @@ function getMpReceita(m, cid) {
 }
 // Aporte de sócio realizado via Mercado Pago (recebimento marcado como "aporte:SOCIO").
 // Camada separada: NÃO entra em getAporteSocioMes (grade editável), só nas agregações de aporte/caixa.
+// Taxa retida pelo Mercado Pago no exercício: a diferença entre o que a filha
+// faturou (bruto) e o que caiu na conta (líquido).
+function getMpTaxa() {
+  const list = (typeof mpRecebimentos !== 'undefined' && mpRecebimentos) ? mpRecebimentos : [];
+  let taxa = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || !r.empresa_id || String(r.empresa_id).startsWith('aporte:')) continue;
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
+    const bruto = mpNum(r.valor) || 0;
+    const liquido = mpNum(r.valor_liquido);
+    if (liquido != null) taxa += bruto - liquido;
+  }
+  return taxa;
+}
+
 function getMpAporte(socio, mes) {
   const list = (typeof mpRecebimentos !== 'undefined' && mpRecebimentos) ? mpRecebimentos : [];
   if (!socio || !list.length) return 0;
@@ -1701,7 +1730,10 @@ function getTotals() {
   // Caixa = tudo que entrou (aportes + receita realizada) menos o que saiu.
   // A receita ficava de fora: o dinheiro recebido das filhas não aparecia no caixa,
   // que era na prática "saldo dos aportes consumidos", não caixa.
-  const receitaRealizada = ytdCons.receita;
+  // Receita entra no caixa pelo LÍQUIDO (a taxa do Mercado Pago nunca chegou na conta);
+  // o bruto continua valendo para receita/DRE.
+  const taxaMp = getMpTaxa();
+  const receitaRealizada = ytdCons.receita - taxaMp;
   const caixaAtual = totalAportes + receitaRealizada - totalRealizadoAcum;
   // Burn rate real = consumo médio mensal nos meses que tiveram gasto
   const mesesComConsumo = MONTHS_OP.filter(m=>getTotalRealizadoMes(m)>0).length || 1;
@@ -1765,7 +1797,7 @@ async function salvarTudoAgora() {
     if (planRows.length) await db(sb.from('planejado').upsert(planRows, { onConflict: 'ano,mes,empresa_id' }), 'salvar plano');
 
     const payload = {
-      caixa_inicial: estrutura.caixa_inicial||0, data_inicio: DATA_INICIO.label,
+      caixa_inicial: estrutura.caixa_inicial||0, ano: EXERCICIO, data_inicio: DATA_INICIO.label,
       investimento: estrutura.investimento, custos_mensais: estrutura.custos_mensais,
       custos_por_mes: estrutura.custos_por_mes, aportes: estrutura.aportes,
       metas: estrutura.metas, updated_at: now
@@ -1919,6 +1951,7 @@ async function saveEstrutura(src) {
     const caixa_inicial = estrutura.caixa_inicial || 0;
     const payload = {
       caixa_inicial,
+      ano: EXERCICIO,
       data_inicio: DATA_INICIO.label,
       investimento: estrutura.investimento,
       custos_mensais: estrutura.custos_mensais,
@@ -1946,7 +1979,7 @@ async function loadAll() {
   const respostas = await Promise.all([
     sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
     sb.from('planejado').select('*').eq('ano', EXERCICIO),
-    sb.from('estrutura').select('*').limit(1).maybeSingle(),
+    sb.from('estrutura').select('*').eq('ano', EXERCICIO).limit(1).maybeSingle(),
     sb.from('custos_extras').select('*').eq('ano', EXERCICIO).order('created_at', { ascending: true }),
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
@@ -1957,10 +1990,7 @@ async function loadAll() {
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
   ]);
   const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
-  if (falhas.length) {
-    console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
-    toast('Não foi possível carregar: ' + falhas.join(', ') + '. Recarregue a página.', 'erro');
-  }
+  if (falhas.length) console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
   const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
          { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }] = respostas;
   if (axData) acessosEmpresas = axData;
@@ -1985,6 +2015,7 @@ async function loadAll() {
       estrutura.aportes = eData.aportes;
     }
   }
+  return falhas;
 }
 
 // ─── RENDER ALL ──────────────────────────────────────────────────────────────
@@ -2639,6 +2670,7 @@ function renderContatos(){
 let acessosEmpresas = [];
 let acessosVisiveis = new Set(); // ids com senha revelada
 let acessosMestraOk = false;     // sessão já validou a senha mestra
+let mestraDigitada = null;       // guardada só em memória: a Edge Function reconfere no servidor
 // Hash SHA-256 da senha mestra (a senha em si NÃO fica no código — repo é público).
 const ACESSOS_MASTER_HASH = '9d2146957f62038c77c8802e17cf734e332b8740b676d1691633b5302a5d2f25';
 
@@ -2653,7 +2685,7 @@ async function verificarMestra(){
   if(tent === null || tent === '') return false;
   let h = '';
   try { h = await sha256hex(tent); } catch(_e){ alert('Não foi possível validar (use HTTPS).'); return false; }
-  if(h === ACESSOS_MASTER_HASH){ acessosMestraOk = true; return true; }
+  if(h === ACESSOS_MASTER_HASH){ acessosMestraOk = true; mestraDigitada = tent; return true; }
   alert('Senha mestra incorreta.');
   return false;
 }
@@ -2723,7 +2755,9 @@ const senhasReveladas = new Map();   // id -> senha, só enquanto a sessão dura
 async function buscarSenhaAcesso(id){
   const k = String(id);
   if (senhasReveladas.has(k)) return senhasReveladas.get(k);
-  const { data, error } = await sb.functions.invoke('acesso-senha', { body: { id: k } });
+  // a mestra vai junto: validar só no navegador não protegia nada — bastava chamar
+  // esta função pelo console para pular o prompt.
+  const { data, error } = await sb.functions.invoke('acesso-senha', { body: { id: k, mestra: mestraDigitada || '' } });
   if (error || !data || data.error) {
     toast('Não foi possível obter a senha: ' + ((data && data.error) || (error && error.message) || 'erro'), 'erro');
     return null;
@@ -3189,9 +3223,11 @@ function renderComparativo(cons, ytd, companiesYTD) {
 
   document.getElementById('comp-table').innerHTML = compRows.map((r,ri)=>{
     const vals = cons.map(c=>r.fn(c));
+    // só os meses do período entram no total, para não divergir dos KPIs
+    const valsOp = cons.map((c,i)=>MONTHS_OPERACIONAIS.includes(c.mes)?vals[i]:0);
     const ytdv = r.pct
       ? (r.label.includes('Receita')?(ytd.receitaP>0?ytd.receita/ytd.receitaP:null):(ytd.resultadoP!==0?ytd.resultado/ytd.resultadoP:null))
-      : vals.reduce((a,b)=>a+b,0);
+      : valsOp.reduce((a,b)=>a+b,0);
     return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td><strong>${r.label}</strong></td>
       ${vals.map(v=>{
@@ -3725,6 +3761,7 @@ function renderEmpresaIndividual(cid) {
 
   const e = getLanc(selEmpresaMonth, cid);
   const agrMes = getEmpresaMes(cid, selEmpresaMonth);
+  const mesReceita = agrMes.receita;   // inclui Mercado Pago, como o resultado ao lado
   const mesExtras = agrMes.custosItens;
   const mesRes = agrMes.resultado;
   const mesMargem = agrMes.receita > 0 ? mesRes / agrMes.receita : 0;
@@ -3806,7 +3843,7 @@ function renderEmpresaIndividual(cid) {
 
         <!-- KPIs do mês -->
         <div class="kpi-grid">
-          ${kpiCard('Receita '+selEmpresaMonth, fmt(e.receita||0), '', comp.color)}
+          ${kpiCard('Receita '+selEmpresaMonth, fmt(mesReceita), agrMes.receitaMp>0?`inclui ${fmt(agrMes.receitaMp)} via Mercado Pago`:'', comp.color)}
           ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)+mesExtras), '', '#F59E0B')}
           ${kpiCard('Headcount', fmtNum(e.headcount||0), 'pessoas', '#8B5CF6')}
         </div>
@@ -3914,6 +3951,9 @@ function buildEmpresaAnualTable(cid) {
   const rows = [
     {label:'Receita Bruta', fn:(m)=>getEmpresaMes(cid,m).receita, bold:true, color:'#1E6FFF'},
     ...cats.map(cat => ({label:'• '+cat, fn:(m)=>getCustoEmpresaCatMes(m,cid,cat)})),
+    // os baldes do formulário antigo entram no Total: sem esta linha a tabela não fecha
+    ...(MONTHS.some(m => calcCustos(getLanc(m,cid)) > 0)
+        ? [{label:'• Lançamento direto (formulário)', fn:(m)=>calcCustos(getLanc(m,cid))}] : []),
     {label:'Total Custos', fn:(m)=>getEmpresaMes(cid,m).custos, bold:true, color:'#F59E0B'},
     {label:'Resultado Operacional', fn:(m)=>getEmpresaMes(cid,m).resultado, bold:true, isResult:true},
     {label:'Margem (%)', fn:(m)=>{const a=getEmpresaMes(cid,m);return a.receita>0?fmtPct(a.resultado/a.receita):'—';}, noFmt:true},
@@ -4766,10 +4806,12 @@ function makeAllEditable() {
 // ─── INIT (called after auth) ────────────────────────────────────────────────
 async function initDashboard() {
   resetState();          // nunca herdar o estado de uma sessão anterior
-  await loadAll();
+  const falhas = await loadAll();
   document.getElementById('loading-overlay').style.display = 'none';
   renderAll();
-  toast('Arcade Hub v2.0 carregado — ' + COMPANIES.length + ' empresas ativas!');
+  // um toast de sucesso por cima do erro esconderia a falha de carga
+  if (falhas.length) toast('Não foi possível carregar: ' + falhas.join(', ') + '. Os números podem estar incompletos — recarregue.', 'erro');
+  else toast('Arcade Hub v2.0 carregado — ' + COMPANIES.length + ' empresas ativas!');
 }
 </script>
 </body>
