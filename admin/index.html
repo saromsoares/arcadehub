@@ -1240,7 +1240,11 @@ document.addEventListener('DOMContentLoaded', () => {
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 // Período operacional — MUDE SÓ AQUI. Todo o resto (cabeçalhos de mês, meses
 // bloqueados, textos, totais e caixa) deriva destas constantes.
-const DATA_INICIO = { mes: 'Mar', idx: 2, label: '01/03/2025' };
+// Exercício corrente. 'mes' é texto sem ano ('Mar'), então tudo — leitura, escrita e
+// as somas do Mercado Pago — precisa ser filtrado por este ano, senão Mar/2026 e
+// Mar/2027 viram a mesma coisa na virada do ano.
+const EXERCICIO = new Date().getFullYear();
+const DATA_INICIO = { mes: 'Mar', idx: 2, label: `01/03/${EXERCICIO}` };
 const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Mar..Dez
 const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev
 const PERIODO_LABEL = `${DATA_INICIO.mes}–${MONTHS[MONTHS.length-1]}`;
@@ -1470,7 +1474,7 @@ function getMpReceita(m, cid) {
     if (r.status !== 'approved' || r.empresa_id !== cid) continue;
     const dRaw = r.date_approved || r.date_created;
     const d = dRaw ? new Date(dRaw) : null;
-    if (!d || isNaN(d.getTime()) || MONTHS[d.getMonth()] !== m) continue;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO || MONTHS[d.getMonth()] !== m) continue;
     soma += mpNum(r.valor) || 0;
   }
   return soma;
@@ -1484,11 +1488,12 @@ function getMpAporte(socio, mes) {
   let soma = 0;
   for (const r of list) {
     if (r.status !== 'approved' || r.empresa_id !== tag) continue;
-    if (mes) {
-      const dRaw = r.date_approved || r.date_created;
-      const d = dRaw ? new Date(dRaw) : null;
-      if (!d || isNaN(d.getTime()) || MONTHS[d.getMonth()] !== mes) continue;
-    }
+    // sem `mes`, isto somava TODO o histórico — em 2027 os aportes de 2026 voltariam
+    // a contar no caixa. O exercício filtra sempre; o mês, só quando pedido.
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
+    if (mes && MONTHS[d.getMonth()] !== mes) continue;
     soma += mpNum(r.valor) || 0;
   }
   return soma;
@@ -1702,21 +1707,21 @@ async function salvarTudoAgora() {
   try {
     const now = new Date().toISOString();
     const lancRows = Object.values(lancamentos).filter(e => e && e.mes && e.empresa_id).map(e => ({
-      mes: e.mes, empresa_id: e.empresa_id,
+      mes: e.mes, ano: EXERCICIO, empresa_id: e.empresa_id,
       receita: e.receita||0, custos_diretos: e.custos_diretos||0, folha: e.folha||0,
       impostos: e.impostos||0, despesas_adm: e.despesas_adm||0, outras_despesas: e.outras_despesas||0,
       headcount: e.headcount||0, obs: e.obs||'', pagador: e.pagador||'', meio_pagamento: e.meio_pagamento||'',
       updated_at: now
     }));
-    if (lancRows.length) await db(sb.from('lancamentos').upsert(lancRows, { onConflict: 'mes,empresa_id' }), 'salvar lançamentos');
+    if (lancRows.length) await db(sb.from('lancamentos').upsert(lancRows, { onConflict: 'ano,mes,empresa_id' }), 'salvar lançamentos');
 
     const planRows = Object.values(planejado).filter(p => p && p.mes && p.empresa_id).map(p => ({
-      mes: p.mes, empresa_id: p.empresa_id,
+      mes: p.mes, ano: EXERCICIO, empresa_id: p.empresa_id,
       receita_p: p.receita_p||0, custos_diretos_p: p.custos_diretos_p||0, folha_p: p.folha_p||0,
       impostos_p: p.impostos_p||0, despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
       headcount_p: p.headcount_p||0, updated_at: now
     }));
-    if (planRows.length) await db(sb.from('planejado').upsert(planRows, { onConflict: 'mes,empresa_id' }), 'salvar plano');
+    if (planRows.length) await db(sb.from('planejado').upsert(planRows, { onConflict: 'ano,mes,empresa_id' }), 'salvar plano');
 
     const payload = {
       caixa_inicial: estrutura.caixa_inicial||0, data_inicio: DATA_INICIO.label,
@@ -1738,20 +1743,20 @@ async function salvarTudoAgora() {
 async function saveLanc(mes, empresa_id) {
   const e = getLanc(mes, empresa_id);
   await db(sb.from('lancamentos').upsert({
-    mes, empresa_id,
+    mes, ano: EXERCICIO, empresa_id,
     receita: e.receita||0, custos_diretos: e.custos_diretos||0,
     folha: e.folha||0, impostos: e.impostos||0,
     despesas_adm: e.despesas_adm||0, outras_despesas: e.outras_despesas||0,
     headcount: e.headcount||0, obs: e.obs||'',
     pagador: e.pagador||'', meio_pagamento: e.meio_pagamento||'',
     updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' }), 'salvar lançamento');
+  }, { onConflict: 'ano,mes,empresa_id' }), 'salvar lançamento');
   showSaving('saving-lanc');
 }
 // ─── CUSTOS EXTRAS CRUD ─────────────────────────────────────────────────────
 async function saveCustoExtra(custo) {
   const payload = {
-    mes: custo.mes, empresa_id: custo.empresa_id,
+    mes: custo.mes, ano: EXERCICIO, empresa_id: custo.empresa_id,
     categoria: custo.categoria || 'Outros Custos',
     tipo: custo.tipo === 'fixo' ? 'fixo' : 'variavel',
     recorrencia_id: custo.recorrencia_id || null,
@@ -1833,13 +1838,13 @@ function getCustosExtras(mes, empresa_id) {
 async function savePlan(mes, empresa_id) {
   const p = getPlan(mes, empresa_id);
   await db(sb.from('planejado').upsert({
-    mes, empresa_id,
+    mes, ano: EXERCICIO, empresa_id,
     receita_p: p.receita_p||0, custos_diretos_p: p.custos_diretos_p||0,
     folha_p: p.folha_p||0, impostos_p: p.impostos_p||0,
     despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
     headcount_p: p.headcount_p||0,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' }), 'salvar plano');
+  }, { onConflict: 'ano,mes,empresa_id' }), 'salvar plano');
   showSaving('saving-plan');
 }
 // Lê/espelha as metas de KPI, que têm inputs gêmeos nas abas Planejado e Estrutura
@@ -1898,10 +1903,10 @@ async function loadAll() {
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
   const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos'];
   const respostas = await Promise.all([
-    sb.from('lancamentos').select('*'),
-    sb.from('planejado').select('*'),
+    sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
+    sb.from('planejado').select('*').eq('ano', EXERCICIO),
     sb.from('estrutura').select('*').limit(1).maybeSingle(),
-    sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
+    sb.from('custos_extras').select('*').eq('ano', EXERCICIO).order('created_at', { ascending: true }),
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
