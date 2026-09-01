@@ -761,7 +761,7 @@
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios − Custos Consumidos (realizado dos lançamentos, <span class="op-periodo"></span>). O caixa começa com o capital que os sócios efetivamente aportaram e vai sendo abatido conforme os custos são lançados.</div>
+    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios <strong>+ Receita Realizada</strong> − Custos Consumidos (<span class="op-periodo"></span>). Entra o capital aportado e o que as filhas receberam (inclusive via Mercado Pago); sai o que foi lançado como custo.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
     <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba 💳 Mercado Pago).</p>
@@ -1626,53 +1626,66 @@ function badgeHtml(s) {
 function getTotalCustosExtras(mes, empresa_id) {
   return getCustosExtras(mes, empresa_id).reduce((a,x)=>a+(x.valor||0),0);
 }
+// ── Agregador ÚNICO por empresa/mês ──────────────────────────────────────────
+// Antes o cabeçalho da empresa, o gráfico e a tabela anual calculavam receita e
+// custo de três formas diferentes (uns incluíam Mercado Pago, outros não; uns
+// somavam os baldes legados do formulário, outros não) e discordavam na mesma tela.
+// Tudo passa por aqui.
+function getEmpresaMes(cid, mes) {
+  const e = getLanc(mes, cid);
+  const receitaManual = e.receita || 0;
+  const receitaMp = getMpReceita(mes, cid);
+  const custosLegado = calcCustos(e);                  // baldes do formulário antigo
+  const custosItens = getTotalCustosExtras(mes, cid);  // Custos do Mês (fonte atual)
+  const receita = receitaManual + receitaMp;
+  const custos = custosLegado + custosItens;
+  return { mes, receita, receitaManual, receitaMp, custos, custosLegado, custosItens,
+           resultado: receita - custos, headcount: e.headcount || 0 };
+}
+
 function getConsolidado() {
   return MONTHS.map(m => {
     let receita=0,custos=0,resultado=0,headcount=0,receitaP=0,resultadoP=0;
     COMPANIES.forEach(c => {
-      const e = getLanc(m, c.id), p = getPlan(m, c.id);
-      const extras = getTotalCustosExtras(m, c.id);
-      const recMp = getMpReceita(m, c.id);
-      receita += (e.receita||0) + recMp; custos += calcCustos(e) + extras;
-      resultado += calcRes(e) + recMp - extras; headcount += e.headcount||0;
+      const a = getEmpresaMes(c.id, m), p = getPlan(m, c.id);
+      receita += a.receita; custos += a.custos; resultado += a.resultado; headcount += a.headcount;
       receitaP += p.receita_p||0; resultadoP += calcResP(p);
     });
     return {mes:m, receita, custos, resultado, headcount, receitaP, resultadoP};
   });
 }
+// YTD agrega só os meses do período operacional — Jan/Fev não fazem parte do exercício.
 function getYTD(cons) {
+  const op = cons.filter(c => MONTHS_OPERACIONAIS.includes(c.mes));
   return {
-    receita: cons.reduce((a,c)=>a+c.receita,0),
-    resultado: cons.reduce((a,c)=>a+c.resultado,0),
-    receitaP: cons.reduce((a,c)=>a+c.receitaP,0),
-    resultadoP: cons.reduce((a,c)=>a+c.resultadoP,0),
+    receita: op.reduce((a,c)=>a+c.receita,0),
+    custos: op.reduce((a,c)=>a+c.custos,0),
+    resultado: op.reduce((a,c)=>a+c.resultado,0),
+    receitaP: op.reduce((a,c)=>a+c.receitaP,0),
+    resultadoP: op.reduce((a,c)=>a+c.resultadoP,0),
   };
 }
 function getCompaniesYTD() {
   return COMPANIES.map(c => {
     let receita=0,custos=0,resultado=0,receitaP=0,resultadoP=0,hc=0;
-    MONTHS.forEach(m => {
-      const e=getLanc(m,c.id),p=getPlan(m,c.id);
-      const extras = getTotalCustosExtras(m, c.id);
-      const recMp = getMpReceita(m, c.id);
-      receita+=(e.receita||0)+recMp; custos+=calcCustos(e)+extras; resultado+=calcRes(e)+recMp-extras;
-      receitaP+=p.receita_p||0; resultadoP+=calcResP(p); hc+=e.headcount||0;
+    MONTHS_OPERACIONAIS.forEach(m => {
+      const a = getEmpresaMes(c.id, m), p = getPlan(m, c.id);
+      receita+=a.receita; custos+=a.custos; resultado+=a.resultado; hc+=a.headcount;
+      receitaP+=p.receita_p||0; resultadoP+=calcResP(p);
     });
     // null = sem plano cadastrado; 0 diria 'não atingiu nada', que é diferente
     const atR=receitaP>0?receita/receitaP:null, atRe=resultadoP!==0?resultado/resultadoP:null;
     const status=(atR===null&&atRe===null)?'SEM DADOS':((atR??1)>=1&&(atRe??1)>=1)?'VERDE':((atR??1)>=0.9&&(atRe??1)>=0.85)?'AMARELO':'VERMELHO';
-    return {...c,receita,custos,resultado,receitaP,resultadoP,atR,atRe,status,hcAvg:hc/12};
+    return {...c,receita,custos,resultado,receitaP,resultadoP,atR,atRe,status,hcAvg:hc/MONTHS_OPERACIONAIS.length};
   });
 }
 function getEmpresaYTD(cid) {
   let receita=0,custos=0,resultado=0,hc=0;
-  MONTHS.forEach(m => {
-    const e=getLanc(m,cid);
-    const extras = getTotalCustosExtras(m, cid);
-    const recMp = getMpReceita(m, cid);
-    receita+=(e.receita||0)+recMp; custos+=calcCustos(e)+extras; resultado+=calcRes(e)+recMp-extras; hc+=e.headcount||0;
+  MONTHS_OPERACIONAIS.forEach(m => {
+    const a = getEmpresaMes(cid, m);
+    receita+=a.receita; custos+=a.custos; resultado+=a.resultado; hc+=a.headcount;
   });
-  return {receita,custos,resultado,hcAvg:hc/12};
+  return {receita,custos,resultado,hcAvg:hc/MONTHS_OPERACIONAIS.length};
 }
 function getTotals() {
   const totalCusto = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0); // custo base mensal (planejado)
@@ -1681,18 +1694,22 @@ function getTotals() {
   const totalRealizadoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalRealizadoMes(m),0); // consumido real (lançamentos)
   const totalInv = INV_CATS.reduce((a,k)=>a+(estrutura.investimento[k]||0),0);
   const cons = getConsolidado();
+  const ytdCons = getYTD(cons);
   const resultadoAcum = cons.reduce((a,c)=>a+c.resultado,0);
   const totalAportes = getTotalAportes();          // aportes confirmados
   const totalAporteMeta = getTotalAporteMeta();     // aportes previstos (meta)
-  // Caixa real = o que entrou (aportes confirmados) menos o que foi consumido (custos realizados)
-  const caixaAtual = totalAportes - totalRealizadoAcum;
+  // Caixa = tudo que entrou (aportes + receita realizada) menos o que saiu.
+  // A receita ficava de fora: o dinheiro recebido das filhas não aparecia no caixa,
+  // que era na prática "saldo dos aportes consumidos", não caixa.
+  const receitaRealizada = ytdCons.receita;
+  const caixaAtual = totalAportes + receitaRealizada - totalRealizadoAcum;
   // Burn rate real = consumo médio mensal nos meses que tiveram gasto
   const mesesComConsumo = MONTHS_OP.filter(m=>getTotalRealizadoMes(m)>0).length || 1;
   const burnRate = totalRealizadoAcum / mesesComConsumo;
   const runway = burnRate>0?caixaAtual/burnRate:0;
-  const ytd = getYTD(cons);
+  const ytd = ytdCons;
   const margem = ytd.receita>0?ytd.resultado/ytd.receita:0;
-  return {totalCusto,totalCustoAcum,totalRealizadoAcum,totalInv,resultadoAcum,caixaAtual,burnRate,runway,ytd,margem,totalAportes,totalAporteMeta};
+  return {totalCusto,totalCustoAcum,totalRealizadoAcum,totalInv,resultadoAcum,caixaAtual,burnRate,runway,ytd,margem,totalAportes,totalAporteMeta,receitaRealizada};
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
@@ -3339,7 +3356,7 @@ function renderEstrutura(totals) {
   document.getElementById('caixa-cards').innerHTML = [
     {label:'Aportes Confirmados', val:fmt(totalAportes), color:'#8B5CF6', sub:`de ${fmt(totalAporteMeta)} previstos · ${fmtPct(aportePct)}`},
     {label:`Consumido (${PERIODO_LABEL})`, val:fmt(totalRealizadoAcum), color:'#EF4444', sub:'custos realmente lançados'},
-    {label:'Caixa Atual', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444', sub:'aportes − consumido'},
+    {label:'Caixa Atual', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444', sub:'aportes + receita − consumido'},
     {label:'Runway', val:`${fmtNum(totals.runway)} m`, color:totals.runway>=(estrutura.metas?.runway||6)?'#10B981':'#F59E0B', sub:'no ritmo de consumo atual'},
   ].map(({label,val,color,sub})=>`
     <div class="caixa-mini" style="border-left:3px solid ${color}">
@@ -3468,7 +3485,7 @@ function renderEstrutura(totals) {
     kpiCard('Custo Base Mensal', fmt(totalBase), 'estrutura planejada', '#F59E0B'),
     kpiCard('Planejado Acum.', fmt(totalCustoAcum), `projeção ${PERIODO_LABEL}`, '#1E6FFF'),
     kpiCard('Realizado Acum.', fmt(totalRealizadoAcum), `${fmtPct(consumoPct)} do planejado`, '#EF4444'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), 'aportes − consumido', caixaAtual>=0?'#10B981':'#EF4444'),
+    kpiCard('Caixa Atual', fmt(caixaAtual), 'aportes + receita − consumido', caixaAtual>=0?'#10B981':'#EF4444'),
     kpiCard('Total Investido', fmt(totalInv), 'estruturação (histórico)', '#8B5CF6'),
     kpiCard('Runway', `${fmtNum(totals.runway)} m`, 'no ritmo atual', totals.runway>=(estrutura.metas?.runway||6)?'#10B981':'#F59E0B'),
   ].join('');
@@ -3707,15 +3724,15 @@ function renderEmpresaIndividual(cid) {
   const margem = ytd.receita > 0 ? ytd.resultado / ytd.receita : 0;
 
   const e = getLanc(selEmpresaMonth, cid);
-  const mesExtras = getTotalCustosExtras(selEmpresaMonth, cid);
-  const mesRes = calcRes(e) - mesExtras;
-  const mesMargem = (e.receita||0) > 0 ? mesRes / e.receita : 0;
+  const agrMes = getEmpresaMes(cid, selEmpresaMonth);
+  const mesExtras = agrMes.custosItens;
+  const mesRes = agrMes.resultado;
+  const mesMargem = agrMes.receita > 0 ? mesRes / agrMes.receita : 0;
 
-  // Dados mensais para o gráfico
+  // Dados mensais para o gráfico — mesmo agregador do cabeçalho e da tabela anual
   const dadosMensais = MONTHS.map(m => {
-    const em = getLanc(m, cid);
-    const mExtras = getTotalCustosExtras(m, cid);
-    return { mes: m, receita: em.receita||0, custos: calcCustos(em)+mExtras, resultado: calcRes(em)-mExtras };
+    const a = getEmpresaMes(cid, m);
+    return { mes: m, receita: a.receita, custos: a.custos, resultado: a.resultado };
   });
 
   const content = `
@@ -3895,16 +3912,18 @@ function buildEmpresaAnualTable(cid) {
   // Custos quebrados pelas categorias que tiveram lançamento no ano (modelo itemizado).
   const cats = getCategoriasComCusto(cid);
   const rows = [
-    {label:'Receita Bruta', fn:(m)=>getLanc(m,cid).receita||0, bold:true, color:'#1E6FFF'},
+    {label:'Receita Bruta', fn:(m)=>getEmpresaMes(cid,m).receita, bold:true, color:'#1E6FFF'},
     ...cats.map(cat => ({label:'• '+cat, fn:(m)=>getCustoEmpresaCatMes(m,cid,cat)})),
-    {label:'Total Custos', fn:(m)=>getTotalCustosExtras(m,cid), bold:true, color:'#F59E0B'},
-    {label:'Resultado Operacional', fn:(m)=>(getLanc(m,cid).receita||0)-getTotalCustosExtras(m,cid), bold:true, isResult:true},
-    {label:'Margem (%)', fn:(m)=>{const e=getLanc(m,cid);const r=(e.receita||0)-getTotalCustosExtras(m,cid);return(e.receita||0)>0?fmtPct(r/e.receita):'—';}, noFmt:true},
+    {label:'Total Custos', fn:(m)=>getEmpresaMes(cid,m).custos, bold:true, color:'#F59E0B'},
+    {label:'Resultado Operacional', fn:(m)=>getEmpresaMes(cid,m).resultado, bold:true, isResult:true},
+    {label:'Margem (%)', fn:(m)=>{const a=getEmpresaMes(cid,m);return a.receita>0?fmtPct(a.resultado/a.receita):'—';}, noFmt:true},
   ];
 
   return rows.map((r,ri)=>{
     const vals = MONTHS.map(m => r.fn(m));
-    const ytdv = r.noFmt ? '—' : vals.reduce((a,b)=>a+b,0);
+    // o total soma só o período operacional, senão diverge do cabeçalho YTD da empresa
+    const ytdv = r.noFmt ? '—'
+      : MONTHS.reduce((a, m, i) => MONTHS_OPERACIONAIS.includes(m) ? a + vals[i] : a, 0);
     return `<tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td style="${r.bold?'font-weight:700;':''}${r.color?`color:${r.color}`:''}">${r.label}</td>
       ${vals.map(v=>{
