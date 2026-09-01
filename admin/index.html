@@ -1219,7 +1219,7 @@ function showDashboard(user) {
 // Sair precisa esvaziar a memória: senhas reveladas, e-mails, contatos e os
 // números do grupo continuavam acessíveis no estado da página, e um login
 // seguinte herdava os registros do usuário anterior quando a RLS devolvia zero linhas.
-function resetState() {
+async function resetState() {
   lancamentos = {}; planejado = {};
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
@@ -1240,7 +1240,9 @@ function resetState() {
   };
   // desinscrever ANTES de liberar as flags: só zerar os booleanos faria o próximo
   // login criar canais novos por cima dos antigos, duplicando os callbacks
-  try { sb.removeAllChannels(); } catch(_e){}
+  // removeAllChannels é ASSÍNCRONO: sem esperar, o login seguinte podia assinar
+  // canais novos enquanto a limpeza ainda corria — e a limpeza derrubava os novos.
+  try { await sb.removeAllChannels(); } catch(_e){}
   mpRealtimeOn = false; contatosRealtimeOn = false;
   if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
@@ -1255,7 +1257,7 @@ function resetState() {
 
 async function doLogout() {
   await sb.auth.signOut();
-  resetState();
+  await resetState();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
@@ -4808,7 +4810,7 @@ function makeAllEditable() {
 
 // ─── INIT (called after auth) ────────────────────────────────────────────────
 async function initDashboard() {
-  resetState();          // nunca herdar o estado de uma sessão anterior
+  await resetState();    // nunca herdar o estado de uma sessão anterior
   const falhas = await loadAll();
   document.getElementById('loading-overlay').style.display = 'none';
   renderAll();
