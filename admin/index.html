@@ -751,31 +751,23 @@
   <!-- ESTRUTURA DE CUSTOS (Arcade Hub Mae) -->
   <div id="tab-estrutura" class="tab-content">
     <div class="page-title" id="pt-estrutura">Orçamento &amp; Caixa — Arcade Hub <span class="saving" id="saving-estr">Salvando...</span></div>
-    <div class="page-sub" id="ps-estrutura">Tudo que é <strong>meta e capital</strong> num lugar só: aportes e caixa, plano por empresa, folha e orçamento por categoria. Nada é lançado aqui — contas entram na aba <strong>📝 Lançamentos</strong>. Período operacional: <strong>01/04/2025</strong> em diante.</div>
+    <div class="page-sub" id="ps-estrutura">Tudo que é <strong>meta e capital</strong> num lugar só: aportes e caixa, plano por empresa, folha e orçamento por categoria. Nada é lançado aqui — contas entram na aba <strong>📝 Lançamentos</strong>. Período operacional: <strong class="op-inicio"></strong> em diante.</div>
 
     <div class="caixa-block">
       <div class="caixa-input-wrap">
         <div class="caixa-label">Início da Operação</div>
         <div class="caixa-desc">Data de abertura do período</div>
-        <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);">01/04/2025</div>
+        <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);" class="op-inicio"></div>
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios − Custos Consumidos (realizado dos lançamentos, Abr–Dez). O caixa começa com o capital que os sócios efetivamente aportaram e vai sendo abatido conforme os custos são lançados.</div>
+    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios − Custos Consumidos (realizado dos lançamentos, <span class="op-periodo"></span>). O caixa começa com o capital que os sócios efetivamente aportaram e vai sendo abatido conforme os custos são lançados.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses Jan/Fev/Mar = pré-operação (bloqueados). Aportes recebidos via Mercado Pago aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba 💳 Mercado Pago).</p>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba 💳 Mercado Pago).</p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1000px;">
-        <thead><tr>
-          <th>Sócio</th>
-          <th style="color:rgba(255,255,255,0.4)">Jan</th><th style="color:rgba(255,255,255,0.4)">Fev</th><th style="color:rgba(255,255,255,0.4)">Mar</th>
-          <th>Abr</th><th>Mai</th><th>Jun</th><th>Jul</th>
-          <th>Ago</th><th>Set</th><th>Out</th><th>Nov</th><th>Dez</th>
-          <th>Confirmado</th>
-          <th style="background:#1E3A5F;color:#C4B5FD;">Meta/Sócio</th>
-          <th style="background:#1E3A5F;color:#C4B5FD;">% Conf.</th>
-        </tr></thead>
+        <thead><tr id="aportes-header"><!-- meses vêm de MONTHS_PRE/MONTHS_OPERACIONAIS --></tr></thead>
         <tbody id="aportes-table"></tbody>
       </table>
     </div>
@@ -808,20 +800,11 @@
     </div>
 
     <div class="section-title"><span>Orçamento × Realizado por Categoria</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">A coluna <strong>Orçamento/mês</strong> é a sua meta de gasto por categoria (editável). As colunas dos meses mostram o <strong>Realizado</strong> — soma dos custos lançados na aba <strong>📝 Lançamentos</strong> (todas as empresas), <strong>somente leitura</strong>. <span style="color:#059669;font-weight:600;">Verde</span> = dentro do orçado, <span style="color:#EF4444;font-weight:600;">vermelho</span> = acima. Jan/Fev/Mar = pré-operação. <strong>Para lançar uma conta, use a aba Lançamentos.</strong>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">A coluna <strong>Orçamento/mês</strong> é a sua meta de gasto por categoria (editável). As colunas dos meses mostram o <strong>Realizado</strong> — soma dos custos lançados na aba <strong>📝 Lançamentos</strong> (todas as empresas), <strong>somente leitura</strong>. <span style="color:#059669;font-weight:600;">Verde</span> = dentro do orçado, <span style="color:#EF4444;font-weight:600;">vermelho</span> = acima. <span class="op-pre"></span> = pré-operação. <strong>Para lançar uma conta, use a aba Lançamentos.</strong>
       <button onclick="irParaLancamentos('arcade_hub')" style="margin-left:6px;background:#10B981;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📝 Ir para Lançamentos</button></p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1200px;">
-        <thead><tr>
-          <th>Categoria</th>
-          <th style="background:#1E3A5F;color:#7DD3FC;min-width:100px;">Orçamento/mês</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Jan</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Fev</th>
-          <th style="background:#1a1a2e;color:rgba(255,255,255,0.3);">Mar</th>
-          <th title="Realizado (lançado em Lançamentos)">Abr</th><th title="Realizado">Mai</th><th title="Realizado">Jun</th><th title="Realizado">Jul</th>
-          <th title="Realizado">Ago</th><th title="Realizado">Set</th><th title="Realizado">Out</th><th title="Realizado">Nov</th><th title="Realizado">Dez</th>
-          <th>Total ano</th>
-        </tr></thead>
+        <thead><tr id="custo-mensal-header"><!-- meses vêm de MONTHS_PRE/MONTHS_OPERACIONAIS --></tr></thead>
         <tbody id="custo-mensal-table"></tbody>
         <tfoot><tr id="custo-mensal-total"></tr></tfoot>
       </table>
@@ -1255,10 +1238,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-// Período operacional: início em 01/04/2025
-const DATA_INICIO = { mes: 'Abr', idx: 3 };
-const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Abr..Dez
-const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev, Mar
+// Período operacional — MUDE SÓ AQUI. Todo o resto (cabeçalhos de mês, meses
+// bloqueados, textos, totais e caixa) deriva destas constantes.
+const DATA_INICIO = { mes: 'Mar', idx: 2, label: '01/03/2025' };
+const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Mar..Dez
+const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev
+const PERIODO_LABEL = `${DATA_INICIO.mes}–${MONTHS[MONTHS.length-1]}`;
 function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 
 // ─── EMPRESAS ─────────────────────────────────────────────────────────────────
@@ -1314,7 +1299,7 @@ let lancamentos = {};
 let planejado = {};
 let estrutura = {
   caixa_inicial: 0,
-  data_inicio: '01/04/2025',
+  data_inicio: DATA_INICIO.label,
   investimento: Object.fromEntries(INV_CATS.map(k => [k, 0])),
   custos_mensais: Object.fromEntries(CUSTO_CATS.map(k => [k, 0])),
   custos_por_mes: {},
@@ -1322,9 +1307,9 @@ let estrutura = {
   metas: { runway: 6, margem: 0.15, burnRateMax: 0 }
 };
 let estrutura_id = null;
-let selMonth = 'Abr';
+let selMonth = DATA_INICIO.mes;
 let selCompany = 'arcade_hub';
-let selPlanMonth = 'Abr';
+let selPlanMonth = DATA_INICIO.mes;
 // Um debounce POR FLUXO de escrita. Com um timer único global, editar dois blocos
 // em menos de 700ms fazia o segundo cancelar o salvamento pendente do primeiro —
 // perda silenciosa. Vira provável quando orçamento, plano e lançamento convivem na
@@ -1661,7 +1646,7 @@ function getEmpresaYTD(cid) {
 }
 function getTotals() {
   const totalCusto = CUSTO_CATS.reduce((a,k)=>a+(estrutura.custos_mensais[k]||0),0); // custo base mensal (planejado)
-  const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const MONTHS_OP = MONTHS_OPERACIONAIS;
   const totalCustoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalCustoMes(m),0);       // planejado acumulado (projeção)
   const totalRealizadoAcum = MONTHS_OP.reduce((a,m)=>a+getTotalRealizadoMes(m),0); // consumido real (lançamentos)
   const totalInv = INV_CATS.reduce((a,k)=>a+(estrutura.investimento[k]||0),0);
@@ -1718,7 +1703,7 @@ async function salvarTudoAgora() {
     if (planRows.length) await sb.from('planejado').upsert(planRows, { onConflict: 'mes,empresa_id' });
 
     const payload = {
-      caixa_inicial: estrutura.caixa_inicial||0, data_inicio: '01/04/2025',
+      caixa_inicial: estrutura.caixa_inicial||0, data_inicio: DATA_INICIO.label,
       investimento: estrutura.investimento, custos_mensais: estrutura.custos_mensais,
       custos_por_mes: estrutura.custos_por_mes, aportes: estrutura.aportes,
       metas: estrutura.metas, updated_at: now
@@ -1872,7 +1857,7 @@ async function saveEstrutura(src) {
     const caixa_inicial = estrutura.caixa_inicial || 0;
     const payload = {
       caixa_inicial,
-      data_inicio: '01/04/2025',
+      data_inicio: DATA_INICIO.label,
       investimento: estrutura.investimento,
       custos_mensais: estrutura.custos_mensais,
       custos_por_mes: estrutura.custos_por_mes,
@@ -3240,15 +3225,31 @@ function renderFolha(totalBase) {
 
 function renderEstrutura(totals) {
   const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalRealizadoAcum, totalInv, totalAportes, totalAporteMeta } = totals;
-  const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const MONTHS_OP = ['Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const MONTHS_ALL = MONTHS;
+  const MONTHS_OP = MONTHS_OPERACIONAIS;
   const aportePct = totalAporteMeta>0 ? totalAportes/totalAporteMeta : 0;
 
   setMetaInputs(estrutura.metas);
 
+  // Cabeçalhos de mês e textos de período derivam de DATA_INICIO — nada de mês fixo no HTML
+  const thMes = (m, extra = '') => MONTHS_PRE.includes(m)
+    ? `<th style="background:#1a1a2e;color:rgba(255,255,255,0.3);" title="pré-operação">${m}</th>`
+    : `<th${extra}>${m}</th>`;
+  document.getElementById('aportes-header').innerHTML =
+    `<th>Sócio</th>${MONTHS.map(m => thMes(m)).join('')}<th>Confirmado</th>` +
+    `<th style="background:#1E3A5F;color:#C4B5FD;">Meta/Sócio</th>` +
+    `<th style="background:#1E3A5F;color:#C4B5FD;">% Conf.</th>`;
+  document.getElementById('custo-mensal-header').innerHTML =
+    `<th>Categoria</th><th style="background:#1E3A5F;color:#7DD3FC;min-width:100px;">Orçamento/mês</th>` +
+    MONTHS.map(m => thMes(m, ' title="Realizado (lançado em Lançamentos)"')).join('') +
+    `<th>Total ano</th>`;
+  document.querySelectorAll('.op-inicio').forEach(el => { el.textContent = DATA_INICIO.label; });
+  document.querySelectorAll('.op-periodo').forEach(el => { el.textContent = PERIODO_LABEL; });
+  document.querySelectorAll('.op-pre').forEach(el => { el.textContent = MONTHS_PRE.join('/'); });
+
   document.getElementById('caixa-cards').innerHTML = [
     {label:'Aportes Confirmados', val:fmt(totalAportes), color:'#8B5CF6', sub:`de ${fmt(totalAporteMeta)} previstos · ${fmtPct(aportePct)}`},
-    {label:'Consumido (Abr–Dez)', val:fmt(totalRealizadoAcum), color:'#EF4444', sub:'custos realmente lançados'},
+    {label:`Consumido (${PERIODO_LABEL})`, val:fmt(totalRealizadoAcum), color:'#EF4444', sub:'custos realmente lançados'},
     {label:'Caixa Atual', val:fmt(caixaAtual), color:caixaAtual>=0?'#10B981':'#EF4444', sub:'aportes − consumido'},
     {label:'Runway', val:`${fmtNum(totals.runway)} m`, color:totals.runway>=(estrutura.metas?.runway||6)?'#10B981':'#F59E0B', sub:'no ritmo de consumo atual'},
   ].map(({label,val,color,sub})=>`
@@ -3342,7 +3343,7 @@ function renderEstrutura(totals) {
         const over = base>0 && real>base;
         return `<td style="padding:6px;text-align:center;font-weight:600;color:${over?'#EF4444':'#059669'};" title="Realizado em ${mm} — lançado na aba Lançamentos${base>0?` · orçado ${fmt(base)}`:''}">${fmt(real)}</td>`;
       }).join('') +
-      `<td style="text-align:center;"><div style="font-weight:700;color:#1E6FFF;" title="Orçado no ano (Abr–Dez)">${fmt(orcadoAnoCat)}</div>${totalRealCat>0?`<div style="font-size:10px;font-weight:600;color:${totalRealCat>orcadoAnoCat?'#EF4444':'#059669'};" title="Realizado no ano">▸ ${fmt(totalRealCat)}</div>`:''}</td>
+      `<td style="text-align:center;"><div style="font-weight:700;color:#1E6FFF;" title="Orçado no período (${PERIODO_LABEL})">${fmt(orcadoAnoCat)}</div>${totalRealCat>0?`<div style="font-size:10px;font-weight:600;color:${totalRealCat>orcadoAnoCat?'#EF4444':'#059669'};" title="Realizado no ano">▸ ${fmt(totalRealCat)}</div>`:''}</td>
     </tr>`;
   }).join('');
 
@@ -3360,7 +3361,7 @@ function renderEstrutura(totals) {
       const r = totalRealPorMes[i];
       return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?(r>0?'#6EE7B7':'rgba(255,255,255,0.3)'):'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;text-align:center;" title="${isOp?('Realizado em '+mm):'pré-operação'}">${isOp?(r>0?fmt(r):'·'):'—'}</td>`;
     }).join('') +
-    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;" title="Orçado no ano (Abr–Dez)">${fmt(orcadoAnual)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>orcadoAnual?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
+    `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;" title="Orçado no período (${PERIODO_LABEL})">${fmt(orcadoAnual)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>orcadoAnual?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
 
   renderFolha(totalBase);
 
@@ -3376,7 +3377,7 @@ function renderEstrutura(totals) {
   const consumoPct = totalCustoAcum>0 ? totalRealizadoAcum/totalCustoAcum : 0;
   document.getElementById('estr-summary-cards').innerHTML = [
     kpiCard('Custo Base Mensal', fmt(totalBase), 'estrutura planejada', '#F59E0B'),
-    kpiCard('Planejado Acum.', fmt(totalCustoAcum), 'projeção Abr–Dez', '#1E6FFF'),
+    kpiCard('Planejado Acum.', fmt(totalCustoAcum), `projeção ${PERIODO_LABEL}`, '#1E6FFF'),
     kpiCard('Realizado Acum.', fmt(totalRealizadoAcum), `${fmtPct(consumoPct)} do planejado`, '#EF4444'),
     kpiCard('Caixa Atual', fmt(caixaAtual), 'aportes − consumido', caixaAtual>=0?'#10B981':'#EF4444'),
     kpiCard('Total Investido', fmt(totalInv), 'estruturação (histórico)', '#8B5CF6'),
