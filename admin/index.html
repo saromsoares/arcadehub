@@ -1216,8 +1216,32 @@ function showDashboard(user) {
   initDashboard();
 }
 
+// Sair precisa esvaziar a memória: senhas reveladas, e-mails, contatos e os
+// números do grupo continuavam acessíveis no estado da página, e um login
+// seguinte herdava os registros do usuário anterior quando a RLS devolvia zero linhas.
+function resetState() {
+  lancamentos = {}; planejado = {};
+  custosExtras = []; acoesCal = []; calExtraDates = [];
+  mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
+  contatos = []; emails = [];
+  acessosEmpresas = []; planosEmpresas = [];
+  if (typeof senhasReveladas !== 'undefined') senhasReveladas.clear();
+  if (typeof acessosVisiveis !== 'undefined') acessosVisiveis.clear();
+  acessosMestraOk = false;
+  estrutura_id = null;
+  cancelarSavesPendentes();
+  if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
+  [chartPainel, chartPainelEmpresas, chartDash, chartComp].forEach(c => { try { c && c.destroy(); } catch(_e){} });
+  chartPainel = chartPainelEmpresas = chartDash = chartComp = null;
+  if (typeof empresaCharts !== 'undefined' && empresaCharts) {
+    Object.values(empresaCharts).forEach(c => { try { c && c.destroy(); } catch(_e){} });
+    empresaCharts = {};
+  }
+}
+
 async function doLogout() {
   await sb.auth.signOut();
+  resetState();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
@@ -1911,7 +1935,8 @@ async function loadAll() {
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
     sb.from('emails').select('*').order('created_at', { ascending: false }).limit(200),
-    sb.from('acessos_empresas').select('*').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
+    // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
+    sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
   ]);
   const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
@@ -2642,8 +2667,8 @@ function renderAcessos(){
   box.innerHTML = acessosEmpresas.map(a => {
     const safeId = encodeURIComponent(String(a.id||''));
     const visivel = acessosVisiveis.has(String(a.id));
-    const senha = a.senha || '';
-    const senhaMostrada = visivel ? escapeHtml(senha) : '•'.repeat(Math.min(Math.max(senha.length,6),14));
+    const senha = senhasReveladas.get(String(a.id));   // só existe se foi revelada nesta sessão
+    const senhaMostrada = (visivel && senha != null) ? escapeHtml(senha) : '••••••••';
     const cor = (typeof FILHAS!=='undefined' && (FILHAS.find(c=>c.id===a.empresa_id||c.name===a.empresa_nome)||{}).color) || '#1E6FFF';
     return `<div style="background:#fff;border:1px solid #E5E7EB;border-left:4px solid ${cor};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
@@ -2673,10 +2698,29 @@ function renderAcessos(){
   }).join('');
 }
 
+// A senha nunca vem no loadAll: quem autoriza é a Edge Function (que valida a
+// sessão e deixa a RLS decidir). A mestra continua como trava local, mas já não
+// é a única barreira — antes bastava ler acessosEmpresas no console.
+const senhasReveladas = new Map();   // id -> senha, só enquanto a sessão dura
+
+async function buscarSenhaAcesso(id){
+  const k = String(id);
+  if (senhasReveladas.has(k)) return senhasReveladas.get(k);
+  const { data, error } = await sb.functions.invoke('acesso-senha', { body: { id: k } });
+  if (error || !data || data.error) {
+    toast('Não foi possível obter a senha: ' + ((data && data.error) || (error && error.message) || 'erro'), 'erro');
+    return null;
+  }
+  senhasReveladas.set(k, data.senha || '');
+  return data.senha || '';
+}
+
 async function toggleSenhaAcesso(id){
   const k = String(id);
   if(acessosVisiveis.has(k)){ acessosVisiveis.delete(k); renderAcessos(); return; }
   if(!(await verificarMestra())) return;
+  const senha = await buscarSenhaAcesso(k);
+  if (senha === null) return;
   acessosVisiveis.add(k);
   renderAcessos();
 }
@@ -2691,9 +2735,9 @@ async function copiarAcesso(texto, btn){
 // Copiar senha exige a senha mestra (a senha não fica embutida no HTML).
 async function copiarSenhaAcesso(id, btn){
   if(!(await verificarMestra())) return;
-  const a = acessosEmpresas.find(x=>String(x.id)===String(id));
-  if(!a) return;
-  copiarAcesso(a.senha||'', btn);
+  const senha = await buscarSenhaAcesso(id);
+  if (senha === null) return;
+  copiarAcesso(senha, btn);
 }
 
 function abrirFormAcesso(){
@@ -2716,7 +2760,10 @@ function editarAcesso(id){
   document.getElementById('acesso-rotulo').value = a.rotulo||'Painel admin';
   document.getElementById('acesso-url').value = a.url||'';
   document.getElementById('acesso-usuario').value = a.usuario||'';
-  document.getElementById('acesso-senha').value = a.senha||'';
+  // a senha não vem na listagem: em branco significa "manter a que está no banco"
+  const campoSenha = document.getElementById('acesso-senha');
+  campoSenha.value = '';
+  campoSenha.placeholder = 'deixe em branco para manter a senha atual';
   document.getElementById('acesso-obs').value = a.obs||'';
   document.getElementById('acesso-feedback').textContent='';
   document.getElementById('acesso-form').style.display='block';
@@ -2740,14 +2787,18 @@ async function salvarAcesso(){
     rotulo: document.getElementById('acesso-rotulo').value.trim() || 'Painel admin',
     url: document.getElementById('acesso-url').value.trim() || null,
     usuario: document.getElementById('acesso-usuario').value.trim() || null,
-    senha: document.getElementById('acesso-senha').value || null,
     obs: document.getElementById('acesso-obs').value.trim() || null,
   };
+  // senha em branco numa edição não pode zerar a que já existe
+  const senhaDigitada = document.getElementById('acesso-senha').value;
+  if (senhaDigitada || !id) payload.senha = senhaDigitada || null;
   fb.style.color='#6B7280'; fb.textContent='Salvando...';
   let res;
-  if(id) res = await sb.from('acessos_empresas').update(payload).eq('id', id).select().single();
-  else   res = await sb.from('acessos_empresas').insert(payload).select().single();
+  const colunas = 'id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at';
+  if(id) res = await sb.from('acessos_empresas').update(payload).eq('id', id).select(colunas).single();
+  else   res = await sb.from('acessos_empresas').insert(payload).select(colunas).single();
   if(res.error){ fb.style.color='#EF4444'; fb.textContent='Erro: '+res.error.message; return; }
+  if(senhaDigitada && id) senhasReveladas.delete(String(id));
   if(id) acessosEmpresas = acessosEmpresas.map(x=>String(x.id)===String(id)?res.data:x);
   else   acessosEmpresas.push(res.data);
   fecharFormAcesso();
@@ -4695,6 +4746,7 @@ function makeAllEditable() {
 
 // ─── INIT (called after auth) ────────────────────────────────────────────────
 async function initDashboard() {
+  resetState();          // nunca herdar o estado de uma sessão anterior
   await loadAll();
   document.getElementById('loading-overlay').style.display = 'none';
   renderAll();
