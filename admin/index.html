@@ -1238,7 +1238,9 @@ function resetState() {
     aportes: Object.fromEntries(SOCIOS.map(sc => [sc, Object.fromEntries(MONTHS.map(m => [m, 0]))])),
     metas: { runway: 6, margem: 0.15, burnRateMax: 0 },
   };
-  // flags travadas impediam as subscriptions e o polling de voltar no próximo login
+  // desinscrever ANTES de liberar as flags: só zerar os booleanos faria o próximo
+  // login criar canais novos por cima dos antigos, duplicando os callbacks
+  try { sb.removeAllChannels(); } catch(_e){}
   mpRealtimeOn = false; contatosRealtimeOn = false;
   if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
@@ -1527,6 +1529,7 @@ function getMpTaxa() {
     const dRaw = r.date_approved || r.date_created;
     const d = dRaw ? new Date(dRaw) : null;
     if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
+    if (!MONTHS_OPERACIONAIS.includes(MONTHS[d.getMonth()])) continue;   // mesma janela da receita
     const bruto = mpNum(r.valor) || 0;
     const liquido = mpNum(r.valor_liquido);
     if (liquido != null) taxa += bruto - liquido;
