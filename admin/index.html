@@ -1287,7 +1287,6 @@ function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 // Empresas filhas: todas as demais
 const COMPANIES = [
   { id:'arcade_hub',    name:'Arcade Hub',      color:'#1E6FFF', emoji:'🏦', segmento:'Holding / Fintech',       isMae: true,  website:'' },
-  { id:'peptiboard',    name:'PeptiBoard',      color:'#22C55E', emoji:'💊', segmento:'Saúde & Protocolos',       isMae: false, website:'https://peptiboard.com/' },
   { id:'gironamaxima',  name:'Giro na Máxima',  color:'#F97316', emoji:'🔄', segmento:'Tecnologia & IA',          isMae: false, website:'https://gironamaxima.com.br/' },
   { id:'priva_br',      name:'PrivaBR',          color:'#14B8A6', emoji:'🔐', segmento:'Privacidade & Dados',      isMae: false, website:'https://www.privabr.com.br/' },
   { id:'coben_life_os', name:'Coben Life OS',   color:'#3B82F6', emoji:'🧬', segmento:'Life OS & Produtividade',  isMae: false, website:'https://www.coben.app/' },
@@ -1296,7 +1295,6 @@ const COMPANIES = [
   { id:'liquida_pecas', name:'Líquida Peças',   color:'#DC2626', emoji:'🔧', segmento:'Marketplace de Peças',     isMae: false, website:'' },
   { id:'xepou',         name:'Xepou',           color:'#EAB308', emoji:'🍞', segmento:'Foodtech & Marketplace',   isMae: false, website:'https://www.xepou.app/' },
   { id:'jogadaca',      name:'Jogadaça.ai',     color:'#8B5CF6', emoji:'⚽', segmento:'IA & Sports Trading',      isMae: false, website:'https://www.jogadaca.ai/' },
-  { id:'criativo_pronto',name:'CriativoPronto',  color:'#EC4899', emoji:'🎬', segmento:'Vídeo IA & Criativos',     isMae: false, website:'https://www.criativopronto.com.br/' },
 ];
 
 const FILHAS = COMPANIES.filter(c => !c.isMae);

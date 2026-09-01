@@ -571,12 +571,12 @@ body.no-webgl::before {
     </nav>
   </div>
 
-  <aside class="detail" aria-live="polite" style="--detail-accent:#18e0ff">
+  <aside class="detail" aria-live="polite" style="--detail-accent:#ff2d9b">
     <span class="detail-eyebrow">Projeto em foco</span>
-    <h2 class="detail-name" id="detail-name">PeptiBoard</h2>
-    <span class="detail-seg" id="detail-seg">Saúde &amp; Protocolos</span>
-    <p class="detail-summary" id="detail-summary">Plataforma inteligente que centraliza protocolos de peptídeos, exames e monitoramento contínuo de pacientes — tecnologia de ponta a serviço da saúde clínica e da longevidade.</p>
-    <a class="detail-cta" id="detail-cta" href="https://peptiboard.com/" target="_blank" rel="noopener noreferrer">Visitar site →</a>
+    <h2 class="detail-name" id="detail-name">Giro na Máxima</h2>
+    <span class="detail-seg" id="detail-seg">Tecnologia &amp; IA</span>
+    <p class="detail-summary" id="detail-summary">Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.</p>
+    <a class="detail-cta" id="detail-cta" href="https://gironamaxima.com.br/" target="_blank" rel="noopener noreferrer">Visitar site →</a>
   </aside>
 
   <nav class="dock" id="portfolio" aria-label="Empresas do portfólio">
@@ -624,7 +624,6 @@ body.no-webgl::before {
       <div class="modal-field"><label for="ct-projeto">Projeto</label>
         <select id="ct-projeto">
           <option value="Geral / Arcade Hub">Geral / Arcade Hub</option>
-          <option>PeptiBoard</option>
           <option>Giro na Máxima</option>
           <option>PrivaBR</option>
           <option>Coben Life OS</option>
@@ -715,9 +714,6 @@ const PORTFOLIO = [
   // assetReady: deixe false para usar a arte procedural neon (default).
   //   Ao adicionar o arquivo real em assets/, mude para true e a imagem entra via TextureLoader.
   // url: quando a empresa tiver site próprio, preencha aqui; vazio cai no contato por e-mail.
-  { title: "PeptiBoard",     segment: "Saúde & Protocolos",       glyph: "PB", color: "#18e0ff", url: "https://peptiboard.com/",
-    summary: "Plataforma inteligente que centraliza protocolos de peptídeos, exames e monitoramento contínuo de pacientes — tecnologia de ponta a serviço da saúde clínica e da longevidade.",
-    asset: "assets/peptiboard.jpg", assetReady: false },
   { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", url: "https://gironamaxima.com.br/",
     summary: "Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.",
     asset: "assets/giro-na-maxima.jpg", assetReady: false },
@@ -733,9 +729,6 @@ const PORTFOLIO = [
   { title: "Croqui.ai",      segment: "Arquitetura & IA",         glyph: "CQ", color: "#ff5e57", url: "https://app.croqui.ai/",
     summary: "Do primeiro rabisco ao estudo preliminar: transforma conversas, áudios e referências soltas em planta baixa preliminar, mockup, orçamento conceitual e proposta white-label. Feito para studios que vendem projeto com método, clareza e rapidez.",
     asset: "assets/croqui.jpg", assetReady: false },
-  { title: "CriativoPronto", segment: "Vídeo IA & Criativos",      glyph: "CP", color: "#ffe14d", url: "https://www.criativopronto.com.br/",
-    summary: "Studio de geração de vídeos curtos com atores de IA brasileiros: rosto, voz, roteiro e cenário num só fluxo. Anúncios verticais prontos para marcas, e-commerces e agências — sem gravação, sem set, sem espera.",
-    asset: "assets/criativo-pronto.jpg", assetReady: false },
 ];
 
 // CTA de cada empresa: site próprio se houver, senão contato direcionado por e-mail.
@@ -1039,13 +1032,11 @@ function ArcadeScene(root) {
   // Config por planeta (segue a ordem do PORTFOLIO): posição espalhada (x,y,z),
   // raio, tipo de superfície (bandMix: 0 rochoso/manchado .. 1 gasoso/faixas) e anel.
   const PLANETS = [
-    { pos: [-5.0, -0.7,  1.2], r: 1.30, bands: 3.2, bandMix: 0.85, feat: 2.0, bright: 1.0,  ring: true,  ringTilt: 1.15 },                // PeptiBoard — gigante gasoso anelado
     { pos: [-1.9,  2.2,  0.2], r: 0.90, bands: 0.0, bandMix: 0.10, feat: 5.0, bright: 1.6,  ring: false, ringTilt: 0    },                // Giro na Máxima — rochoso (mais claro)
     { pos: [ 1.4, -0.7, -0.3], r: 1.12, bands: 5.5, bandMix: 0.62, feat: 3.0, bright: 1.05, ring: true,  ringTilt: 1.5  },                // PrivaBR — faixas, anelado
     { pos: [ 4.6,  1.7, -0.7], r: 0.84, bands: 0.0, bandMix: 0.22, feat: 6.5, bright: 1.6,  ring: false, ringTilt: 0,    moon: true },    // Coben Life OS — rochoso (com lua)
     { pos: [ 7.6, -0.5, -1.1], r: 1.04, bands: 4.0, bandMix: 0.70, feat: 2.6, bright: 1.05, ring: true,  ringTilt: 0.8  },                // Kanbia — tempestuoso anelado
     { pos: [10.6,  1.4,  0.5], r: 0.96, bands: 3.5, bandMix: 0.45, feat: 4.0, bright: 1.2,  ring: false, ringTilt: 0    },                // Croqui.ai — rochoso/misto
-    { pos: [13.4, -0.9,  0.4], r: 1.00, bands: 4.5, bandMix: 0.55, feat: 3.4, bright: 1.15, ring: true,  ringTilt: 1.25 },                // CriativoPronto — gasoso anelado (cinematográfico)
   ];
 
   // Material do planeta: superfície procedural (FBM) única por seed/tipo + atmosfera neon
