@@ -809,6 +809,23 @@
       </table>
     </div>
 
+    <div class="section-title"><span>Folha — Equipe Fixa</span></div>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Pessoas com custo <strong>fixo recorrente</strong> lançado na aba <strong>📝 Lançamentos</strong>, no formato <em>Salário — Nome (Cargo)</em>. Visão somente leitura: para admitir, reajustar ou desligar alguém, edite o custo fixo no mês desejado — esta tabela acompanha automaticamente.
+      <button onclick="irParaLancamentos('arcade_hub')" style="margin-left:6px;background:#10B981;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📝 Ir para Lançamentos</button></p>
+    <div class="kpi-grid" id="folha-cards"></div>
+    <div class="table-wrap" style="overflow-x:auto;margin:14px 0 22px;">
+      <table style="min-width:860px;">
+        <thead><tr>
+          <th>Pessoa</th><th>Cargo</th><th>Categoria</th><th>Empresa</th>
+          <th style="text-align:center;">Salário/mês</th>
+          <th style="text-align:center;">% da folha</th>
+          <th style="text-align:center;">Desde</th>
+          <th style="text-align:center;">Meses lançados</th>
+        </tr></thead>
+        <tbody id="folha-table"></tbody>
+      </table>
+    </div>
+
     <div class="section-title"><span>Orçamento × Realizado por Categoria</span></div>
     <p style="color:#6B7280;font-size:12px;margin:-8px 0 12px;">A coluna <strong>Orçamento/mês</strong> é a sua meta de gasto por categoria (editável). As colunas dos meses mostram o <strong>Realizado</strong> — soma dos custos lançados na aba <strong>📝 Lançamentos</strong> (todas as empresas), <strong>somente leitura</strong>. <span style="color:#059669;font-weight:600;">Verde</span> = dentro do orçado, <span style="color:#EF4444;font-weight:600;">vermelho</span> = acima. Jan/Fev/Mar = pré-operação. <strong>Para lançar uma conta, use a aba Lançamentos.</strong>
       <button onclick="irParaLancamentos('arcade_hub')" style="margin-left:6px;background:#10B981;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">📝 Ir para Lançamentos</button></p>
@@ -1271,7 +1288,7 @@ const COMPANIES = [
 const FILHAS = COMPANIES.filter(c => !c.isMae);
 
 const INV_CATS = ['Desenvolvimento','Branding','Legal e Contábil','Tecnologia','Infraestrutura','Marketing','Reserva','Outros'];
-const CUSTO_CATS = ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'];
+const CUSTO_CATS = ['Programador','Designer','Marketing','Conteúdo/Vídeo','Operador','Atendimento/CRM','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'];
 
 // Sócios e meios de pagamento
 const SOCIOS = ['SAROM','GLADIOMIR','LUIZ'];
@@ -1502,7 +1519,7 @@ function getCustoMes(mes, cat) {
   return estrutura.custos_mensais[cat]||0;
 }
 function getTotalCustoMes(mes) {
-  return ['Programador','Designer','Operador','Encargos/Benefícios','Servidor/Hospedagem','Ferramentas Design','Ferramentas Tech','Atendimento/CRM','Contabilidade','Jurídico','Tráfego/Ads','Outros Custos'].reduce((a,k)=>a+getCustoMes(mes,k),0);
+  return CUSTO_CATS.reduce((a,k)=>a+getCustoMes(mes,k),0);
 }
 // Realizado: soma os custos extras lançados (TODAS as empresas) no mês, por categoria.
 // Categoria vazia/nula é tratada como "Outros Custos" para não perder lançamentos legados.
@@ -3114,6 +3131,87 @@ function renderComparativo(cons, ytd, companiesYTD) {
 }
 
 // ─── ESTRUTURA ───────────────────────────────────────────────────────────────
+// ─── FOLHA (equipe fixa) ─────────────────────────────────────────────────────
+// A folha NÃO é uma tabela própria: ela é lida dos custos fixos recorrentes cuja
+// descrição segue o padrão "Salário — Nome (Cargo)". Lançamentos continua sendo a
+// fonte única; aqui só agrupamos por pessoa para dar a visão de equipe.
+const FOLHA_PREFIX = 'Salário — ';
+
+function parseFolhaDesc(desc) {
+  if (!desc || desc.indexOf(FOLHA_PREFIX) !== 0) return null;
+  const resto = desc.slice(FOLHA_PREFIX.length).trim();
+  const m = resto.match(/^(.+?)\s*\((.+)\)$/);
+  return m ? { nome: m[1].trim(), cargo: m[2].trim() } : { nome: resto, cargo: '—' };
+}
+
+// Agrupa os lançamentos de folha por pessoa (série recorrente quando houver).
+// valor/categoria/cargo vêm do mês mais recente lançado — assim um reajuste aparece sozinho.
+function getFolha() {
+  const map = new Map();
+  custosExtras.forEach(c => {
+    const p = parseFolhaDesc(c.descricao);
+    if (!p) return;
+    const idx = MONTHS.indexOf(c.mes);
+    if (idx < 0) return;
+    const key = c.recorrencia_id || `${c.empresa_id}:${p.nome.toLowerCase()}`;
+    const item = map.get(key) || {
+      nome: p.nome, cargo: p.cargo, categoria: c.categoria || 'Outros Custos',
+      empresa_id: c.empresa_id, valor: 0, meses: [], primeiroIdx: idx, ultimoIdx: -1,
+    };
+    item.meses.push(c.mes);
+    if (idx < item.primeiroIdx) item.primeiroIdx = idx;
+    if (idx > item.ultimoIdx) {
+      item.ultimoIdx = idx;
+      item.valor = c.valor || 0;
+      item.categoria = c.categoria || item.categoria;
+      item.cargo = p.cargo;
+    }
+    map.set(key, item);
+  });
+  const mesAtualIdx = new Date().getMonth();
+  return [...map.values()]
+    .map(i => ({ ...i, ativo: i.ultimoIdx >= mesAtualIdx }))
+    .sort((a, b) => (b.ativo - a.ativo) || (b.valor - a.valor) || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+
+function renderFolha(totalBase) {
+  const folha = getFolha();
+  const ativos = folha.filter(f => f.ativo);
+  const folhaMes = ativos.reduce((a, f) => a + f.valor, 0);
+  const pctCusto = totalBase > 0 ? folhaMes / totalBase : 0;
+  const medio = ativos.length ? folhaMes / ativos.length : 0;
+
+  document.getElementById('folha-cards').innerHTML = [
+    kpiCard('Headcount', String(ativos.length), 'pessoas com custo fixo ativo', '#1E6FFF'),
+    kpiCard('Folha / mês', fmt(folhaMes), 'soma dos salários ativos', '#EF4444'),
+    kpiCard('% do Custo Base', fmtPct(pctCusto), `de ${fmt(totalBase)} orçados/mês`, pctCusto > 0.8 ? '#EF4444' : '#F59E0B'),
+    kpiCard('Custo Médio', fmt(medio), 'por pessoa', '#8B5CF6'),
+  ].join('');
+
+  const tbody = document.getElementById('folha-table');
+  if (!folha.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;">
+      Nenhuma pessoa na folha. Lance um custo fixo com a descrição no formato <strong>Salário — Nome (Cargo)</strong> na aba Lançamentos.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = folha.map((f, i) => {
+    const emp = COMPANIES.find(c => c.id === f.empresa_id);
+    const pct = folhaMes > 0 && f.ativo ? f.valor / folhaMes : 0;
+    return `<tr style="background:${i % 2 === 0 ? '#FAFAFA' : '#fff'};${f.ativo ? '' : 'opacity:0.6;'}">
+      <td style="font-weight:600;">${escapeHtml(f.nome)}${f.ativo ? '' : ' <span style="background:#FEE2E2;color:#B91C1C;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;">encerrado</span>'}</td>
+      <td style="color:#6B7280;">${escapeHtml(f.cargo)}</td>
+      <td>${escapeHtml(f.categoria)}</td>
+      <td style="color:#6B7280;">${emp ? `${emp.emoji} ${escapeHtml(emp.name)}` : escapeHtml(f.empresa_id)}</td>
+      <td style="text-align:center;font-weight:700;">${fmt(f.valor)}</td>
+      <td style="text-align:center;color:#6B7280;">${f.ativo ? fmtPct(pct) : '—'}</td>
+      <td style="text-align:center;color:#6B7280;">${MONTHS[f.primeiroIdx]}</td>
+      <td style="text-align:center;color:#6B7280;" title="${f.meses.join(', ')}">${f.meses.length}</td>
+    </tr>`;
+  }).join('') +
+  `<tr class="table-total"><td colspan="4">FOLHA ATIVA · ${ativos.length} ${ativos.length === 1 ? 'pessoa' : 'pessoas'}</td>
+    <td style="text-align:center;">${fmt(folhaMes)}</td><td style="text-align:center;">100%</td><td colspan="2"></td></tr>`;
+}
+
 function renderEstrutura(totals) {
   const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalRealizadoAcum, totalInv, totalAportes, totalAporteMeta } = totals;
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -3237,6 +3335,8 @@ function renderEstrutura(totals) {
       return `<td style="background:${isOp?'#0A1628':'#1a1a2e'};color:${isOp?(r>0?'#6EE7B7':'rgba(255,255,255,0.3)'):'rgba(255,255,255,0.2)'};font-weight:700;padding:8px 12px;text-align:center;" title="${isOp?('Realizado em '+mm):'pré-operação'}">${isOp?(r>0?fmt(r):'·'):'—'}</td>`;
     }).join('') +
     `<td style="background:#0A1628;color:#F59E0B;font-weight:700;padding:8px 12px;text-align:center;" title="Orçado no ano (Abr–Dez)">${fmt(orcadoAnual)}${totalRealAcum>0?`<div style="font-size:9px;color:${totalRealAcum>orcadoAnual?'#FCA5A5':'#6EE7B7'};">▸ ${fmt(totalRealAcum)}</div>`:''}</td>`;
+
+  renderFolha(totalBase);
 
   document.getElementById('inv-table').innerHTML = INV_CATS.map((k,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
