@@ -1345,7 +1345,18 @@ let estrutura_id = null;
 let selMonth = 'Abr';
 let selCompany = 'arcade_hub';
 let selPlanMonth = 'Abr';
-let saveTimer = null;
+// Um debounce POR FLUXO de escrita. Com um timer único global, editar dois blocos
+// em menos de 700ms fazia o segundo cancelar o salvamento pendente do primeiro —
+// perda silenciosa. Vira provável quando orçamento, plano e lançamento convivem na
+// mesma tela, então cada fluxo tem seu próprio timer.
+const saveTimers = {};
+function agendarSave(fluxo, fn, ms = 700) {
+  clearTimeout(saveTimers[fluxo]);
+  saveTimers[fluxo] = setTimeout(fn, ms);
+}
+function cancelarSavesPendentes() {
+  Object.keys(saveTimers).forEach(k => clearTimeout(saveTimers[k]));
+}
 let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp = null;
 let currentEmpresaId = null;
 let selBalancoSocio = 'TODOS';
@@ -1706,7 +1717,7 @@ async function salvarTudoAgora() {
   const btn = document.getElementById('btn-salvar-tudo');
   const orig = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Salvando...'; }
-  clearTimeout(saveTimer);
+  cancelarSavesPendentes();
   try {
     const now = new Date().toISOString();
     const lancRows = Object.values(lancamentos).filter(e => e && e.mes && e.empresa_id).map(e => ({
@@ -1867,8 +1878,7 @@ async function saveEstrutura(src) {
   if(src && src.dataset && src.dataset.meta){
     document.querySelectorAll('[data-meta="'+src.dataset.meta+'"]').forEach(el=>{ if(el!==src) el.value = src.value; });
   }
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
+  agendarSave('estrutura', async () => {
     // Preserva campos existentes de metas (ex: aporteMetas) ao gravar os 3 inputs de KPI
     const metas = {
       ...(estrutura.metas || {}),
@@ -2184,8 +2194,7 @@ function updateLanc(key, val) {
   }
   lancamentos[k].mes = selMonth; lancamentos[k].empresa_id = selCompany;
   updateLancResult();
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>saveLanc(selMonth, selCompany).then(()=>renderAll()), 700);
+  agendarSave('lancamentos', ()=>saveLanc(selMonth, selCompany).then(()=>renderAll()));
 }
 
 function updateLancResult() {
@@ -3081,8 +3090,7 @@ function updatePlan(cid, key, val) {
   if (!planejado[k]) planejado[k] = {};
   planejado[k][key] = parseFloat(val)||0;
   planejado[k].mes = selPlanMonth; planejado[k].empresa_id = cid;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>savePlan(selPlanMonth, cid).then(()=>renderPlanejado()), 700);
+  agendarSave('planejado', ()=>savePlan(selPlanMonth, cid).then(()=>renderPlanejado()));
 }
 
 // ─── COMPARATIVO ─────────────────────────────────────────────────────────────
@@ -3850,8 +3858,7 @@ function updateEmpresaLanc(cid, key, val) {
     `;
   }
 
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(async ()=>{
+  agendarSave('empresa:' + cid, async ()=>{
     await saveLanc(selEmpresaMonth, cid);
     showSaving(`saving-emp-${cid}`);
     renderAll();
