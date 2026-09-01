@@ -1667,10 +1667,25 @@ function getTotals() {
 }
 
 // ─── TOAST ───────────────────────────────────────────────────────────────────
-function toast(msg) {
+function toast(msg, tipo) {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+  el.textContent = msg;
+  el.style.background = tipo === 'erro' ? '#B91C1C' : '';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), tipo === 'erro' ? 6000 : 2500);
+}
+
+// supabase-js RESOLVE a promise com { data, error } — não lança. Sem checar `error`,
+// uma escrita recusada (RLS, rede, constraint) passa despercebida e a tela mente
+// dizendo que salvou. Todo caminho de escrita passa por aqui.
+async function db(promise, contexto) {
+  const res = await promise;
+  if (res && res.error) {
+    console.error('[supabase] falha ao ' + contexto, res.error);
+    toast(`Falha ao ${contexto}: ${res.error.message || 'erro desconhecido'}`, 'erro');
+    throw Object.assign(new Error(contexto), { supabase: res.error });
+  }
+  return res;
 }
 function showSaving(id) {
   const el = document.getElementById(id);
@@ -1693,7 +1708,7 @@ async function salvarTudoAgora() {
       headcount: e.headcount||0, obs: e.obs||'', pagador: e.pagador||'', meio_pagamento: e.meio_pagamento||'',
       updated_at: now
     }));
-    if (lancRows.length) await sb.from('lancamentos').upsert(lancRows, { onConflict: 'mes,empresa_id' });
+    if (lancRows.length) await db(sb.from('lancamentos').upsert(lancRows, { onConflict: 'mes,empresa_id' }), 'salvar lançamentos');
 
     const planRows = Object.values(planejado).filter(p => p && p.mes && p.empresa_id).map(p => ({
       mes: p.mes, empresa_id: p.empresa_id,
@@ -1701,7 +1716,7 @@ async function salvarTudoAgora() {
       impostos_p: p.impostos_p||0, despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
       headcount_p: p.headcount_p||0, updated_at: now
     }));
-    if (planRows.length) await sb.from('planejado').upsert(planRows, { onConflict: 'mes,empresa_id' });
+    if (planRows.length) await db(sb.from('planejado').upsert(planRows, { onConflict: 'mes,empresa_id' }), 'salvar plano');
 
     const payload = {
       caixa_inicial: estrutura.caixa_inicial||0, data_inicio: DATA_INICIO.label,
@@ -1709,7 +1724,7 @@ async function salvarTudoAgora() {
       custos_por_mes: estrutura.custos_por_mes, aportes: estrutura.aportes,
       metas: estrutura.metas, updated_at: now
     };
-    if (estrutura_id) await sb.from('estrutura').update(payload).eq('id', estrutura_id);
+    if (estrutura_id) await db(sb.from('estrutura').update(payload).eq('id', estrutura_id), 'salvar estrutura');
     else { const { data } = await sb.from('estrutura').insert(payload).select().single(); if (data) estrutura_id = data.id; }
 
     if (btn) { btn.innerHTML = '✓ Tudo salvo!'; setTimeout(()=>{ btn.disabled=false; btn.innerHTML = orig; }, 1800); }
@@ -1722,7 +1737,7 @@ async function salvarTudoAgora() {
 // ─── SUPABASE OPS ─────────────────────────────────────────────────────────────
 async function saveLanc(mes, empresa_id) {
   const e = getLanc(mes, empresa_id);
-  await sb.from('lancamentos').upsert({
+  await db(sb.from('lancamentos').upsert({
     mes, empresa_id,
     receita: e.receita||0, custos_diretos: e.custos_diretos||0,
     folha: e.folha||0, impostos: e.impostos||0,
@@ -1730,7 +1745,7 @@ async function saveLanc(mes, empresa_id) {
     headcount: e.headcount||0, obs: e.obs||'',
     pagador: e.pagador||'', meio_pagamento: e.meio_pagamento||'',
     updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' });
+  }, { onConflict: 'mes,empresa_id' }), 'salvar lançamento');
   showSaving('saving-lanc');
 }
 // ─── CUSTOS EXTRAS CRUD ─────────────────────────────────────────────────────
@@ -1745,7 +1760,7 @@ async function saveCustoExtra(custo) {
     updated_at: new Date().toISOString()
   };
   if (custo.id) {
-    await sb.from('custos_extras').update(payload).eq('id', custo.id);
+    await db(sb.from('custos_extras').update(payload).eq('id', custo.id), 'atualizar custo');
   } else {
     const { data } = await sb.from('custos_extras').insert(payload).select().single();
     if (data) custo.id = data.id;
@@ -1797,15 +1812,15 @@ async function deleteCustoExtra(id) {
     const todos = confirm('Este é um custo FIXO recorrente.\n\nOK = excluir de TODOS os meses\nCancelar = excluir só deste mês');
     if (todos) {
       const serie = custosExtras.filter(x => x.recorrencia_id === c.recorrencia_id);
-      for (const x of serie) { if (x.id) await sb.from('custos_extras').delete().eq('id', x.id); }
+      for (const x of serie) { if (x.id) await db(sb.from('custos_extras').delete().eq('id', x.id), 'excluir custo'); }
       custosExtras = custosExtras.filter(x => x.recorrencia_id !== c.recorrencia_id);
     } else {
-      await sb.from('custos_extras').delete().eq('id', id);
+      await db(sb.from('custos_extras').delete().eq('id', id), 'excluir custo');
       custosExtras = custosExtras.filter(x => x.id !== id);
     }
   } else {
     if (!confirm('Excluir este custo?')) return;
-    await sb.from('custos_extras').delete().eq('id', id);
+    await db(sb.from('custos_extras').delete().eq('id', id), 'excluir custo');
     custosExtras = custosExtras.filter(x => x.id !== id);
   }
   renderLancamentos();
@@ -1817,14 +1832,14 @@ function getCustosExtras(mes, empresa_id) {
 
 async function savePlan(mes, empresa_id) {
   const p = getPlan(mes, empresa_id);
-  await sb.from('planejado').upsert({
+  await db(sb.from('planejado').upsert({
     mes, empresa_id,
     receita_p: p.receita_p||0, custos_diretos_p: p.custos_diretos_p||0,
     folha_p: p.folha_p||0, impostos_p: p.impostos_p||0,
     despesas_adm_p: p.despesas_adm_p||0, outras_despesas_p: p.outras_despesas_p||0,
     headcount_p: p.headcount_p||0,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'mes,empresa_id' });
+  }, { onConflict: 'mes,empresa_id' }), 'salvar plano');
   showSaving('saving-plan');
 }
 // Lê/espelha as metas de KPI, que têm inputs gêmeos nas abas Planejado e Estrutura
@@ -1867,7 +1882,7 @@ async function saveEstrutura(src) {
       updated_at: new Date().toISOString()
     };
     if (estrutura_id) {
-      await sb.from('estrutura').update(payload).eq('id', estrutura_id);
+      await db(sb.from('estrutura').update(payload).eq('id', estrutura_id), 'salvar estrutura');
     } else {
       const { data } = await sb.from('estrutura').insert(payload).select().single();
       if (data) estrutura_id = data.id;
@@ -1879,10 +1894,13 @@ async function saveEstrutura(src) {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData }, { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }] = await Promise.all([
+  // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
+  // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
+  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos'];
+  const respostas = await Promise.all([
     sb.from('lancamentos').select('*'),
     sb.from('planejado').select('*'),
-    sb.from('estrutura').select('*').limit(1).single(),
+    sb.from('estrutura').select('*').limit(1).maybeSingle(),
     sb.from('custos_extras').select('*').order('created_at', { ascending: true }),
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
@@ -1891,6 +1909,13 @@ async function loadAll() {
     sb.from('acessos_empresas').select('*').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
   ]);
+  const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
+  if (falhas.length) {
+    console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
+    toast('Não foi possível carregar: ' + falhas.join(', ') + '. Recarregue a página.', 'erro');
+  }
+  const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
+         { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }] = respostas;
   if (axData) acessosEmpresas = axData;
   if (plData) planosEmpresas = plData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
@@ -2514,14 +2539,16 @@ function updateContatosBadge(){
 async function marcarContatoLido(id, lido){
   const c = contatos.find(x => String(x.id)===String(id));
   if(!c) return;
-  c.lido = lido;
-  await sb.from('contatos').update({ lido }).eq('id', id);
+  const antes = c.lido;
+  c.lido = lido;                       // otimista: a tela responde na hora
   renderContatos();
+  try { await db(sb.from('contatos').update({ lido }).eq('id', id), 'marcar contato'); }
+  catch (e) { c.lido = antes; renderContatos(); }   // banco recusou: volta atrás
 }
 
 async function excluirContato(id){
   if(!confirm('Excluir esta mensagem?')) return;
-  await sb.from('contatos').delete().eq('id', id);
+  await db(sb.from('contatos').delete().eq('id', id), 'excluir contato');
   contatos = contatos.filter(x => String(x.id)!==String(id));
   renderContatos();
 }
@@ -2823,14 +2850,16 @@ async function recarregarEmails(){
 async function marcarEmailLido(id, lido){
   const e = emails.find(x=>String(x.id)===String(id));
   if(!e) return;
+  const antes = e.lido;
   e.lido = lido;
-  await sb.from('emails').update({ lido }).eq('id', id);
   renderEmails();
+  try { await db(sb.from('emails').update({ lido }).eq('id', id), 'marcar e-mail'); }
+  catch (err) { e.lido = antes; renderEmails(); }
 }
 
 async function excluirEmail(id){
   if(!confirm('Excluir este e-mail do histórico?')) return;
-  await sb.from('emails').delete().eq('id', id);
+  await db(sb.from('emails').delete().eq('id', id), 'excluir e-mail');
   emails = emails.filter(x=>String(x.id)!==String(id));
   renderEmails();
 }
@@ -4475,7 +4504,7 @@ async function saveCalModal() {
 
 async function deleteCalAcao(id) {
   if (!confirm('Excluir esta ação?')) return;
-  await sb.from('calendario_acoes').delete().eq('id', id);
+  await db(sb.from('calendario_acoes').delete().eq('id', id), 'excluir ação');
   acoesCal = acoesCal.filter(a => a.id !== id);
   renderCalendario();
 }
