@@ -1223,16 +1223,19 @@ async function executarLogin() {
     return;
   }
 
-  showDashboard(data.user);
+  await showDashboard(data.user);
 }
 
-function showDashboard(user) {
+// devolve a promessa de initDashboard: a trava de login só pode cair quando a
+// carga terminar, senão um logout + login de outra conta deixa o loadAll anterior
+// correndo e ele repovoa a tela com os dados do usuário que saiu.
+async function showDashboard(user) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'block';
   document.getElementById('loading-overlay').style.display = 'flex';
   document.getElementById('user-email-display').textContent = user.email;
-  initDashboard();
+  await initDashboard();
 }
 
 // Sair precisa esvaziar a memória: senhas reveladas, e-mails, contatos e os
