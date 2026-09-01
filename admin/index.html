@@ -1179,7 +1179,14 @@ function togglePassword() {
   }
 }
 
+// Enquanto o logout limpa canais e estado, um novo login nao pode comecar: o
+// initDashboard se sobreporia a limpeza e os canais recem-criados seriam
+// derrubados por ela. Desabilitar o botao nao bastava — o Enter no campo de
+// senha chama doLogin() direto.
+let logoutPendente = null;
+
 async function doLogin() {
+  if (logoutPendente) { try { await logoutPendente; } catch(_e){} }
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const errorEl = document.getElementById('login-error');
@@ -1267,12 +1274,16 @@ async function doLogout() {
   document.getElementById('login-error').style.display = 'none';
   const btnEntrar = document.getElementById('login-btn');
   if (btnEntrar) btnEntrar.disabled = true;      // sem novo login enquanto a limpeza corre
-  try {
-    await sb.auth.signOut();
-    await resetState();
-  } finally {
-    if (btnEntrar) btnEntrar.disabled = false;
-  }
+  logoutPendente = (async () => {
+    try {
+      await sb.auth.signOut();
+      await resetState();
+    } finally {
+      logoutPendente = null;
+      if (btnEntrar) btnEntrar.disabled = false;
+    }
+  })();
+  await logoutPendente;
 }
 
 // Enter key on password field
