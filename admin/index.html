@@ -3158,10 +3158,17 @@ function parseFolhaDesc(desc) {
 }
 
 // Agrupa os lançamentos de folha por pessoa (série recorrente quando houver).
-// valor/categoria/cargo vêm do mês mais recente lançado — assim um reajuste aparece sozinho.
+// Só custo tipo 'fixo' entra: um gasto avulso descrito como "Salário — Fulano (Freela)"
+// não é headcount e não pode inflar os KPIs.
+// Quem está ativo se mede pelo MÊS CORRENTE, não pelo último mês lançado: o rollforward
+// materializa o mês novo só no dia 1, então exigir lançamento no mês corrente marcaria
+// a equipe inteira como encerrada até o cron rodar. Daí a tolerância de 1 mês para séries
+// recorrentes — e um lançamento só em mês futuro não conta como folha de hoje.
 function getFolha() {
+  const mesAtualIdx = new Date().getMonth();
   const map = new Map();
   custosExtras.forEach(c => {
+    if (c.tipo !== 'fixo') return;
     const p = parseFolhaDesc(c.descricao);
     if (!p) return;
     const idx = MONTHS.indexOf(c.mes);
@@ -3169,21 +3176,29 @@ function getFolha() {
     const key = c.recorrencia_id || `${c.empresa_id}:${p.nome.toLowerCase()}`;
     const item = map.get(key) || {
       nome: p.nome, cargo: p.cargo, categoria: c.categoria || 'Outros Custos',
-      empresa_id: c.empresa_id, valor: 0, meses: [], primeiroIdx: idx, ultimoIdx: -1,
+      empresa_id: c.empresa_id, valor: 0, meses: [], porMes: {},
+      primeiroIdx: idx, ultimoIdx: -1, recorrente: false,
     };
     item.meses.push(c.mes);
+    item.porMes[idx] = (item.porMes[idx] || 0) + (c.valor || 0);
+    if (c.recorrencia_id) item.recorrente = true;
     if (idx < item.primeiroIdx) item.primeiroIdx = idx;
     if (idx > item.ultimoIdx) {
       item.ultimoIdx = idx;
-      item.valor = c.valor || 0;
+      item.valor = c.valor || 0;               // fallback: último valor conhecido
       item.categoria = c.categoria || item.categoria;
       item.cargo = p.cargo;
     }
     map.set(key, item);
   });
-  const mesAtualIdx = new Date().getMonth();
   return [...map.values()]
-    .map(i => ({ ...i, ativo: i.ultimoIdx >= mesAtualIdx }))
+    .map(i => {
+      const noMes = i.porMes[mesAtualIdx];
+      const noAnterior = i.porMes[mesAtualIdx - 1];
+      const ativo = noMes !== undefined || (i.recorrente && noAnterior !== undefined);
+      const valor = noMes !== undefined ? noMes : (ativo ? noAnterior : i.valor);
+      return { ...i, ativo, valor };
+    })
     .sort((a, b) => (b.ativo - a.ativo) || (b.valor - a.valor) || a.nome.localeCompare(b.nome, 'pt-BR'));
 }
 
