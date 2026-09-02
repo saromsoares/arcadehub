@@ -1,1620 +1,231 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
-  style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob:;
-  connect-src 'self' https://*.supabase.co;
-  base-uri 'self';
-  form-action 'self';
-  object-src 'none';
-  upgrade-insecure-requests;
-" />
-<meta http-equiv="X-Content-Type-Options" content="nosniff" />
-<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-<meta name="theme-color" content="#05010d" />
-<title>Arcade Hub | Ecossistema de Tecnologia Brasileira</title>
-<meta name="description" content="Arcade Hub é uma holding de tecnologia brasileira que constrói e escala empresas em privacidade, saúde, inteligência artificial e produtividade." />
-<meta name="robots" content="index, follow" />
-<meta property="og:title" content="Arcade Hub | Tecnologia que resolve problemas reais" />
-<meta property="og:description" content="Conheça o ecossistema de empresas de tecnologia da Arcade Hub." />
-<meta property="og:type" content="website" />
-<meta property="og:locale" content="pt_BR" />
-<meta property="og:url" content="https://arcadehub.tech/" />
-<meta property="og:image" content="https://arcadehub.tech/og-image.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="Arcade Hub — ecossistema de tecnologia brasileira" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Arcade Hub | Tecnologia que resolve problemas reais" />
-<meta name="twitter:description" content="Conheça o ecossistema de empresas de tecnologia da Arcade Hub." />
-<meta name="twitter:image" content="https://arcadehub.tech/og-image.png" />
-<link rel="canonical" href="https://arcadehub.tech/" />
-<!-- favicon/apple-touch têm fundo próprio: a marca branca sozinha sumiria em aba clara -->
-<link rel="icon" type="image/png" href="favicon.png" />
-<link rel="apple-touch-icon" href="favicon.png" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self';script-src 'self' 'unsafe-inline';style-src 'self' 'unsafe-inline';img-src 'self' data:;connect-src 'self' https://*.supabase.co;base-uri 'self';form-action 'self';object-src 'none';upgrade-insecure-requests">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta name="theme-color" content="#050706">
+<title>Arcade Hub | Holding de tecnologia e venture studio</title>
+<meta name="description" content="A Arcade cria, opera e escala empresas digitais com tecnologia, inteligência artificial, dados, governança e disciplina financeira.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Arcade Hub | Holding de tecnologia e venture studio">
+<meta property="og:description" content="A Arcade cria, opera e escala empresas digitais com tecnologia, inteligência artificial, dados, governança e disciplina financeira.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://arcadehub.tech/">
+<meta property="og:image" content="https://arcadehub.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="ARCADE — holding de tecnologia e venture studio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Arcade Hub | Holding de tecnologia e venture studio">
+<meta name="twitter:description" content="A Arcade cria, opera e escala empresas digitais com tecnologia, inteligência artificial, dados, governança e disciplina financeira.">
+<meta name="twitter:image" content="https://arcadehub.tech/og-image.png">
+<link rel="canonical" href="https://arcadehub.tech/">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Arcade Hub","alternateName":"ARCADE","url":"https://arcadehub.tech/","logo":"https://arcadehub.tech/assets/brand/arcade-logo-alt.png","email":"suporte@arcadehub.tech","taxID":"66.910.447/0001-06","description":"Holding operacional de tecnologia que cria, opera e escala empresas digitais."}</script>
 <style>
-/* ============================================================
-   ARCADE HUB — Synthwave / Neon design tokens
-   ============================================================ */
-:root {
-  /* Base — violeta profundo, não preto puro */
-  --bg-0: #05010d;
-  --bg-1: #0b0322;
-  --bg-2: #1a063f;
-
-  /* Neon arcade */
-  --neon-cyan:    #18e0ff;
-  --neon-magenta: #ff2d9b;
-  --neon-violet:  #9b5cff;
-  --neon-amber:   #ffb347;
-
-  /* Superfícies de vidro */
-  --glass:        rgba(20, 8, 44, 0.46);
-  --glass-strong: rgba(24, 10, 52, 0.72);
-  --line:         rgba(155, 92, 255, 0.26);
-  --line-strong:  rgba(255, 45, 155, 0.46);
-
-  /* Tipografia */
-  --text:  #f3ecff;
-  --muted: rgba(243, 236, 255, 0.78);
-  --quiet: rgba(243, 236, 255, 0.62);
-
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", "Consolas", monospace;
-
-  --shadow-neon: 0 0 18px rgba(255, 45, 155, 0.55), 0 0 42px rgba(155, 92, 255, 0.35);
-}
-
-*, *::before, *::after { box-sizing: border-box; }
-
-html, body {
-  width: 100%;
-  min-height: 100%;
-  margin: 0;
-  /* A cena 3D é fixed (fundo imersivo); o HUD rola quando não cabe na altura
-     da viewport (laptops). Sem isso, overflow:hidden cortava a lista de
-     empresas e o rodapé em telas baixas, sem como acessá-los. */
-  overflow-x: hidden;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  color: var(--text);
-  font-family: var(--font-sans);
-  background:
-    radial-gradient(120% 80% at 50% 116%, rgba(91, 60, 255, 0.16), transparent 52%),
-    radial-gradient(140% 90% at 50% 120%, rgba(31, 108, 255, 0.12), transparent 64%),
-    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%);
-}
-
-/* Canvas WebGL — camada de fundo (z0) */
-#scene-root,
-#arcade-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-#scene-root { z-index: 0; }
-/* pan-y: em telas touch, o dedo rola a página sobre o canvas (a cena reage a
-   hover/clique, não a arraste, então liberar o pan vertical não tira função). */
-#arcade-canvas { display: block; outline: none; touch-action: pan-y; }
-
-/* Overlay CRT/scanline + grão — atmosfera cyberpunk (z2, não captura ponteiro) */
-.fx-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  mix-blend-mode: soft-light;
-  opacity: 0.5;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.05) 0px,
-    rgba(255, 255, 255, 0.05) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-}
-
-/* Vinheta leve só para legibilidade — não mata a cena */
-.fx-vignette {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background:
-    radial-gradient(120% 120% at 50% 42%, transparent 56%, rgba(5, 1, 13, 0.62) 100%),
-    linear-gradient(180deg, rgba(5, 1, 13, 0.42), transparent 26%);
-}
-
-/* ============================================================
-   HUD — interface sobre a cena (z3)
-   ============================================================ */
-.shell {
-  position: relative;
-  z-index: 3;
-  min-height: 100svh;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  padding: 26px clamp(20px, 4vw, 60px) 22px;
-  pointer-events: none;
-}
-.topbar, .hero, .detail, .dock, .footer-meta { pointer-events: auto; }
-
-/* Topbar */
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 13px;
-  color: var(--text);
-  text-decoration: none;
-}
-/* A marca é um símbolo branco com alpha: nada de moldura/fundo (a antiga existia para
-   disfarçar o PNG opaco). Glow via drop-shadow — box-shadow sombrearia o retângulo. */
-.brand img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 12px rgba(155, 92, 255, 0.55));
-}
-.brand-copy { display: grid; gap: 3px; }
-.brand-title {
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: 0.5px;
-}
-.brand-subtitle {
-  color: var(--neon-cyan);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-}
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--line);
-  background: var(--glass);
-  padding: 4px;
-  border-radius: 12px;
-  backdrop-filter: blur(16px);
-}
-.nav a {
-  color: var(--muted);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  padding: 9px 13px;
-  border-radius: 8px;
-  transition: color 0.2s ease, background 0.2s ease;
-}
-.nav a:hover, .nav a:focus-visible {
-  color: var(--text);
-  background: rgba(255, 45, 155, 0.16);
-  outline: none;
-}
-
-/* Hero */
-.hero {
-  position: relative;
-  z-index: 0;
-  align-self: center;
-  max-width: 660px;
-  padding-top: 16px;
-}
-/* Scrim de legibilidade — escurece a cena só atrás do texto, à esquerda */
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: -48px -80px -48px -120px;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    120% 96% at 8% 50%,
-    rgba(5, 1, 13, 0.92),
-    rgba(5, 1, 13, 0.62) 38%,
-    transparent 74%
-  );
-}
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 22px;
-  color: var(--neon-cyan);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-.eyebrow::before {
-  content: "";
-  width: 36px;
-  height: 1px;
-  background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan));
-  box-shadow: 0 0 8px var(--neon-cyan);
-}
-h1 {
-  margin: 0;
-  font-size: clamp(38px, 6vw, 70px);
-  line-height: 1.04;
-  letter-spacing: -0.5px;
-  font-weight: 800;
-  text-shadow: 0 2px 30px rgba(5, 1, 13, 0.8);
-}
-.accent {
-  color: #ffffff;
-  text-shadow: 0 0 22px rgba(255, 255, 255, 0.28);
-}
-.hero p {
-  max-width: 540px;
-  margin: 22px 0 0;
-  color: var(--muted);
-  font-size: clamp(15px, 1.4vw, 18px);
-  line-height: 1.62;
-}
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 32px;
-}
-.button {
-  position: relative;
-  min-height: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 0 20px;
-  color: var(--text);
-  background: var(--glass-strong);
-  backdrop-filter: blur(12px);
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.25s ease;
-}
-.button.primary {
-  border-color: var(--line-strong);
-  background: linear-gradient(135deg, rgba(255, 45, 155, 0.30), rgba(155, 92, 255, 0.22)), var(--glass-strong);
-  box-shadow: 0 0 0 rgba(255, 45, 155, 0);
-}
-.button:hover, .button:focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--neon-magenta);
-  box-shadow: var(--shadow-neon);
-  outline: none;
-}
-
-/* Painel "Projeto em foco" — resumo do projeto sob o cursor (desktop) */
-.detail {
-  justify-self: start;
-  width: min(540px, 100%);
-  margin-bottom: 18px;
-  padding: 16px 20px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--detail-accent, var(--neon-cyan));
-  border-radius: 14px;
-  background: var(--glass-strong);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 0 28px -10px var(--detail-accent, transparent);
-}
-.detail-eyebrow {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--quiet);
-}
-.detail-name {
-  margin: 7px 0 3px;
-  font-size: 23px;
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--detail-accent, var(--text));
-}
-.detail-seg {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.detail-summary {
-  margin: 11px 0 14px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.56;
-}
-.detail-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  color: var(--detail-accent, var(--neon-cyan));
-  text-decoration: none;
-}
-.detail-cta:hover, .detail-cta:focus-visible { text-decoration: underline; outline: none; }
-
-/* Resumo inline no card do dock — só aparece no mobile (no desktop usa o painel) */
-.dock-summary { display: none; }
-
-/* Dock — lançadores das empresas, sincronizados com os portais 3D */
-.dock {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-  gap: 10px;
-  width: min(1040px, 100%);
-  align-self: end;
-  margin-bottom: 16px;
-}
-.dock-item {
-  position: relative;
-  display: grid;
-  gap: 7px;
-  min-height: 78px;
-  padding: 13px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  color: var(--text);
-  text-align: left;
-  text-decoration: none;
-  font-family: inherit;
-  cursor: pointer;
-  overflow: hidden;
-  transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.25s ease, background 0.2s ease;
-}
-.dock-item::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--accent);
-  box-shadow: 0 0 14px var(--accent);
-}
-.dock-item:hover,
-.dock-item:focus-visible,
-.dock-item.is-active {
-  transform: translateY(-3px);
-  border-color: var(--accent);
-  background: var(--glass-strong);
-  box-shadow: 0 0 22px -2px var(--accent);
-  outline: none;
-}
-.dock-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.dock-item strong { font-size: 14px; font-weight: 700; line-height: 1.15; }
-.dock-play {
-  font-size: 11px;
-  color: var(--accent);
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.dock-item:hover .dock-play,
-.dock-item:focus-visible .dock-play,
-.dock-item.is-active .dock-play { opacity: 1; transform: translateX(0); }
-.dock-item span.seg {
-  display: block;
-  color: var(--quiet);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-
-/* Footer */
-.footer-meta {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--quiet);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-}
-.system-readout { text-align: right; color: var(--neon-cyan); }
-.footer-legal {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  color: var(--quiet);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.4px;
-  text-align: center;
-  line-height: 1.7;
-}
-.footer-legal a { color: var(--neon-cyan); text-decoration: none; }
-.footer-legal a:hover { text-decoration: underline; }
-
-/* ============================================================
-   Fallback sem WebGL — a cena some, a CSS sustenta a estética
-   ============================================================ */
-body.no-webgl #scene-root { display: none; }
-body.no-webgl {
-  background:
-    radial-gradient(110% 70% at 50% 118%, rgba(255, 45, 155, 0.28), transparent 46%),
-    linear-gradient(180deg, var(--bg-0), var(--bg-2));
-}
-body.no-webgl::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(24, 224, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 45, 155, 0.14) 1px, transparent 1px);
-  background-size: 60px 60px;
-  background-position: center bottom;
-  transform: perspective(360px) rotateX(68deg);
-  transform-origin: center bottom;
-  mask-image: linear-gradient(to top, black, transparent 64%);
-}
-
-/* ============================================================
-   Responsivo
-   ============================================================ */
-/* Foco visível robusto — sobrevive a forced-colors / alto contraste */
-.brand:focus-visible,
-.nav a:focus-visible,
-.button:focus-visible,
-.dock-item:focus-visible {
-  outline: 2px solid var(--neon-cyan);
-  outline-offset: 3px;
-}
-@media (forced-colors: active) {
-  .brand:focus-visible,
-  .nav a:focus-visible,
-  .button:focus-visible,
-  .dock-item:focus-visible { outline: 2px solid CanvasText; }
-}
-
-@media (max-width: 1080px) {
-  .dock { width: min(720px, 100%); }
-}
-@media (max-width: 760px) {
-  /* No mobile a página rola sobre o canvas 3D fixo (cena vira plano de fundo imersivo) */
-  html, body { overflow-y: auto; overflow-x: hidden; }
-  #arcade-canvas { touch-action: pan-y; }
-  .shell { display: flex; flex-direction: column; min-height: 100svh; padding: 16px 16px 28px; }
-  /* Nav permanece acessível no mobile (compacta), nunca display:none */
-  .topbar { flex-wrap: wrap; gap: 12px; }
-  .nav { gap: 2px; padding: 3px; }
-  .nav a { padding: 7px 9px; font-size: 11px; }
-  .brand img { width: 40px; height: 40px; }
-  .hero { align-self: stretch; padding-top: 34vh; }   /* espaço para a faixa de portais fixa no topo */
-  .hero::before {
-    inset: -36px -22px -28px -22px;
-    background: linear-gradient(180deg, transparent, rgba(5, 1, 13, 0.86) 24%, rgba(5, 1, 13, 0.94));
-  }
-  .hero p { max-width: none; }
-  .actions { margin-top: 22px; }
-  .button { min-height: 44px; padding: 0 16px; font-size: 12.5px; }
-  /* O resumo aparece direto em cada card (lista vertical rolável); painel some */
-  .detail { display: none; }
-  .dock { grid-template-columns: 1fr; gap: 10px; width: 100%; margin: 26px 0 0; }
-  .dock-item { min-height: 0; padding: 14px 15px; }
-  .dock-item strong { font-size: 14.5px; }
-  .dock-summary { display: block; margin-top: 7px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-  .footer-meta { margin-top: 20px; }
-  .system-readout { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .button { transition: none; }
-  .dock-item { transition: border-color 0.2s ease, background 0.2s ease; }
-}
+:root{--black:#050706;--deep:#071510;--surface:#0b1511;--green:#00f5a0;--cyan:#49dce8;--white:#f2f5f3;--muted:#9aa7a1;--quiet:#7f8d86;--border:rgba(160,255,210,.16);--strong:rgba(160,255,210,.31);--glow:rgba(0,245,160,.22);--danger:#ff8b8b;--success:#76e4b9;--display:"Space Grotesk","Aptos Display","Segoe UI Variable Display","Segoe UI",sans-serif;--sans:Inter,"Aptos","Segoe UI Variable","Segoe UI",sans-serif;--mono:"Cascadia Code","SFMono-Regular",Consolas,monospace;--max:1400px;--x:clamp(20px,4.5vw,72px);--header:92px;--ease:cubic-bezier(.2,.75,.25,1)}
+*,*:before,*:after{box-sizing:border-box}
+html{min-width:320px;scroll-behavior:smooth;background:var(--black)}
+body{min-width:320px;margin:0;overflow-x:hidden;color:var(--white);font-family:var(--sans);background:radial-gradient(60% 35% at 74% 4%,rgba(0,245,160,.055),transparent 76%),linear-gradient(#040605 0%,var(--black) 36%,#07100c);text-rendering:optimizeLegibility}
+body.menu-open,body.modal-open{overflow:hidden}button,input,select,textarea{font:inherit}a{color:inherit}img,svg{display:block;max-width:100%}
+::selection{color:#02120b;background:var(--green)}:focus-visible{outline:2px solid var(--green);outline-offset:4px}
+.skip{position:fixed;z-index:2000;top:12px;left:12px;padding:10px 14px;color:var(--black);background:var(--green);transform:translateY(-160%)}.skip:focus{transform:none}
+.sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.container{width:min(100%,var(--max));margin:auto;padding-inline:var(--x)}
+.eyebrow,.kicker,.tech{color:var(--green);font:600 11px/1.4 var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.button{min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:0 22px;border:1px solid var(--strong);border-radius:6px;color:var(--white);background:rgba(5,9,7,.62);text-decoration:none;font-size:14px;font-weight:650;transition:.18s}
+.button:hover,.button:focus-visible{border-color:rgba(0,245,160,.72);background:rgba(0,245,160,.08);box-shadow:0 0 28px rgba(0,245,160,.08);transform:translateY(-2px)}
+.primary{border-color:var(--green);color:#03130c;background:linear-gradient(110deg,#00e998,#45e6ba);box-shadow:0 12px 42px rgba(0,245,160,.15)}.primary:hover,.primary:focus-visible{color:#020a06;background:var(--white)}
+.compact{min-height:44px;padding-inline:18px;font-size:13px}
+.site-header{position:fixed;z-index:100;inset:0 0 auto;height:var(--header);border-bottom:1px solid transparent;transition:.24s var(--ease)}
+.site-header.scrolled{height:76px;border-color:var(--border);background:rgba(4,8,6,.84);box-shadow:0 14px 40px rgba(0,0,0,.24);backdrop-filter:blur(18px)}
+.header-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:30px}
+.logo{display:inline-block;color:var(--white);background:currentColor;-webkit-mask:url("assets/brand/arcade-logo-horizontal.webp") center/contain no-repeat;mask:url("assets/brand/arcade-logo-horizontal.webp") center/contain no-repeat}
+.logo-header{width:156px;height:58px}.logo-footer{width:176px;height:80px}.logo-mark{width:108px;height:132px;-webkit-mask-image:url("assets/brand/arcade-logo-vertical.webp");mask-image:url("assets/brand/arcade-logo-vertical.webp")}
+.brand{display:inline-flex;color:var(--white);text-decoration:none}.desktop-nav{display:flex;align-items:center;gap:clamp(20px,2.8vw,42px)}
+.desktop-nav>a:not(.button){position:relative;padding:12px 0;color:#b4beb9;text-decoration:none;font-size:13px}.desktop-nav>a:not(.button):hover{color:var(--white)}
+.desktop-nav>a:not(.button):after{content:"";position:absolute;inset:auto 0 5px;height:1px;background:var(--green);transform:scaleX(0);transition:.18s}.desktop-nav>a:hover:after{transform:scaleX(1)}
+.menu-toggle{width:48px;height:48px;display:none;place-items:center;padding:0;border:1px solid var(--strong);border-radius:8px;color:var(--white);background:#06100c;cursor:pointer}
+.menu-toggle span,.menu-toggle:before,.menu-toggle:after{content:"";width:21px;height:1px;display:block;background:currentColor;transition:.18s}.menu-toggle span{margin-block:5px}.menu-toggle[aria-expanded=true] span{opacity:0}.menu-toggle[aria-expanded=true]:before{transform:translateY(6px) rotate(45deg)}.menu-toggle[aria-expanded=true]:after{transform:translateY(-6px) rotate(-45deg)}
+.mobile-menu{position:fixed;z-index:90;inset:76px 0 auto;display:none;padding:18px var(--x) 26px;border-bottom:1px solid var(--border);background:rgba(4,8,6,.98);box-shadow:0 30px 70px #000}.mobile-menu.open{display:grid}.mobile-menu a{min-height:50px;display:flex;align-items:center;border-bottom:1px solid var(--border);text-decoration:none}.mobile-menu .button{margin-top:16px}
+.hero{position:relative;min-height:100svh;overflow:hidden;isolation:isolate}.hero:before{content:"";position:absolute;z-index:-2;inset:0;background:linear-gradient(rgba(73,220,232,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(73,220,232,.025) 1px,transparent 1px);background-size:72px 72px;mask-image:radial-gradient(circle at 72% 48%,#000,transparent 65%)}
+.hero:after{content:"";position:absolute;z-index:-1;width:min(76vw,1050px);aspect-ratio:1;top:-10%;right:-13%;border-radius:50%;background:radial-gradient(circle at 44% 46%,rgba(0,245,160,.1),transparent 25%),radial-gradient(circle,transparent 44%,rgba(73,220,232,.05) 60%,transparent 72%);filter:blur(18px)}
+.hero-inner{min-height:100svh;display:grid;grid-template-columns:minmax(0,.9fr) minmax(500px,1.1fr);align-items:center;gap:clamp(28px,4vw,68px);padding-top:calc(var(--header) + 52px);padding-bottom:78px}
+.hero-copy{position:relative;z-index:3;max-width:660px}.hero .eyebrow{display:flex;align-items:center;gap:12px;margin:0 0 28px}.hero .eyebrow:before{content:"";width:36px;height:1px;background:var(--green);box-shadow:0 0 12px var(--glow)}
+h1{margin:0;font:590 clamp(54px,5.2vw,78px)/.98 var(--display);letter-spacing:clamp(-4px,-.28vw,-2px)}h1 span{display:block}.hero-accent{color:#cff9e7;background:linear-gradient(98deg,#dff9ee,var(--cyan),var(--green));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-desc{max-width:610px;margin:28px 0 0;color:#b4beb9;font-size:clamp(15px,1.25vw,18px);line-height:1.72}.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.status{width:fit-content;display:flex;align-items:center;gap:12px;margin-top:48px;padding:10px 16px;border:1px solid var(--border);border-radius:999px;color:#71d9b4;background:rgba(5,10,7,.5);font:600 10px var(--mono);letter-spacing:.16em;text-transform:uppercase}.status:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green)}
+.continue{position:absolute;left:50%;bottom:18px;display:grid;place-items:center;gap:7px;color:var(--quiet);font:9px var(--mono);letter-spacing:.16em;text-decoration:none;text-transform:uppercase;transform:translateX(-50%)}.continue:after{content:"";width:1px;height:30px;background:linear-gradient(var(--green),transparent)}
+.core-visual{--px:0px;--py:0px;position:relative;z-index:2;perspective:1100px}.core-stage{position:relative;width:min(100%,720px);aspect-ratio:1;margin:auto;transform:translate3d(var(--px),var(--py),0);transition:transform .28s var(--ease)}
+.core-stage:before,.core-stage:after{content:"";position:absolute;border-radius:50%;pointer-events:none}.core-stage:before{inset:7%;border:1px solid rgba(73,220,232,.09);background:radial-gradient(circle,rgba(0,245,160,.035),transparent 63%);transform:rotateX(67deg) rotateZ(-18deg)}.core-stage:after{inset:17% 4%;border:1px solid rgba(0,245,160,.12);transform:rotateX(72deg) rotateZ(22deg)}
+.core-svg{width:100%;height:100%;overflow:visible}.grid-line{stroke:rgba(73,220,232,.11);stroke-width:1;stroke-dasharray:2 9}.ring{fill:none;stroke:rgba(160,255,210,.16);stroke-width:1}.ring.strong{stroke:rgba(0,245,160,.3)}.ring.dash{stroke-dasharray:3 8}.orbits{transform-origin:360px 360px;animation:turn 56s linear infinite}.connection{stroke:rgba(160,255,210,.2);stroke-width:1.2;stroke-dasharray:2 8;transition:.22s}.connection.active{stroke:var(--active,var(--green));stroke-width:2;filter:url(#glowLine)}.signal{fill:var(--green);filter:url(#glowDot)}@keyframes turn{to{transform:rotate(360deg)}}
+.core-center{position:absolute;z-index:4;top:50%;left:50%;width:clamp(174px,28%,220px);aspect-ratio:1;display:grid;place-items:center;border:1px solid rgba(160,255,210,.42);border-radius:50%;background:radial-gradient(circle at 37% 28%,rgba(242,245,243,.16),transparent 17%),radial-gradient(circle,rgba(0,245,160,.13),#040c08 60%,#020403);box-shadow:inset -22px -28px 48px rgba(0,0,0,.72),0 0 0 14px rgba(0,245,160,.025),0 0 58px rgba(0,245,160,.17);transform:translate(-50%,-50%) rotateX(7deg) rotateY(-8deg)}
+.core-center:before,.core-center:after{content:"";position:absolute;border-radius:50%}.core-center:before{inset:-12%;border:1px solid rgba(73,220,232,.15)}.core-center:after{inset:11%;border:1px dashed rgba(160,255,210,.2);animation:turn 32s linear infinite reverse}.core-center .logo{z-index:2;filter:drop-shadow(0 0 17px rgba(0,245,160,.28))}
+.core-label{position:absolute;top:calc(100% + 22px);left:50%;width:230px;color:var(--green);font:10px/1.5 var(--mono);letter-spacing:.16em;text-align:center;text-transform:uppercase;transform:translateX(-50%)}
+.core-node{--node:var(--green);position:absolute;z-index:6;width:112px;aspect-ratio:1;display:grid;place-items:center;gap:3px;padding:9px 8px;border:1px solid rgba(160,255,210,.23);border-radius:50%;color:#c1ccc7;background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--node) 13%,transparent),transparent 62%),rgba(4,10,7,.88);box-shadow:0 12px 38px rgba(0,0,0,.38);cursor:pointer;transform:translate(-50%,-50%);transition:.2s var(--ease)}
+.core-node:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--node);box-shadow:0 0 12px var(--node)}.core-node strong{max-width:90px;font-size:11px;line-height:1.15;text-align:center}.core-node small{color:var(--quiet);font:8px var(--mono);letter-spacing:.12em}
+.core-node:hover,.core-node:focus-visible,.core-node.active{z-index:8;border-color:var(--node);color:var(--white);box-shadow:0 0 30px color-mix(in srgb,var(--node) 20%,transparent);transform:translate(-50%,-50%) scale(1.06)}
+.core-node[data-pos="0"]{top:12%;left:50%}.core-node[data-pos="1"]{top:29%;left:84%}.core-node[data-pos="2"]{top:69%;left:84%}.core-node[data-pos="3"]{top:88%;left:50%}.core-node[data-pos="4"]{top:69%;left:16%}.core-node[data-pos="5"]{top:29%;left:16%}
+.core-readout{position:absolute;z-index:7;right:2%;bottom:3%;max-width:190px;color:var(--muted);font:9px/1.55 var(--mono);letter-spacing:.08em;text-align:right;text-transform:uppercase}.core-readout strong{display:block;color:var(--white);font-size:10px}
+.particles{position:absolute;inset:0;pointer-events:none}.particle{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:var(--cyan);opacity:var(--o);box-shadow:0 0 8px var(--cyan);animation:drift var(--d) ease-in-out infinite alternate}@keyframes drift{to{transform:translate(var(--dx),var(--dy));opacity:.15}}
+.readout{border-block:1px solid var(--border);background:rgba(6,15,11,.78)}.readout-inner{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;color:#a7b5af;font:10px/1.5 var(--mono);letter-spacing:.13em;text-transform:uppercase}.readout-inner span{display:inline-flex;align-items:center;gap:9px}.readout-inner span:before{content:"";width:4px;height:4px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.section{position:relative;padding-block:clamp(104px,11vw,160px);border-bottom:1px solid var(--border)}.section-head{display:grid;grid-template-columns:1fr minmax(320px,.72fr);align-items:end;gap:clamp(36px,8vw,120px);margin-bottom:clamp(56px,7vw,90px)}.kicker{display:block;margin-bottom:18px}
+.section-head h2,.manifesto h2,.contact h2{margin:0;font:480 clamp(44px,5.6vw,76px)/1 var(--display);letter-spacing:clamp(-3.8px,-.25vw,-2px)}.section-head p{max-width:580px;margin:0 0 5px auto;color:var(--muted);font-size:16px;line-height:1.72}
+.ecosystem{overflow:hidden;background:radial-gradient(54% 40% at 50% 43%,rgba(0,245,160,.052),transparent 72%),linear-gradient(#050807,#07110d)}.ecosystem:before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle,rgba(73,220,232,.14) 1px,transparent 1.5px);background-size:42px 42px;mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);opacity:.2}
+.eco-map{position:relative;display:grid;grid-template-columns:1fr minmax(280px,.72fr) 1fr;grid-template-areas:"c0 core c1" "c2 core c3" "c4 detail c5";gap:18px clamp(22px,3.6vw,52px)}
+.company{--company:var(--green);position:relative;z-index:2;min-height:192px;padding:24px;border:1px solid var(--border);border-radius:12px;background:radial-gradient(90% 100% at 0 0,color-mix(in srgb,var(--company) 7%,transparent),transparent 65%),linear-gradient(145deg,rgba(13,28,21,.86),rgba(5,10,8,.92));transition:.22s var(--ease)}
+.company[data-order="0"]{grid-area:c0}.company[data-order="1"]{grid-area:c1}.company[data-order="2"]{grid-area:c2}.company[data-order="3"]{grid-area:c3}.company[data-order="4"]{grid-area:c4}.company[data-order="5"]{grid-area:c5}
+.company:hover,.company:focus-within,.company.active{border-color:var(--company);box-shadow:0 0 34px color-mix(in srgb,var(--company) 8%,transparent);transform:translateY(-3px)}.company h3{margin:6px 0}.company-index{color:var(--company);font:10px var(--mono);letter-spacing:.15em}.company-select{padding:0;border:0;color:var(--white);background:transparent;font:560 clamp(19px,1.75vw,25px)/1.15 var(--display);text-align:left;cursor:pointer}.category{margin:0 0 15px;color:var(--company);font:9px var(--mono);letter-spacing:.1em;text-transform:uppercase}.summary{margin:0;color:#b2bdb8;font-size:13px;line-height:1.55}.description{margin:9px 0 0;color:var(--quiet);font-size:11px;line-height:1.5}.company-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px}.company-status{display:inline-flex;align-items:center;gap:8px;color:#91a099;font:9px var(--mono);letter-spacing:.1em;text-transform:uppercase}.company-status:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 10px var(--success)}.company-link{display:inline-flex;gap:7px;color:var(--white);text-decoration:none;font-size:11px;font-weight:650}.company-link span{color:var(--company);font-size:16px}
+.eco-core{grid-area:core;position:relative;z-index:1;min-height:406px;display:grid;place-items:center}.eco-core:before,.eco-core:after{content:"";position:absolute;border:1px solid var(--border);border-radius:50%}.eco-core:before{width:88%;aspect-ratio:1}.eco-core:after{width:62%;aspect-ratio:1;border-style:dashed;animation:turn 42s linear infinite}
+.eco-sphere{position:relative;z-index:2;width:184px;aspect-ratio:1;display:grid;place-items:center;border:1px solid var(--strong);border-radius:50%;background:radial-gradient(circle at 36% 27%,rgba(242,245,243,.16),transparent 16%),radial-gradient(circle,rgba(0,245,160,.13),#06100b 61%,#020403);box-shadow:inset -20px -24px 40px #000,0 0 60px rgba(0,245,160,.11)}.eco-sphere .logo{width:86px;height:105px}.eco-label{position:absolute;top:calc(50% + 112px);color:var(--green);font:10px var(--mono);letter-spacing:.14em;text-align:center;text-transform:uppercase}.eco-label span{display:block;margin-top:5px;color:var(--quiet);font-size:8px}
+.detail{--detail:var(--green);grid-area:detail;position:relative;z-index:2;min-height:192px;padding:23px;border:1px solid color-mix(in srgb,var(--detail) 38%,transparent);border-radius:12px;background:radial-gradient(100% 120% at 0 0,color-mix(in srgb,var(--detail) 10%,transparent),transparent 66%),rgba(5,11,8,.94)}.detail-label{color:var(--quiet);font:9px var(--mono);letter-spacing:.12em;text-transform:uppercase}.detail h3{margin:12px 0 4px;font:550 25px var(--display)}.detail-cat{color:var(--detail);font:9px var(--mono);letter-spacing:.09em;text-transform:uppercase}.detail-desc{margin:13px 0 18px;color:#aebbb4;font-size:12px;line-height:1.55}.detail-link{font-size:11px;font-weight:650;text-underline-offset:4px;text-decoration-color:var(--detail)}
+.system{background:radial-gradient(45% 70% at 100% 50%,rgba(73,220,232,.04),transparent 76%),#050806}.system-intro{display:grid;grid-template-columns:.72fr 1.28fr;gap:clamp(40px,8vw,130px);margin-bottom:72px}.system-intro h2{margin:0;font:480 clamp(45px,5vw,70px)/1 var(--display);letter-spacing:-3px}.system-intro p{max-width:650px;margin:0;color:var(--muted);font-size:16px;line-height:1.75}
+.ops{position:relative;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:12px;overflow:hidden;background:rgba(8,17,12,.56)}.ops:before{content:"";position:absolute;top:73px;left:12.5%;right:12.5%;height:1px;background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent)}.step{position:relative;min-height:292px;padding:30px 28px 34px;border-left:1px solid var(--border)}.step:first-child{border:0}.step-num{color:var(--green);font:11px var(--mono)}.step-signal{position:relative;width:12px;height:12px;display:block;margin:24px 0 35px;border:2px solid var(--green);border-radius:50%;background:var(--surface);box-shadow:0 0 16px var(--glow)}.step h3{margin:0 0 13px;color:#c8fff0;font:560 20px var(--display);letter-spacing:.02em}.step p{margin:0;color:var(--muted);font-size:13px;line-height:1.65}.step-meta{position:absolute;inset:auto 28px 20px;color:var(--quiet);font:8px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.manifesto{overflow:hidden;background:radial-gradient(70% 100% at 4% 100%,rgba(0,245,160,.07),transparent 62%),linear-gradient(120deg,#07120d,#040605 62%)}.manifesto-grid{display:grid;grid-template-columns:1.18fr minmax(320px,.62fr);gap:clamp(48px,10vw,150px);align-items:end}.manifesto h2{font-size:clamp(48px,7vw,94px)}.manifesto h2 span{display:block}.manifesto h2 span:last-child{color:#b8f5dc}.manifesto-copy{position:relative;padding-top:64px}.manifesto-copy:before{content:"";position:absolute;inset:0 auto auto;width:84px;height:1px;background:var(--green)}.manifesto-copy p{margin:0;color:#aab7b0;font-size:16px;line-height:1.76}.signature{display:block;margin-top:34px;color:var(--green);font:10px var(--mono);letter-spacing:.16em;text-transform:uppercase}
+.contact{padding-block:clamp(100px,10vw,150px);background:linear-gradient(rgba(73,220,232,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(73,220,232,.025) 1px,transparent 1px),#050806;background-size:56px 56px}.contact-panel{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;gap:50px;align-items:end;padding:clamp(34px,5vw,72px);border:1px solid var(--strong);border-radius:16px;background:radial-gradient(60% 160% at 100% 100%,rgba(0,245,160,.1),transparent 70%),rgba(7,17,12,.85)}.contact h2{max-width:800px}.contact p{max-width:650px;margin:24px 0 0;color:var(--muted);font-size:16px;line-height:1.72}.contact-actions{display:grid;gap:12px;min-width:230px}
+.footer{padding-block:70px 34px;background:#030504}.footer-grid{display:grid;grid-template-columns:1.2fr .7fr .9fr .8fr;gap:44px}.footer-brand p{max-width:350px;margin:18px 0 0;color:var(--muted);font-size:13px;line-height:1.65}.footer-col h2{margin:9px 0 18px;color:var(--quiet);font:600 9px var(--mono);letter-spacing:.15em;text-transform:uppercase}.footer-col ul{margin:0;padding:0;list-style:none}.footer-col li+li{margin-top:11px}.footer-col a{color:#b8c3bd;text-decoration:none;font-size:12px}.footer-col a:hover{color:var(--green)}.footer-bottom{display:flex;justify-content:space-between;gap:20px;margin-top:58px;padding-top:24px;border-top:1px solid var(--border);color:var(--quiet);font-size:10px}.online{display:inline-flex;align-items:center;gap:8px;color:#72d8b3;font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase}.online:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.modal{position:fixed;z-index:1000;inset:0;display:none;place-items:center;padding:20px;background:rgba(1,4,2,.84);backdrop-filter:blur(14px)}.modal.open{display:grid}.modal-card{width:min(100%,520px);max-height:min(92svh,760px);overflow:auto;padding:30px;border:1px solid var(--strong);border-radius:14px;background:linear-gradient(160deg,#0c1913,#050806 68%);box-shadow:0 38px 120px #000}.modal-head{display:flex;justify-content:space-between;gap:20px}.modal-card h2{margin:0;font:560 28px var(--display)}.modal-close{width:42px;height:42px;border:1px solid var(--border);border-radius:50%;color:var(--white);background:transparent;cursor:pointer;font-size:22px}.modal-sub{margin:8px 0 24px;color:var(--muted);font-size:13px;line-height:1.55}.field{margin-bottom:14px}.field label{display:block;margin-bottom:7px;color:#a9b6af;font:9px var(--mono);letter-spacing:.1em;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;min-height:46px;padding:11px 12px;border:1px solid var(--border);border-radius:6px;color:var(--white);background:rgba(255,255,255,.035)}.field textarea{min-height:108px;resize:vertical}.field option{background:var(--surface)}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);outline:2px solid rgba(0,245,160,.1)}.hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0}.modal-actions{display:flex;gap:10px;margin-top:22px}.modal-actions button{flex:1;min-height:47px;border-radius:6px;cursor:pointer;font-weight:650}.cancel{border:1px solid var(--border);color:var(--white);background:transparent}.send{border:1px solid var(--green);color:#03110b;background:var(--green)}.send:disabled{cursor:wait;opacity:.56}.form-msg{min-height:20px;margin-top:13px;color:var(--muted);font-size:12px;text-align:center}
+.reveal{opacity:1;transform:none}
+@supports(animation-timeline:view()){.reveal{animation:sectionReveal both linear;animation-timeline:view();animation-range:entry 0% entry 28%}@keyframes sectionReveal{from{opacity:.22;transform:translateY(18px)}to{opacity:1;transform:none}}}
+@media(min-width:1081px){.company[data-order="0"]:after,.company[data-order="2"]:after{content:"";position:absolute;top:50%;left:100%;width:clamp(22px,3.6vw,52px);height:1px;background:linear-gradient(90deg,var(--company),rgba(0,245,160,.22))}.company[data-order="1"]:before,.company[data-order="3"]:before{content:"";position:absolute;top:50%;right:100%;width:clamp(22px,3.6vw,52px);height:1px;background:linear-gradient(90deg,rgba(0,245,160,.22),var(--company))}}
+@media(max-width:1080px){:root{--header:78px}.desktop-nav{display:none}.menu-toggle{display:grid}.hero-inner{grid-template-columns:1fr;gap:44px;padding-top:126px}.hero-copy{max-width:760px}.core-stage{max-width:680px}.continue{display:none}.section-head{grid-template-columns:1fr;gap:28px}.section-head p{margin-left:0}.eco-map{grid-template-columns:1fr 1fr;grid-template-areas:"core core" "detail detail" "c0 c1" "c2 c3" "c4 c5"}.eco-core{min-height:340px}.detail{min-height:0}.system-intro{grid-template-columns:1fr;gap:28px}.ops{grid-template-columns:1fr 1fr}.ops:before{display:none}.step:nth-child(3){border-left:0;border-top:1px solid var(--border)}.step:nth-child(4){border-top:1px solid var(--border)}.manifesto-grid{grid-template-columns:1fr;gap:36px}.manifesto-copy{padding-top:38px}.footer-grid{grid-template-columns:1fr 1fr 1fr}.footer-brand{grid-column:1/-1}}
+@media(max-width:700px){:root{--x:20px}.site-header,.site-header.scrolled{height:72px}.logo-header{width:142px;height:54px}.mobile-menu{top:72px}.hero-inner{gap:34px;padding-top:110px;padding-bottom:62px}.hero .eyebrow{margin-bottom:22px;font-size:9px;letter-spacing:.15em}h1{font-size:clamp(41px,12vw,57px);line-height:1.01;letter-spacing:-2.6px}.hero-desc{margin-top:22px;font-size:15px;line-height:1.62}.hero-actions{margin-top:26px}.hero-actions .button{width:100%}.status{margin-top:28px;padding:9px 12px;font-size:8px;letter-spacing:.1em}.core-stage{width:calc(100% + 16px);margin-left:-8px}.core-center{width:31%;min-width:126px}.core-center .logo{width:76px;height:94px}.core-label{top:calc(100% + 15px);font-size:8px}.core-node{width:76px;padding:7px 5px}.core-node strong{max-width:66px;font-size:8px}.core-node small{display:none}.core-node[data-pos="1"],.core-node[data-pos="2"]{left:86%}.core-node[data-pos="4"],.core-node[data-pos="5"]{left:14%}.core-readout{right:5%;bottom:0;max-width:132px;font-size:7px}.readout-inner{min-height:82px;display:grid;grid-template-columns:1fr 1fr;padding-block:16px;font-size:8px}.readout-inner span:nth-child(3){grid-column:1/-1}.section{padding-block:92px}.section-head{margin-bottom:48px}.section-head h2,.manifesto h2,.contact h2{font-size:clamp(40px,12vw,56px)}.section-head p,.system-intro p,.contact p,.manifesto-copy p{font-size:14px}.eco-map{grid-template-columns:1fr;grid-template-areas:"core" "detail" "c0" "c1" "c2" "c3" "c4" "c5"}.eco-core{min-height:290px}.eco-sphere{width:152px}.company{min-height:0;padding:22px}.description{display:none}.ops{grid-template-columns:1fr}.step{min-height:250px;border-left:0;border-top:1px solid var(--border)}.step:first-child{border-top:0}.contact-panel{grid-template-columns:1fr;gap:34px;padding:30px 24px}.contact-actions{min-width:0}.footer-grid{grid-template-columns:1fr 1fr}.footer-brand{grid-column:1/-1}.footer-bottom{align-items:flex-start;flex-direction:column}.modal{padding:10px;align-items:end}.modal-card{max-height:94svh;padding:24px 20px;border-radius:14px 14px 0 0}}
+@media(max-width:390px){.core-node{width:70px}.core-node strong{font-size:7.5px}.footer-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.particles{display:none}.core-stage{transform:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<div id="scene-root" aria-hidden="true"></div>
-<div class="fx-overlay" aria-hidden="true"></div>
-<div class="fx-vignette" aria-hidden="true"></div>
-
-<main class="shell" aria-label="Arcade Hub">
-  <header class="topbar" id="top">
-    <a class="brand" href="/" aria-label="Arcade Hub — início">
-      <img src="logo.webp" alt="" width="44" height="44" onerror="this.onerror=null;this.src='logo.png'" />
-      <span class="brand-copy">
-        <span class="brand-title">Arcade Hub</span>
-        <span class="brand-subtitle">Ecossistema de tecnologia brasileira</span>
-      </span>
-    </a>
-    <nav class="nav" aria-label="Navegação principal">
-      <a href="#top">Início</a>
-      <a href="#portfolio">Portfólio</a>
-      <a href="#" onclick="abrirContato();return false;">Contato</a>
-      <a href="/admin/">Admin</a>
-    </nav>
-  </header>
-
-  <div class="hero">
-    <div class="eyebrow">Holding operacional</div>
-    <h1>Construímos empresas de tecnologia com <span class="accent">disciplina.</span></h1>
-    <p>Arcade Hub cria, opera e escala produtos digitais para mercados onde privacidade, saúde, inteligência artificial e produtividade precisam sair do discurso e virar sistema.</p>
-    <nav class="actions" aria-label="Ações principais">
-      <a class="button primary" href="#portfolio">Ver portfólio</a>
-      <a class="button" href="#" onclick="abrirContato();return false;">Falar com a Arcade Hub</a>
-    </nav>
-  </div>
-
-  <aside class="detail" aria-live="polite" style="--detail-accent:#ff2d9b">
-    <span class="detail-eyebrow">Projeto em foco</span>
-    <h2 class="detail-name" id="detail-name">Giro na Máxima</h2>
-    <span class="detail-seg" id="detail-seg">Tecnologia &amp; IA</span>
-    <p class="detail-summary" id="detail-summary">Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.</p>
-    <a class="detail-cta" id="detail-cta" href="https://gironamaxima.com.br/" target="_blank" rel="noopener noreferrer">Visitar site →</a>
-  </aside>
-
-  <nav class="dock" id="portfolio" aria-label="Empresas do portfólio">
-    <!-- Preenchido por JS a partir de PORTFOLIO; este markup é o fallback acessível -->
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<header class="site-header" id="header">
+ <div class="container header-inner">
+  <a class="brand" href="#inicio" aria-label="ARCADE — início"><span class="logo logo-header" role="img" aria-label="ARCADE"></span></a>
+  <nav class="desktop-nav" aria-label="Navegação principal">
+   <a href="#ecossistema">Ecossistema</a><a href="#como-operamos">Como operamos</a><a href="#sobre">Sobre</a><a href="#contato">Contato</a>
+   <a class="button compact open-contact" href="#contato">Falar com a Arcade</a>
   </nav>
-
-  <footer class="footer-meta">
-    <span id="company-count">06 empresas em operação · Brasil</span>
-    <span class="system-readout" id="system-readout">ARCADE://ECOSYSTEM · ONLINE</span>
-  </footer>
-  <div class="footer-legal">
-    © 2026 ArcadeHub.tech · CNPJ 66.910.447/0001-06 · <a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a> · Todos os direitos reservados
+  <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Abrir menu"><span aria-hidden="true"></span></button>
+ </div>
+ <nav class="mobile-menu" id="mobile-menu" aria-label="Navegação móvel" hidden>
+  <a href="#ecossistema">Ecossistema</a><a href="#como-operamos">Como operamos</a><a href="#sobre">Sobre</a><a href="#contato">Contato</a>
+  <a class="button primary open-contact" href="#contato">Falar com a Arcade</a>
+ </nav>
+</header>
+<main id="conteudo">
+ <section class="hero" id="inicio" aria-labelledby="hero-title">
+  <div class="container hero-inner">
+   <div class="hero-copy reveal visible">
+    <p class="eyebrow">Technology holding · Brazil</p>
+    <h1 id="hero-title"><span>Uma empresa-mãe.</span><span>Vários negócios.</span><span class="hero-accent">Um sistema para escalar.</span></h1>
+    <p class="hero-desc">A Arcade cria, opera e desenvolve empresas digitais, conectando estratégia, tecnologia, inteligência artificial, dados e gestão financeira em um único ecossistema.</p>
+    <div class="hero-actions"><a class="button primary" href="#ecossistema">Explorar o ecossistema <span aria-hidden="true">→</span></a><a class="button open-contact" href="#contato">Falar com a Arcade <span aria-hidden="true">◌</span></a></div>
+    <div class="status">ARCADE://CORE · SYSTEM ONLINE</div>
+   </div>
+   <figure class="core-visual reveal visible" aria-labelledby="core-caption">
+    <div class="core-stage" id="core-stage">
+     <svg class="core-svg" viewBox="0 0 720 720" role="img" aria-label="Arcade Core com seis empresas conectadas ao núcleo">
+      <defs><filter id="glowDot" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><filter id="glowLine"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="haze"><stop offset="0" stop-color="#00f5a0" stop-opacity=".14"/><stop offset=".6" stop-color="#49dce8" stop-opacity=".03"/><stop offset="1" stop-color="#00f5a0" stop-opacity="0"/></radialGradient></defs>
+      <circle cx="360" cy="360" r="315" fill="url(#haze)"/>
+      <g aria-hidden="true"><path class="grid-line" d="M38 360H682M360 38V682M132 132L588 588M588 132L132 588"/><circle class="ring" cx="360" cy="360" r="268"/><circle class="ring dash" cx="360" cy="360" r="224"/><circle class="ring strong" cx="360" cy="360" r="181"/><circle class="ring" cx="360" cy="360" r="146"/>
+       <g class="orbits"><ellipse class="ring" cx="360" cy="360" rx="314" ry="188" transform="rotate(-18 360 360)"/><ellipse class="ring dash" cx="360" cy="360" rx="286" ry="115" transform="rotate(31 360 360)"/><circle class="signal" cx="106" cy="253" r="3"/><circle class="signal" cx="598" cy="205" r="3"/><circle class="signal" cx="589" cy="524" r="3"/></g>
+       <g id="connections"><line class="connection" data-index="0" x1="360" y1="360" x2="360" y2="87"/><line class="connection" data-index="1" x1="360" y1="360" x2="605" y2="210"/><line class="connection" data-index="2" x1="360" y1="360" x2="605" y2="510"/><line class="connection" data-index="3" x1="360" y1="360" x2="360" y2="633"/><line class="connection" data-index="4" x1="360" y1="360" x2="115" y2="510"/><line class="connection" data-index="5" x1="360" y1="360" x2="115" y2="210"/></g>
+      </g>
+     </svg>
+     <div class="core-center" aria-hidden="true"><span class="logo logo-mark"></span><span class="core-label">Arcade Core<br>Build · Operate · Scale</span></div>
+     <div id="core-nodes"></div><div class="particles" id="particles" aria-hidden="true"></div>
+     <div class="core-readout" aria-live="polite"><strong id="core-name">Giro na Máxima</strong><span id="core-category">Tecnologia &amp; IA</span></div>
+    </div>
+    <figcaption class="sr" id="core-caption">O núcleo Arcade conecta todas as empresas em uma base compartilhada de estratégia, tecnologia, dados e gestão.</figcaption>
+   </figure>
   </div>
+  <a class="continue" href="#system-readout">Scroll</a>
+ </section>
+ <aside class="readout" id="system-readout" aria-label="Resumo técnico do ecossistema"><div class="container readout-inner"><span><strong id="company-count">6</strong>&nbsp;empresas em operação</span><span>Brasil · Holding operacional de tecnologia</span><span>Build / Operate / Scale · Arcade system online</span></div></aside>
+
+ <section class="section ecosystem" id="ecossistema" aria-labelledby="ecosystem-title">
+  <div class="container">
+   <header class="section-head reveal"><div><span class="kicker">Ecossistema</span><h2 id="ecosystem-title">Um núcleo.<br>Múltiplas empresas.</h2></div><p>Cada empresa resolve um problema específico. A Arcade conecta tecnologia, operação, inteligência e gestão para que todas possam evoluir com mais velocidade e disciplina.</p></header>
+   <div class="eco-map">
+    <article class="company reveal" data-company data-slug="giro-na-maxima" data-order="0" data-featured="true" style="--company:#ff6b8d"><span class="company-index">01</span><h3><button class="company-select" type="button">Giro na Máxima</button></h3><p class="category">Tecnologia &amp; IA</p><p class="summary">Tecnologia e inteligência artificial para acelerar operações e decisões.</p><p class="description">Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://gironamaxima.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer Giro na Máxima (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <article class="company reveal" data-company data-slug="privabr" data-order="1" data-featured="false" style="--company:#9a86ff"><span class="company-index">02</span><h3><button class="company-select" type="button">PrivaBR</button></h3><p class="category">Privacidade &amp; Dados</p><p class="summary">Privacidade de dados com mapeamento, notificação e remoção de informações pessoais.</p><p class="description">Seus dados pessoais estão espalhados por bases que você nunca autorizou. A PrivaBR mapeia, notifica e remove suas informações de onde elas não deveriam estar. Privacidade não é luxo — é direito.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://www.privabr.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer PrivaBR (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <article class="company reveal" data-company data-slug="coben-life-os" data-order="2" data-featured="false" style="--company:#f0b35f"><span class="company-index">03</span><h3><button class="company-select" type="button">Coben Life OS</button></h3><p class="category">Life OS &amp; Produtividade</p><p class="summary">Um sistema operacional para integrar rotina, metas, hábitos e decisões.</p><p class="description">O sistema operacional da sua vida: integra rotina, metas, hábitos e decisões em uma única plataforma inteligente que evolui com você.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://www.coben.app/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer Coben Life OS (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <article class="company reveal" data-company data-slug="kanbia" data-order="3" data-featured="false" style="--company:#00f5a0"><span class="company-index">04</span><h3><button class="company-select" type="button">Kanbia</button></h3><p class="category">Pós-venda &amp; IA</p><p class="summary">IA de pós-venda no WhatsApp para garantias, triagem e coleta de documentos.</p><p class="description">IA de pós-venda no WhatsApp: resolve garantias, faz a triagem e coleta documentos automaticamente. Mais agilidade, organização e satisfação no atendimento — com solução white label.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://www.instagram.com/kanbia.oficial/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer Kanbia no Instagram (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <article class="company reveal" data-company data-slug="croqui-ai" data-order="4" data-featured="false" style="--company:#ff796f"><span class="company-index">05</span><h3><button class="company-select" type="button">Croqui.ai</button></h3><p class="category">Arquitetura &amp; IA</p><p class="summary">IA aplicada a estudos preliminares, propostas e orçamentos conceituais.</p><p class="description">Do primeiro rabisco ao estudo preliminar: transforma conversas, áudios e referências soltas em planta baixa preliminar, mockup, orçamento conceitual e proposta white-label. Feito para studios que vendem projeto com método, clareza e rapidez.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://app.croqui.ai/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer Croqui.ai (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <article class="company reveal" data-company data-slug="jogadaca-ai" data-order="5" data-featured="false" style="--company:#72e66f"><span class="company-index">06</span><h3><button class="company-select" type="button">Jogadaça.ai</button></h3><p class="category">Futebol &amp; Inteligência Estatística</p><p class="summary">Inteligência estatística em tempo real para análise de partidas de futebol.</p><p class="description">Inteligência de futebol em tempo real: transforma dados de partidas em projeções estatísticas para gols, escanteios, cartões e finalizações, com histórico aberto de acertos e modelos que evoluem durante o jogo.</p><div class="company-foot"><span class="company-status">Em operação</span><a class="company-link" href="https://www.jogadaca.ai/" target="_blank" rel="noopener noreferrer" aria-label="Conhecer Jogadaça.ai (abre em nova aba)">Conhecer <span>↗</span></a></div></article>
+    <div class="eco-core reveal" aria-hidden="true"><div class="eco-sphere"><span class="logo logo-mark"></span></div><div class="eco-label">Arcade Core<span>The Arcade System</span></div></div>
+    <aside class="detail reveal" id="company-detail" aria-live="polite" aria-label="Empresa selecionada"><span class="detail-label">Projeto em foco · 01 / 06</span><h3 id="detail-name">Giro na Máxima</h3><span class="detail-cat" id="detail-cat">Tecnologia &amp; IA</span><p class="detail-desc" id="detail-desc">Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.</p><a class="detail-link" id="detail-link" href="https://gironamaxima.com.br/" target="_blank" rel="noopener noreferrer">Conhecer o projeto ↗<span class="sr"> (abre em nova aba)</span></a></aside>
+   </div>
+  </div>
+ </section>
+
+ <section class="section system" id="como-operamos" aria-labelledby="system-title"><div class="container">
+  <header class="system-intro reveal"><div><span class="kicker">The Arcade System</span><h2 id="system-title">Build.<br>Operate.<br>Scale.</h2></div><p>A Arcade funciona como uma base operacional compartilhada. Estratégia, produto, engenharia, inteligência artificial, dados, design, gestão financeira e governança trabalham como um único sistema para construir empresas mais consistentes.</p></header>
+  <div class="ops">
+   <article class="step reveal"><span class="step-num">01</span><span class="step-signal" aria-hidden="true"></span><h3>IDENTIFICAR</h3><p>Encontramos problemas reais e oportunidades capazes de se transformar em negócios digitais.</p><span class="step-meta">Signal / Opportunity</span></article>
+   <article class="step reveal"><span class="step-num">02</span><span class="step-signal" aria-hidden="true"></span><h3>CONSTRUIR</h3><p>Unimos estratégia, design, engenharia e inteligência artificial para criar produtos funcionais.</p><span class="step-meta">Product / Engineering</span></article>
+   <article class="step reveal"><span class="step-num">03</span><span class="step-signal" aria-hidden="true"></span><h3>OPERAR</h3><p>Aplicamos tecnologia, dados, gestão financeira e governança na operação cotidiana.</p><span class="step-meta">Data / Governance</span></article>
+   <article class="step reveal"><span class="step-num">04</span><span class="step-signal" aria-hidden="true"></span><h3>ESCALAR</h3><p>Compartilhamos infraestrutura, conhecimento e processos para acelerar o crescimento.</p><span class="step-meta">Growth / Infrastructure</span></article>
+  </div>
+ </div></section>
+ <section class="section manifesto" id="sobre" aria-labelledby="manifesto-title"><div class="container manifesto-grid"><div class="reveal"><span class="kicker">Manifesto</span><h2 id="manifesto-title"><span>Não criamos apenas produtos.</span><span>Construímos empresas.</span></h2></div><div class="manifesto-copy reveal"><p>A Arcade transforma ideias em operações digitais reais. Cada empresa possui identidade, mercado e missão próprios, mas compartilha a mesma base de tecnologia, inteligência, governança e disciplina.</p><span class="signature">ARCADE · BUILD / OPERATE / SCALE</span></div></div></section>
+ <section class="contact" id="contato" aria-labelledby="contact-title"><div class="container"><div class="contact-panel reveal"><div><span class="kicker">Contato estratégico</span><h2 id="contact-title">Vamos construir o próximo sistema?</h2><p>Fale com a Arcade sobre tecnologia, novos negócios, oportunidades estratégicas ou parcerias com empresas do ecossistema.</p></div><div class="contact-actions"><a class="button primary open-contact" href="#contato">Falar com a Arcade</a><a class="button" href="#ecossistema">Conhecer as empresas</a></div></div></div></section>
 </main>
+<footer class="footer"><div class="container"><div class="footer-grid">
+ <div class="footer-brand"><a class="brand" href="#inicio" aria-label="ARCADE — voltar ao início"><span class="logo logo-footer" role="img" aria-label="ARCADE"></span></a><p>Empresa-mãe de tecnologia que cria, opera e escala negócios digitais com inteligência, governança e disciplina financeira.</p></div>
+ <nav class="footer-col" aria-label="Navegação do rodapé"><h2>Navegação</h2><ul><li><a href="#ecossistema">Ecossistema</a></li><li><a href="#como-operamos">Como operamos</a></li><li><a href="#sobre">Sobre</a></li><li><a href="#contato">Contato</a></li></ul></nav>
+ <nav class="footer-col" aria-label="Empresas do ecossistema"><h2>Empresas</h2><ul><li><a href="https://gironamaxima.com.br/" target="_blank" rel="noopener noreferrer">Giro na Máxima ↗</a></li><li><a href="https://www.privabr.com.br/" target="_blank" rel="noopener noreferrer">PrivaBR ↗</a></li><li><a href="https://www.coben.app/" target="_blank" rel="noopener noreferrer">Coben Life OS ↗</a></li><li><a href="https://www.instagram.com/kanbia.oficial/" target="_blank" rel="noopener noreferrer">Kanbia ↗</a></li><li><a href="https://app.croqui.ai/" target="_blank" rel="noopener noreferrer">Croqui.ai ↗</a></li><li><a href="https://www.jogadaca.ai/" target="_blank" rel="noopener noreferrer">Jogadaça.ai ↗</a></li></ul></nav>
+ <div class="footer-col"><h2>Contato</h2><ul><li><a href="mailto:suporte@arcadehub.tech">suporte@arcadehub.tech</a></li><li><a class="open-contact" href="#contato">Falar com a Arcade</a></li></ul></div>
+ </div><div class="footer-bottom"><span>© 2026 ArcadeHub.tech · CNPJ 66.910.447/0001-06 · Todos os direitos reservados</span><span class="online">ARCADE://SYSTEM ONLINE</span></div></div></footer>
 
-<!-- Modal "Falar com a Arcade Hub" -->
-<style>
-.modal-overlay{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:rgba(3,1,13,0.80);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;}
-.modal-overlay.open{display:flex;}
-.modal-card{width:100%;max-width:460px;background:linear-gradient(180deg,#0d1030,#0a0a18);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.6),0 0 40px rgba(0,229,255,0.08);max-height:92vh;overflow-y:auto;}
-.modal-card h3{margin:0 0 4px;font-size:20px;font-weight:800;color:#fff;}
-.modal-card p.sub{margin:0 0 18px;font-size:13px;color:var(--quiet);line-height:1.5;}
-.modal-field{margin-bottom:12px;}
-.modal-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--quiet);margin-bottom:5px;}
-.modal-field input,.modal-field select,.modal-field textarea{width:100%;box-sizing:border-box;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;}
-.modal-field textarea{resize:vertical;min-height:92px;}
-.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{outline:none;border-color:var(--neon-cyan);}
-.modal-field option{background:#0d1030;color:#fff;}
-.modal-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;opacity:0;}
-.modal-actions{display:flex;gap:10px;margin-top:18px;}
-.modal-actions button{flex:1;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit;}
-.modal-cancel{background:rgba(255,255,255,0.06);color:#cbd5e1;border:1px solid var(--line);}
-.modal-send{background:var(--neon-cyan);color:#04121a;}
-.modal-send:disabled{opacity:0.6;cursor:default;}
-.modal-msg{margin-top:12px;font-size:13px;text-align:center;min-height:18px;color:var(--quiet);}
-</style>
-<div class="modal-overlay" id="contato-modal" role="dialog" aria-modal="true" aria-labelledby="contato-title">
-  <div class="modal-card">
-    <h3 id="contato-title">Falar com a Arcade Hub</h3>
-    <p class="sub">Conte o que você precisa e selecione o projeto. Retornamos pelo contato informado.</p>
-    <form id="contato-form" onsubmit="return enviarContato(event)">
-      <div class="modal-field"><label for="ct-nome">Nome*</label><input type="text" id="ct-nome" required maxlength="120" /></div>
-      <div class="modal-field"><label for="ct-email">E-mail</label><input type="email" id="ct-email" maxlength="160" /></div>
-      <div class="modal-field"><label for="ct-whatsapp">WhatsApp</label><input type="tel" id="ct-whatsapp" maxlength="40" placeholder="(DDD) 9 0000-0000" /></div>
-      <div class="modal-field"><label for="ct-projeto">Projeto</label>
-        <select id="ct-projeto">
-          <option value="Geral / Arcade Hub">Geral / Arcade Hub</option>
-          <option>Giro na Máxima</option>
-          <option>PrivaBR</option>
-          <option>Coben Life OS</option>
-          <option>Kanbia</option>
-          <option>Croqui.ai</option>
-          <option>Outro</option>
-        </select>
-      </div>
-      <div class="modal-field"><label for="ct-mensagem">Mensagem*</label><textarea id="ct-mensagem" required maxlength="4000"></textarea></div>
-      <input class="modal-hp" type="text" id="ct-website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-      <div class="modal-actions">
-        <button type="button" class="modal-cancel" onclick="fecharContato()">Cancelar</button>
-        <button type="submit" class="modal-send" id="ct-send">Enviar</button>
-      </div>
-      <div class="modal-msg" id="ct-msg" role="status"></div>
-    </form>
-  </div>
-</div>
+<div class="modal" id="contact-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true" inert><div class="modal-card">
+ <div class="modal-head"><div><span class="kicker">ARCADE://CONTACT</span><h2 id="modal-title">Falar com a Arcade</h2></div><button class="modal-close" id="modal-close" type="button" aria-label="Fechar contato">×</button></div>
+ <p class="modal-sub">Conte o que você precisa e selecione o projeto. Retornamos pelo contato informado.</p>
+ <form id="contact-form" novalidate>
+  <div class="field"><label for="ct-nome">Nome*</label><input type="text" id="ct-nome" name="nome" required maxlength="120" autocomplete="name"></div>
+  <div class="field"><label for="ct-email">E-mail</label><input type="email" id="ct-email" name="email" maxlength="160" autocomplete="email"></div>
+  <div class="field"><label for="ct-whatsapp">WhatsApp</label><input type="tel" id="ct-whatsapp" name="whatsapp" maxlength="40" autocomplete="tel" placeholder="(DDD) 9 0000-0000"></div>
+  <div class="field"><label for="ct-projeto">Projeto</label><select id="ct-projeto" name="projeto"><option value="Geral / Arcade Hub">Geral / Arcade Hub</option><option value="Outro">Outro</option></select></div>
+  <div class="field"><label for="ct-mensagem">Mensagem*</label><textarea id="ct-mensagem" name="mensagem" required maxlength="4000"></textarea></div>
+  <input class="hp" type="text" id="ct-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <div class="modal-actions"><button type="button" class="cancel" id="modal-cancel">Cancelar</button><button type="submit" class="send" id="ct-send">Enviar</button></div><div class="form-msg" id="ct-msg" role="status" aria-live="polite"></div>
+ </form>
+</div></div>
 <script>
-let _contatoTrigger = null;
-function abrirContato(){ _contatoTrigger = document.activeElement; document.getElementById('contato-modal').classList.add('open'); setTimeout(function(){ var n=document.getElementById('ct-nome'); if(n) n.focus(); }, 50); }
-function fecharContato(){ document.getElementById('contato-modal').classList.remove('open'); if(_contatoTrigger && _contatoTrigger.focus){ _contatoTrigger.focus(); } }
-document.addEventListener('keydown', function(e){
-  var modal=document.getElementById('contato-modal');
-  if(!modal || !modal.classList.contains('open')) return;
-  if(e.key==='Escape'){ fecharContato(); return; }
-  if(e.key==='Tab'){
-    var card=modal.querySelector('.modal-card');
-    if(!card) return;
-    var focaveis=Array.prototype.filter.call(
-      card.querySelectorAll('a[href],button,input,textarea,select,[tabindex]'),
-      function(el){ return el.tabIndex!==-1 && el.getAttribute('aria-hidden')!=='true' && el.offsetParent!==null; }
-    );
-    if(!focaveis.length) return;
-    var primeiro=focaveis[0], ultimo=focaveis[focaveis.length-1];
-    if(e.shiftKey && document.activeElement===primeiro){ e.preventDefault(); ultimo.focus(); }
-    else if(!e.shiftKey && document.activeElement===ultimo){ e.preventDefault(); primeiro.focus(); }
-  }
-});
-document.addEventListener('click', function(e){ if(e.target && e.target.id==='contato-modal') fecharContato(); });
-async function enviarContato(ev){
-  ev.preventDefault();
-  var btn=document.getElementById('ct-send'), msg=document.getElementById('ct-msg');
-  var nome=document.getElementById('ct-nome').value.trim();
-  var email=document.getElementById('ct-email').value.trim();
-  var whatsapp=document.getElementById('ct-whatsapp').value.trim();
-  var projeto=document.getElementById('ct-projeto').value;
-  var mensagem=document.getElementById('ct-mensagem').value.trim();
-  var website=document.getElementById('ct-website').value;
-  if(!nome||!mensagem){ msg.style.color='#ff6b6b'; msg.textContent='Preencha nome e mensagem.'; return false; }
-  if(!email&&!whatsapp){ msg.style.color='#ff6b6b'; msg.textContent='Informe e-mail ou WhatsApp.'; return false; }
-  btn.disabled=true; btn.textContent='Enviando...'; msg.style.color='var(--quiet)'; msg.textContent='';
-  try{
-    var r=await fetch('https://zdwgwpvlwqtsdgervcof.supabase.co/functions/v1/contato',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':'sb_publishable_8yfc-M-6SZl5RTkLdMKe5w_9colNPe-'},
-      body:JSON.stringify({nome:nome,email:email,whatsapp:whatsapp,projeto:projeto,mensagem:mensagem,website:website})
-    });
-    var d=await r.json();
-    if(d && d.ok){ msg.style.color='#2ee6a3'; msg.textContent='Mensagem enviada! Em breve retornamos.'; document.getElementById('contato-form').reset(); setTimeout(fecharContato, 1900); }
-    else { msg.style.color='#ff6b6b'; msg.textContent=(d && d.error) || 'Não foi possível enviar.'; }
-  }catch(e){ msg.style.color='#ff6b6b'; msg.textContent='Falha de conexão. Tente novamente.'; }
-  btn.disabled=false; btn.textContent='Enviar';
-  return false;
-}
-</script>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
-  }
-}
-</script>
-<script type="module">
-/* ================================================================
-   ARCADE HUB — cena imersiva synthwave (Three.js / WebGL)
-   Arquitetura: builders puros + controlador com ciclo de vida.
-   ================================================================ */
-import * as THREE from "three";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-
-/* ---------- Configuração ------------------------------------- */
-const PORTFOLIO = [
-  // assetReady: deixe false para usar a arte procedural neon (default).
-  //   Ao adicionar o arquivo real em assets/, mude para true e a imagem entra via TextureLoader.
-  // url: quando a empresa tiver site próprio, preencha aqui; vazio cai no contato por e-mail.
-  { title: "Giro na Máxima", segment: "Tecnologia & IA",          glyph: "GM", color: "#ff2d9b", url: "https://gironamaxima.com.br/",
-    summary: "Tecnologia e inteligência artificial na velocidade máxima para transformar como as empresas operam: resultados acelerados, decisões mais rápidas e impacto real.",
-    asset: "assets/giro-na-maxima.jpg", assetReady: false },
-  { title: "PrivaBR",        segment: "Privacidade & Dados",      glyph: "PR", color: "#9b5cff", url: "https://www.privabr.com.br/",
-    summary: "Seus dados pessoais estão espalhados por bases que você nunca autorizou. A PrivaBR mapeia, notifica e remove suas informações de onde elas não deveriam estar. Privacidade não é luxo — é direito.",
-    asset: "assets/privabr.jpg", assetReady: false },
-  { title: "Coben Life OS",  segment: "Life OS & Produtividade",  glyph: "CB", color: "#ffb347", url: "https://www.coben.app/",
-    summary: "O sistema operacional da sua vida: integra rotina, metas, hábitos e decisões em uma única plataforma inteligente que evolui com você.",
-    asset: "assets/coben-life-os.jpg", assetReady: false },
-  { title: "Kanbia",         segment: "Pós-venda & IA",           glyph: "KB", color: "#2ee6a3", url: "https://www.instagram.com/kanbia.oficial/", logo: "kanbia",
-    summary: "IA de pós-venda no WhatsApp: resolve garantias, faz a triagem e coleta documentos automaticamente. Mais agilidade, organização e satisfação no atendimento — com solução white label.",
-    asset: "assets/kanbia.jpg", assetReady: false },
-  { title: "Croqui.ai",      segment: "Arquitetura & IA",         glyph: "CQ", color: "#ff5e57", url: "https://app.croqui.ai/",
-    summary: "Do primeiro rabisco ao estudo preliminar: transforma conversas, áudios e referências soltas em planta baixa preliminar, mockup, orçamento conceitual e proposta white-label. Feito para studios que vendem projeto com método, clareza e rapidez.",
-    asset: "assets/croqui.jpg", assetReady: false },
-];
-
-// CTA de cada empresa: site próprio se houver, senão contato direcionado por e-mail.
-const companyHref = (item) =>
-  item.url ? item.url
-           : "mailto:suporte@arcadehub.tech?subject=" + encodeURIComponent("Arcade Hub — " + item.title);
-
-// Atualiza o painel "Projeto em foco" com o resumo do projeto selecionado.
-function applyDetail(i) {
-  const item = PORTFOLIO[i];
-  if (!item) return;
-  const panel = document.querySelector(".detail");
-  if (panel) panel.style.setProperty("--detail-accent", item.color);
-  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
-  set("detail-name", item.title);
-  set("detail-seg", item.segment);
-  set("detail-summary", item.summary);
-  const cta = document.getElementById("detail-cta");
-  if (cta) {
-    cta.href = companyHref(item);
-    if (item.url) { cta.target = "_blank"; cta.rel = "noopener noreferrer"; }
-    else { cta.removeAttribute("target"); cta.removeAttribute("rel"); }
-  }
-}
-
-const CONFIG = {
-  maxPixelRatio: 1.8,        // teto de DPR — evita travar em telas Retina/4K
-  resizeDebounce: 160,       // ms
-  maxDelta: 1 / 30,          // clamp de delta (evita saltos após troca de aba)
-  gridScroll: 6.0,           // velocidade do grid neon
-  starCount: 1100,
-  fog: { color: 0x06040f, density: 0.0125 },
-};
-
-const prefersReducedMotion =
-  window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/* ---------- Detecção de WebGL --------------------------------- */
-function webglAvailable() {
-  try {
-    const c = document.createElement("canvas");
-    return !!(window.WebGLRenderingContext &&
-      (c.getContext("webgl2") || c.getContext("webgl")));
-  } catch (e) {
-    return false;
-  }
-}
-
-/* ================================================================
-   Controlador da cena
-   ================================================================ */
-function ArcadeScene(root) {
-  const disposables = [];   // geometrias/materiais/texturas para liberar
-  const track = (obj) => { disposables.push(obj); return obj; };
-
-  /* --- Renderer --- */
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: false,
-    powerPreference: "high-performance",
-  });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, CONFIG.maxPixelRatio));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.domElement.id = "arcade-canvas";
-  root.appendChild(renderer.domElement);
-
-  /* --- Cena / câmera --- */
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(CONFIG.fog.color);
-  scene.fog = new THREE.FogExp2(CONFIG.fog.color, CONFIG.fog.density);
-
-  const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 600);
-  const cameraHome = new THREE.Vector3(0, 3.4, 13);
-  const lookHome = new THREE.Vector3(0, 3.0, -12);
-  camera.position.copy(cameraHome);
-  camera.lookAt(lookHome);
-
-  /* --- Post-processing: bloom neon (ligado no desktop) --- */
-  let composer = null, useBloom = false;
-  try {
-    composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    composer.addPass(new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      0.42,   // strength
-      0.4,    // radius
-      0.86    // threshold alto — só os pontos bem brilhantes florescem (sol não estoura)
-    ));
-    composer.addPass(new OutputPass());
-  } catch (e) {
-    composer = null;   // sem composer, cai no render direto
-  }
-
-  /* --- Utilidades --- */
-  const clock = new THREE.Clock();
-  const raycaster = new THREE.Raycaster();
-  const textureLoader = new THREE.TextureLoader();
-
-  const pointer = new THREE.Vector2(0, 0);          // alvo (-1..1)
-  const smooth = new THREE.Vector2(0, 0);           // valor suavizado
-  const rayCoords = new THREE.Vector2(0, 0);        // posição real do ponteiro p/ raycast
-  let pointerActive = false;
-
-  /* ---------- Sol synthwave (horizonte) ---------- */
-  function buildSun() {
-    const geo = track(new THREE.PlaneGeometry(120, 120));
-    const mat = track(new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-      uniforms: {
-        uTop:    { value: new THREE.Color(0xffd36e) },
-        uMid:    { value: new THREE.Color(0xff5fa2) },
-        uBottom: { value: new THREE.Color(0x9b3cff) },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform vec3 uTop;
-        uniform vec3 uMid;
-        uniform vec3 uBottom;
-        void main() {
-          vec2 p = vUv * 2.0 - 1.0;
-          float d = length(p);
-          // disco do sol — raio ~0.6 do plano para sobrar espaço ao halo
-          float disc = smoothstep(0.60, 0.56, d);
-          // gradiente vertical do sol
-          vec3 col = mix(uBottom, uMid, smoothstep(0.0, 0.5, vUv.y));
-          col = mix(col, uTop, smoothstep(0.5, 1.0, vUv.y));
-          // faixas horizontais (gaps) na metade inferior — assinatura synthwave
-          float bands = 1.0;
-          if (vUv.y < 0.5) {
-            float s = step(0.46, fract(vUv.y * 22.0));
-            bands = mix(s, 1.0, smoothstep(0.30, 0.5, vUv.y));
-          }
-          // halo externo — zera antes da borda do plano (sem quadrado)
-          float halo = smoothstep(1.0, 0.60, d) * 0.42;
-          float alpha = disc * bands + halo;
-          gl_FragColor = vec4(col, alpha);
-        }
-      `,
-    }));
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(0, 9, -84);
-    mesh.renderOrder = -2;
-    return mesh;
-  }
-
-  /* ---------- Grid neon infinito (ShaderMaterial) ---------- */
-  function buildGrid() {
-    const geo = track(new THREE.PlaneGeometry(600, 600, 1, 1));
-    const mat = track(new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-      uniforms: {
-        uTime:   { value: 0 },
-        uScroll: { value: CONFIG.gridScroll },
-        uColorA: { value: new THREE.Color(0x18e0ff) },
-        uColorB: { value: new THREE.Color(0xff2d9b) },
-        uCell:   { value: 2.4 },
-      },
-      vertexShader: `
-        varying vec3 vWorld;
-        void main() {
-          vec4 wp = modelMatrix * vec4(position, 1.0);
-          vWorld = wp.xyz;
-          gl_Position = projectionMatrix * viewMatrix * wp;
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec3 vWorld;
-        uniform float uTime;
-        uniform float uScroll;
-        uniform float uCell;
-        uniform vec3 uColorA;
-        uniform vec3 uColorB;
-
-        // linha antialiasada via derivadas
-        float gridFactor(vec2 coord) {
-          vec2 g = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
-          float line = min(g.x, g.y);
-          return 1.0 - min(line, 1.0);
-        }
-
-        void main() {
-          // rola em Z para criar movimento infinito em direção à câmera
-          vec2 coord = vec2(vWorld.x, vWorld.z + uTime * uScroll) / uCell;
-          float l = gridFactor(coord);
-
-          float dist = length(vWorld.xz);
-          // some perto da câmera e no horizonte distante
-          float fade = smoothstep(2.0, 26.0, dist) * (1.0 - smoothstep(120.0, 260.0, dist));
-          // mistura de cor por profundidade (cyan perto -> magenta longe)
-          vec3 col = mix(uColorA, uColorB, smoothstep(10.0, 150.0, dist));
-          float intensity = l * fade;
-          gl_FragColor = vec4(col * (1.4 + l), intensity * 0.9);
-        }
-      `,
-    }));
-    mat.extensions = { derivatives: true };  // fwidth em WebGL1
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.y = 0;
-    mesh.renderOrder = -1;
-    return { mesh, mat };
-  }
-
-  /* ---------- Campo de estrelas ---------- */
-  // Duas camadas: muitas estrelas pequenas + poucas maiores (sem shader custom)
-  function buildStarLayer(count, size, opacity, big) {
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const cA = new THREE.Color(0x8fd9ff);
-    const cB = new THREE.Color(0xff9ed1);
-    const cC = new THREE.Color(0xffffff);
-    for (let i = 0; i < count; i++) {
-      const k = i * 3;
-      positions[k]     = (Math.random() - 0.5) * 320;
-      positions[k + 1] = -16 + Math.random() * 92;
-      positions[k + 2] = -20 - Math.random() * 260;
-      const r = Math.random();
-      const c = r > 0.8 ? cB : (r > 0.48 ? cC : cA);
-      colors[k] = c.r; colors[k + 1] = c.g; colors[k + 2] = c.b;
-    }
-    const geo = track(new THREE.BufferGeometry());
-    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    const mat = track(new THREE.PointsMaterial({
-      size, sizeAttenuation: true, vertexColors: true, transparent: true,
-      opacity, depthWrite: false, blending: THREE.AdditiveBlending, fog: false,
-    }));
-    return new THREE.Points(geo, mat);
-  }
-  function buildStars() {
-    const n = prefersReducedMotion ? 0.6 : 1;
-    const group = new THREE.Group();
-    group.add(buildStarLayer(Math.floor(1800 * n), 0.42, 0.85));   // poeira de estrelas
-    group.add(buildStarLayer(Math.floor(260 * n), 1.15, 0.95));    // estrelas brilhantes
-    return group;
-  }
-
-  /* ---------- Halo radial reutilizável (fake bloom) ---------- */
-  function makeGlowTexture() {
-    const c = document.createElement("canvas");
-    c.width = c.height = 256;
-    const ctx = c.getContext("2d");
-    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    g.addColorStop(0, "rgba(255,255,255,0.9)");
-    g.addColorStop(0.25, "rgba(255,255,255,0.45)");
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 256, 256);
-    const tex = track(new THREE.CanvasTexture(c));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }
-
-  // Rastro horizontal (cabeça brilhante -> cauda) para as estrelas cadentes
-  function makeStreakTexture() {
-    const c = document.createElement("canvas");
-    c.width = 256; c.height = 32;
-    const ctx = c.getContext("2d");
-    const g = ctx.createLinearGradient(0, 0, 256, 0);
-    g.addColorStop(0.0, "rgba(255,255,255,0)");
-    g.addColorStop(0.7, "rgba(255,255,255,0.45)");
-    g.addColorStop(0.96, "rgba(255,255,255,1)");
-    g.addColorStop(1.0, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 256, 32);
-    // afina verticalmente (faixa fina)
-    const v = ctx.createLinearGradient(0, 0, 0, 32);
-    v.addColorStop(0, "rgba(0,0,0,1)");
-    v.addColorStop(0.5, "rgba(0,0,0,0)");
-    v.addColorStop(1, "rgba(0,0,0,1)");
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = v;
-    ctx.fillRect(0, 0, 256, 32);
-    const tex = track(new THREE.CanvasTexture(c));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }
-
-  /* ---------- Planetas (cada projeto = um mundo distinto na galáxia) ---------- */
-  const glowTex = makeGlowTexture();
-  const sphereGeo = track(new THREE.SphereGeometry(1, 56, 56));
-  const ringGeo = track(new THREE.TorusGeometry(1, 0.018, 14, 110));
-  const haloGeo = track(new THREE.PlaneGeometry(1, 1));
-  const labelGeo = track(new THREE.PlaneGeometry(1.95, 0.61));
-
-  // Config por planeta (segue a ordem do PORTFOLIO): posição espalhada (x,y,z),
-  // raio, tipo de superfície (bandMix: 0 rochoso/manchado .. 1 gasoso/faixas) e anel.
-  const PLANETS = [
-    { pos: [-1.9,  2.2,  0.2], r: 0.90, bands: 0.0, bandMix: 0.10, feat: 5.0, bright: 1.6,  ring: false, ringTilt: 0    },                // Giro na Máxima — rochoso (mais claro)
-    { pos: [ 1.4, -0.7, -0.3], r: 1.12, bands: 5.5, bandMix: 0.62, feat: 3.0, bright: 1.05, ring: true,  ringTilt: 1.5  },                // PrivaBR — faixas, anelado
-    { pos: [ 4.6,  1.7, -0.7], r: 0.84, bands: 0.0, bandMix: 0.22, feat: 6.5, bright: 1.6,  ring: false, ringTilt: 0,    moon: true },    // Coben Life OS — rochoso (com lua)
-    { pos: [ 7.6, -0.5, -1.1], r: 1.04, bands: 4.0, bandMix: 0.70, feat: 2.6, bright: 1.05, ring: true,  ringTilt: 0.8  },                // Kanbia — tempestuoso anelado
-    { pos: [10.6,  1.4,  0.5], r: 0.96, bands: 3.5, bandMix: 0.45, feat: 4.0, bright: 1.2,  ring: false, ringTilt: 0    },                // Croqui.ai — rochoso/misto
-  ];
-
-  // Material do planeta: superfície procedural (FBM) única por seed/tipo + atmosfera neon
-  function makePlanetMaterial(color, cfg, seed) {
-    return track(new THREE.ShaderMaterial({
-      fog: false,
-      uniforms: {
-        uColor: { value: new THREE.Color(color) },
-        uTime: { value: 0 },
-        uSeed: { value: seed },
-        uBands: { value: cfg.bands },
-        uBandMix: { value: cfg.bandMix },
-        uFeat: { value: cfg.feat },
-        uBright: { value: cfg.bright != null ? cfg.bright : 1.0 },
-      },
-      vertexShader: `
-        varying vec3 vN; varying vec3 vV; varying vec3 vP;
-        void main() {
-          vP = position;
-          vN = normalize(normalMatrix * normal);
-          vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          vV = normalize(-mv.xyz);
-          gl_Position = projectionMatrix * mv;
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        uniform vec3 uColor; uniform float uTime; uniform float uSeed;
-        uniform float uBands; uniform float uBandMix; uniform float uFeat; uniform float uBright;
-        varying vec3 vN; varying vec3 vV; varying vec3 vP;
-
-        float hash(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
-        float vnoise(vec3 x){
-          vec3 i = floor(x); vec3 f = fract(x); f = f*f*(3.0-2.0*f);
-          return mix(mix(mix(hash(i+vec3(0,0,0)),hash(i+vec3(1,0,0)),f.x),
-                         mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
-                     mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),
-                         mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y), f.z);
-        }
-        float fbm(vec3 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vnoise(p); p=p*2.03+vec3(1.7); a*=0.5; } return s; }
-
-        void main(){
-          vec3 n = normalize(vN);
-          vec3 sp = normalize(vP);
-          float nz = fbm(sp * uFeat + vec3(uSeed) + vec3(0.0, uTime * 0.04, 0.0));
-          float band = 0.5 + 0.5 * sin(sp.y * uBands + nz * 2.5 + uTime * 0.25);
-          float surf = pow(mix(nz, band, uBandMix), 1.2);
-          vec3 body = uColor * (0.14 + 0.52 * surf) * uBright;
-          float lit = clamp(dot(n, normalize(vec3(-0.4, 0.85, 0.5))), 0.0, 1.0);
-          body *= (0.52 + 0.78 * lit);                 // sombreamento pela "estrela" (lado escuro menos preto)
-          float fres = pow(1.0 - max(dot(n, normalize(vV)), 0.0), 2.6);
-          vec3 col = body + uColor * fres * 1.9;        // atmosfera neon
-          gl_FragColor = vec4(col, 1.0);
-        }
-      `,
-    }));
-  }
-
-  // Nome do projeto flutuando abaixo do planeta (billboard)
-  function makeLabelTexture(item) {
-    const W = 640, H = 200;
-    const canvas = document.createElement("canvas");
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext("2d");
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "800 60px Inter, Arial, sans-serif";
-    const tw = ctx.measureText(item.title).width;
-    const pillW = Math.min(W - 24, tw + 80), pillH = 108;
-    const px = (W - pillW) / 2, py = (H - pillH) / 2, r = pillH / 2;
-    // pílula escura com borda na cor da empresa — nome legível sobre o brilho do sol
-    ctx.beginPath();
-    ctx.moveTo(px + r, py);
-    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, r);
-    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, r);
-    ctx.arcTo(px, py + pillH, px, py, r);
-    ctx.arcTo(px, py, px + pillW, py, r);
-    ctx.closePath();
-    ctx.fillStyle = "rgba(8,4,20,0.58)";
-    ctx.fill();
-    ctx.globalAlpha = 0.72;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = item.color;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(item.title, W / 2, H / 2 + 2);
-    const tex = track(new THREE.CanvasTexture(canvas));
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    return tex;
-  }
-
-  const portalGroup = new THREE.Group();
-  portalGroup.position.set(0, 3.6, -3.5);
-  const portals = [];
-  const cardMeshes = [];   // alvos de raycast = as esferas dos planetas
-
-  PORTFOLIO.forEach((item, index) => {
-    const color = new THREE.Color(item.color);
-    const cfg = PLANETS[index % PLANETS.length];
-    const radius = cfg.r;
-    const holder = new THREE.Group();
-    holder.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
-    holder.userData = { index, baseX: cfg.pos[0], baseY: cfg.pos[1], baseZ: cfg.pos[2], hover: 0, spin: 0.10 + index * 0.025 };
-
-    // halo de atmosfera (fake bloom)
-    const glowMat = track(new THREE.MeshBasicMaterial({
-      map: glowTex, color, transparent: true, opacity: 0.5,
-      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
-    }));
-    const glow = new THREE.Mesh(haloGeo, glowMat);
-    glow.scale.setScalar(radius * 3.4);
-    glow.position.z = -0.05;
-    holder.add(glow);
-
-    // planeta (superfície única por tipo/seed)
-    const planet = new THREE.Mesh(sphereGeo, makePlanetMaterial(color, cfg, index * 11.37 + 3.1));
-    planet.scale.setScalar(radius);
-    planet.rotation.z = 0.2 + index * 0.07;   // eixos inclinados diferentes
-    planet.userData.index = index;
-    holder.add(planet);
-    cardMeshes.push(planet);
-
-    // anel (só em alguns mundos)
-    let ring = null;
-    if (cfg.ring) {
-      const ringMat = track(new THREE.MeshBasicMaterial({
-        color, transparent: true, opacity: 0.8,
-        depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false, toneMapped: false,
-      }));
-      ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.scale.setScalar(radius * 1.7);
-      ring.rotation.x = cfg.ringTilt;
-      ring.rotation.y = 0.22;
-      holder.add(ring);
-    }
-
-    // lua orbitando (só em alguns mundos)
-    if (cfg.moon) {
-      const moon = new THREE.Mesh(
-        sphereGeo,
-        makePlanetMaterial(new THREE.Color(0xc2cad8), { bands: 0, bandMix: 0.12, feat: 9.0, bright: 1.4 }, index * 11.37 + 10.0)
-      );
-      moon.scale.setScalar(radius * 0.24);
-      holder.add(moon);
-      holder.userData.moon = moon;
-      holder.userData.moonOrbit = radius * 1.9;
-      holder.userData.moonAngle = index * 1.7;
-    }
-
-    // nome flutuante
-    const labelMat = track(new THREE.MeshBasicMaterial({
-      map: makeLabelTexture(item), transparent: true,
-      depthWrite: false, fog: false, toneMapped: false,
-    }));
-    const label = new THREE.Mesh(labelGeo, labelMat);
-    label.position.y = -radius - 0.62;
-    holder.add(label);
-
-    holder.userData.planet = planet;
-    holder.userData.ring = ring;
-    holder.userData.glow = glow;
-    holder.userData.label = label;
-
-    portalGroup.add(holder);
-    portals.push(holder);
-  });
-
-  /* ---------- Montagem (galáxia profunda — sem sol/horizonte) ---------- */
-  const stars = buildStars();
-
-  // nebulosas — nuvens profundas de espaço (paleta fria, sem o rosa de pôr do sol)
-  const nebula = new THREE.Group();
-  [
-    [-34, 10, -82,  78, 0x5b3cff, 0.16],   // violeta
-    [ 40, 20, -98,  92, 0x1f6cff, 0.14],   // azul
-    [-14, -4, -64,  56, 0x18b0ff, 0.12],   // ciano
-    [ 54,  2, -112, 104, 0x3a1f8f, 0.12],  // índigo profundo
-    [  6, 28, -126, 120, 0x7a2fae, 0.07],  // violeta sutil (bem ao longe)
-    [-50, -2, -100, 84, 0x144a7a, 0.10],   // teal escuro
-  ].forEach(([x, y, z, s, c, o]) => {
-    const m = new THREE.Mesh(haloGeo, track(new THREE.MeshBasicMaterial({
-      map: glowTex, color: new THREE.Color(c), transparent: true, opacity: o,
-      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
-    })));
-    m.scale.setScalar(s);
-    m.position.set(x, y, z);
-    m.renderOrder = -3;
-    nebula.add(m);
-  });
-
-  // núcleo galáctico — brilho frio concentrado ao fundo (não um pôr do sol)
-  const core = new THREE.Group();
-  [[11, 0.5, 0xeaf2ff], [26, 0.28, 0x9ec8ff], [46, 0.12, 0x5c7cff]].forEach(([s, o, c]) => {
-    const m = new THREE.Mesh(haloGeo, track(new THREE.MeshBasicMaterial({
-      map: glowTex, color: new THREE.Color(c), transparent: true, opacity: o,
-      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
-    })));
-    m.scale.setScalar(s);
-    m.renderOrder = -2;
-    core.add(m);
-  });
-  core.position.set(12, 15, -92);
-
-  // estrelas cadentes
-  const cometTex = makeStreakTexture();
-  const cometGeo = track(new THREE.PlaneGeometry(7, 0.16));
-  const comets = [];
-  for (let i = 0; i < 2; i++) {
-    const m = new THREE.Mesh(cometGeo, track(new THREE.MeshBasicMaterial({
-      map: cometTex, transparent: true, opacity: 0,
-      depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
-    })));
-    m.visible = false;
-    m.renderOrder = -1;
-    scene.add(m);
-    comets.push({ mesh: m, active: false, delay: 2.5 + i * 5 + Math.random() * 4, t: 0, life: 1, dx: 0, dy: 0, speed: 0 });
-  }
-
-  scene.add(nebula, core, stars, portalGroup);
-
-  /* ---------- Interação ---------- */
-  let pointerMoved = false;   // evita raycast redundante em frames sem movimento
-  function onPointerMove(e) {
-    const x = e.clientX / window.innerWidth;
-    const y = e.clientY / window.innerHeight;
-    pointer.set(x * 2 - 1, -(y * 2 - 1));
-    rayCoords.copy(pointer);
-    pointerActive = true;
-    pointerMoved = true;
-  }
-  function onPointerLeave() {
-    pointer.set(0, 0);
-    pointerActive = false;
-    pointerMoved = true;   // garante 1 recálculo limpando o hover
-    setDockActive(-1);
-  }
-  // Em toque, não existe "leave": solta/cancela libera o highlight preso.
-  function onPointerUp(e) {
-    if (e.pointerType === "touch") onPointerLeave();
-  }
-  // Clique no portal 3D abre o site da empresa (concretiza o "▶ LAUNCH" do card).
-  function onCanvasClick() {
-    if (pointerActive && lastRayIndex >= 0) {
-      window.open(companyHref(PORTFOLIO[lastRayIndex]), "_blank", "noopener");
-    }
-  }
-
-  let dockHoverIndex = -1;
-  const onDockEnter = (i) => { dockHoverIndex = i; selectProject(i); };
-  const onDockLeave = () => { dockHoverIndex = -1; };
-
-  // Painel "Projeto em foco" — persiste o último selecionado (não esconde no leave).
-  let selectedProject = -1;
-  function selectProject(i) {
-    if (i < 0 || i === selectedProject) return;
-    selectedProject = i;
-    applyDetail(i);
-  }
-
-  /* ---------- Resize com debounce ---------- */
-  let resizeTimer = null;
-  function applyResize() {
-    const w = window.innerWidth, h = window.innerHeight;
-    if (w === 0 || h === 0) return;   // evita aspect NaN / textura 0x0
-    const isMobile = w < 760;
-    const many = PORTFOLIO.length >= 5;   // cluster mais largo -> aperta escala/foco
-    // No desktop a câmera olha quase reto e o foco 3D vive à direita,
-    // deixando a coluna de texto livre à esquerda. No mobile, tudo centralizado.
-    const focalX  = isMobile ? 0 : (many ? 4.0 : 4.3);    // posição do cluster de planetas
-    const camX    = isMobile ? 0 : 0.0;   // câmera centrada
-    const lookX   = isMobile ? 0 : 0.6;   // leve viés à direita
-    camera.aspect = w / h;
-    cameraHome.set(camX, isMobile ? 3.6 : 3.5, isMobile ? 15.5 : 13);
-    lookHome.set(lookX, isMobile ? 3.4 : 3.4, -12);
-    // Planetas flutuam no espaço (sem horizonte): centralizados na vista.
-    portalGroup.position.set(focalX, isMobile ? 6.6 : 3.7, -3.5);
-    portalGroup.scale.setScalar(isMobile ? (many ? 0.4 : 0.6) : (many ? 0.56 : 0.82));
-    camera.updateProjectionMatrix();
-    // Mobile tem teto de DPR menor: os shaders aditivos são limitados por fill-rate.
-    const dprCap = isMobile ? 1.3 : CONFIG.maxPixelRatio;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
-    renderer.setSize(w, h);
-    // bloom só no desktop (fill-rate); ajusta o composer ao novo tamanho/DPR
-    useBloom = !isMobile && !!composer;
-    if (composer) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
-    }
-    if (!running) renderOnce();
-  }
-  function onResize() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(applyResize, CONFIG.resizeDebounce);
-  }
-
-  // Retoma do jeito certo: nada se a aba está oculta; 1 frame se reduced-motion; senão, loop.
-  function resume() {
-    if (document.hidden) return;
-    if (prefersReducedMotion) renderOnce();
-    else start();
-  }
-
-  /* ---------- Context loss ---------- */
-  function onContextLost(e) { e.preventDefault(); stop(); }
-  function onContextRestored() { resume(); }
-
-  /* ---------- Visibilidade ---------- */
-  function onVisibility() {
-    if (document.hidden) stop();
-    else resume();
-  }
-
-  /* ---------- Loop ---------- */
-  const tmpScale = new THREE.Vector3();
-  const camTarget = new THREE.Vector3();
-  let running = false;
-  let rafId = 0;
-  let activeIndex = -1;
-  let animTime = 0;          // tempo de animação contínuo (sobrevive a pause/resume)
-  let lastRayIndex = -1;     // último card sob o cursor (cache do raycast)
-  let cursorIsPointer = false;
-
-  function frame() {
-    const dt = Math.min(clock.getDelta(), CONFIG.maxDelta);
-    animTime += dt;
-    const t = animTime;
-
-    // suaviza ponteiro (lerp) — parallax cinematográfico
-    smooth.x += (pointer.x - smooth.x) * Math.min(1, dt * 4);
-    smooth.y += (pointer.y - smooth.y) * Math.min(1, dt * 4);
-
-    // raycast só quando o ponteiro de fato se moveu (evita custo/GC por frame)
-    if (pointerActive && pointerMoved) {
-      pointerMoved = false;
-      raycaster.setFromCamera(rayCoords, camera);
-      const hits = raycaster.intersectObjects(cardMeshes, false);
-      lastRayIndex = hits.length ? hits[0].object.userData.index : -1;
-    }
-    const rayIndex = pointerActive ? lastRayIndex : -1;
-    activeIndex = rayIndex >= 0 ? rayIndex : dockHoverIndex;
-    setDockActive(activeIndex);
-    if (activeIndex >= 0) selectProject(activeIndex);   // resumo acompanha o hover
-
-    // cursor de "clicável" quando há um portal sob o mouse
-    if ((rayIndex >= 0) !== cursorIsPointer) {
-      cursorIsPointer = rayIndex >= 0;
-      renderer.domElement.style.cursor = cursorIsPointer ? "pointer" : "default";
-    }
-
-    // parallax do mouse + deriva idle (a cena respira sozinha)
-    const driftX = Math.sin(t * 0.13) * 0.55;
-    const driftY = Math.cos(t * 0.10) * 0.32;
-    portalGroup.rotation.y += (smooth.x * 0.14 + Math.sin(t * 0.09) * 0.04 - portalGroup.rotation.y) * 0.06;
-    portalGroup.rotation.x += (-smooth.y * 0.06 + Math.cos(t * 0.11) * 0.02 - portalGroup.rotation.x) * 0.06;
-    camTarget.set(cameraHome.x + smooth.x * 0.9 + driftX, cameraHome.y - smooth.y * 0.5 + driftY, cameraHome.z);
-    camera.position.lerp(camTarget, 0.04);
-    camera.lookAt(lookHome.x + smooth.x * 0.6 + driftX * 0.35, lookHome.y + driftY * 0.3, lookHome.z);
-
-    // animação por planeta
-    for (let i = 0; i < portals.length; i++) {
-      const h = portals[i];
-      const d = h.userData;
-      const isActive = i === activeIndex;
-      d.hover += ((isActive ? 1 : 0) - d.hover) * Math.min(1, dt * 8);
-
-      h.position.y = d.baseY + Math.sin(t * 0.6 + i * 0.9) * 0.14 + d.hover * 0.25;
-      h.position.z = d.baseZ + d.hover * 0.7;
-
-      const s = 1 + d.hover * 0.12;        // cresce no hover
-      h.scale.lerp(tmpScale.set(s, s, s), 0.16);
-
-      // giro do planeta + bandas vivas + anel + lua
-      d.planet.rotation.y += dt * d.spin;
-      d.planet.material.uniforms.uTime.value = t;
-      if (d.ring) d.ring.rotation.z += dt * 0.12;
-      if (d.moon) {
-        d.moonAngle += dt * 0.6;
-        const mr = d.moonOrbit;
-        d.moon.position.set(Math.cos(d.moonAngle) * mr, Math.sin(d.moonAngle) * mr * 0.33, Math.sin(d.moonAngle) * mr * 0.55);
-        d.moon.rotation.y += dt * 0.4;
-      }
-
-      // atmosfera acende no hover; nome sempre encara a câmera
-      d.glow.material.opacity = 0.45 + d.hover * 0.6;
-      d.label.quaternion.copy(camera.quaternion);
-    }
-
-    // cintilar das estrelas
-    if (stars.children[0]) stars.children[0].material.opacity = 0.78 + Math.sin(t * 0.8) * 0.1;
-    if (stars.children[1]) stars.children[1].material.opacity = 0.9 + Math.sin(t * 1.1 + 1.0) * 0.08;
-
-    // estrelas cadentes
-    for (let c = 0; c < comets.length; c++) {
-      const cm = comets[c];
-      if (!cm.active) {
-        cm.delay -= dt;
-        if (cm.delay <= 0) {
-          cm.active = true; cm.t = 0; cm.life = 1.0 + Math.random() * 0.7;
-          const theta = Math.PI + 0.2 + Math.random() * 0.35;   // diagonal p/ baixo-esquerda
-          cm.dx = Math.cos(theta); cm.dy = Math.sin(theta);
-          cm.speed = 55 + Math.random() * 35;
-          cm.mesh.position.set(18 + Math.random() * 42, 24 + Math.random() * 26, -55 - Math.random() * 45);
-          cm.mesh.rotation.z = theta;
-          cm.mesh.scale.setScalar(0.7 + Math.random() * 0.6);
-          cm.mesh.visible = true;
-        }
-      } else {
-        cm.t += dt;
-        cm.mesh.position.x += cm.dx * cm.speed * dt;
-        cm.mesh.position.y += cm.dy * cm.speed * dt;
-        const k = cm.t / cm.life;
-        cm.mesh.material.opacity = Math.sin(Math.min(k, 1) * Math.PI) * 0.95;
-        if (k >= 1) { cm.active = false; cm.mesh.visible = false; cm.delay = 4 + Math.random() * 9; }
-      }
-    }
-
-    if (useBloom && composer) composer.render(); else renderer.render(scene, camera);
-    rafId = requestAnimationFrame(frame);
-  }
-
-  function renderOnce() {
-    if (useBloom && composer) composer.render(); else renderer.render(scene, camera);
-  }
-
-  function start() {
-    if (running) return;
-    running = true;
-    clock.getDelta();   // descarta o tempo parado para o 1º dt não saltar
-    rafId = requestAnimationFrame(frame);
-  }
-  function stop() {
-    running = false;
-    cancelAnimationFrame(rafId);
-  }
-
-  /* ---------- Dock (DOM) ---------- */
-  const dockEl = document.querySelector(".dock");
-  const dockItems = [];
-  function buildDock() {
-    const frag = document.createDocumentFragment();
-    PORTFOLIO.forEach((item, i) => {
-      const el = document.createElement("a");
-      el.className = "dock-item";
-      el.href = companyHref(item);
-      if (item.url) { el.target = "_blank"; el.rel = "noopener noreferrer"; }
-      el.style.setProperty("--accent", item.color);
-      el.setAttribute("aria-label", "Saiba mais sobre " + item.title + " — " + item.segment);
-      el.innerHTML =
-        '<span class="dock-head"><strong>' + item.title + '</strong>' +
-        '<span class="dock-play" aria-hidden="true">▶ PLAY</span></span>' +
-        '<span class="seg">' + item.segment + '</span>' +
-        '<span class="dock-summary">' + item.summary + '</span>';
-      el.addEventListener("mouseenter", () => onDockEnter(i));
-      el.addEventListener("mouseleave", onDockLeave);
-      el.addEventListener("focus", () => onDockEnter(i));
-      el.addEventListener("blur", onDockLeave);
-      frag.appendChild(el);
-      dockItems.push(el);
-    });
-    dockEl.appendChild(frag);
-  }
-  let lastDockActive = -1;
-  function setDockActive(i) {
-    if (i === lastDockActive) return;
-    if (dockItems[lastDockActive]) dockItems[lastDockActive].classList.remove("is-active");
-    if (dockItems[i]) dockItems[i].classList.add("is-active");
-    lastDockActive = i;
-  }
-
-  /* ---------- Ciclo de vida ---------- */
-  const listeners = [];
-  function on(target, type, fn, opts) {
-    target.addEventListener(type, fn, opts);
-    listeners.push([target, type, fn, opts]);
-  }
-
-  function init() {
-    buildDock();
-    selectProject(0);   // projeto em foco inicial
-    on(window, "pointermove", onPointerMove, { passive: true });
-    on(window, "pointerdown", onPointerMove, { passive: true });
-    on(window, "pointerup", onPointerUp, { passive: true });
-    on(window, "pointercancel", onPointerUp, { passive: true });
-    on(window, "pointerleave", onPointerLeave, { passive: true });
-    on(renderer.domElement, "click", onCanvasClick);
-    on(window, "resize", onResize, { passive: true });
-    on(window, "orientationchange", onResize, { passive: true });
-    on(document, "visibilitychange", onVisibility);
-    on(renderer.domElement, "webglcontextlost", onContextLost, false);
-    on(renderer.domElement, "webglcontextrestored", onContextRestored, false);
-    // bfcache: ao sair só pausa (e.persisted); destrói de fato apenas no unload real.
-    on(window, "pagehide", (e) => { if (e.persisted) stop(); else destroy(); });
-    on(window, "pageshow", (e) => { if (e.persisted) resume(); });
-
-    applyResize();
-    if (prefersReducedMotion) renderOnce();   // respeita redução de movimento
-    else start();
-  }
-
-  function destroy() {
-    stop();
-    listeners.forEach(([t, type, fn, opts]) => t.removeEventListener(type, fn, opts));
-    listeners.length = 0;
-    scene.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) {
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach((m) => {
-          for (const key in m) {
-            const v = m[key];
-            if (v && v.isTexture) v.dispose();
-          }
-          m.dispose();
-        });
-      }
-    });
-    disposables.forEach((d) => d.dispose && d.dispose());
-    disposables.length = 0;
-    if (composer) composer.dispose();
-    renderer.dispose();
-    if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
-  }
-
-  init();
-  return { destroy, start, stop, scene, camera, renderer };
-}
-
-/* ================================================================
-   Bootstrap
-   ================================================================ */
-const root = document.getElementById("scene-root");
-if (webglAvailable()) {
-  try {
-    window.ArcadeHub = ArcadeScene(root);
-  } catch (err) {
-    console.error("[ArcadeHub] falha ao iniciar a cena 3D:", err);
-    document.body.classList.add("no-webgl");
-    // mesmo sem 3D, o dock precisa existir (fallback acessível)
-    bootstrapDockFallback();
-  }
-} else {
-  document.body.classList.add("no-webgl");
-  bootstrapDockFallback();
-}
-
-// Contagem do rodapé sempre coerente com PORTFOLIO (independe do caminho 3D/fallback).
-const _countEl = document.getElementById("company-count");
-if (_countEl) {
-  _countEl.textContent =
-    String(PORTFOLIO.length).padStart(2, "0") + " empresas em operação · Brasil";
-}
-applyDetail(0);   // garante o painel preenchido mesmo no fallback sem-WebGL
-
-function bootstrapDockFallback() {
-  const dockEl = document.querySelector(".dock");
-  if (!dockEl || dockEl.childElementCount) return;
-  const frag = document.createDocumentFragment();
-  PORTFOLIO.forEach((item) => {
-    const el = document.createElement("a");
-    el.className = "dock-item";
-    el.href = companyHref(item);
-    if (item.url) { el.target = "_blank"; el.rel = "noopener noreferrer"; }
-    el.style.setProperty("--accent", item.color);
-    el.setAttribute("aria-label", "Saiba mais sobre " + item.title + " — " + item.segment);
-    el.innerHTML =
-      '<span class="dock-head"><strong>' + item.title + '</strong></span>' +
-      '<span class="seg">' + item.segment + '</span>' +
-      '<span class="dock-summary">' + item.summary + '</span>';
-    frag.appendChild(el);
-  });
-  dockEl.appendChild(frag);
-}
+/** @typedef {{slug:string,name:string,category:string,summary:string,description:string,url:string,status:string,color:string,featured:boolean,order:number,element:HTMLElement}} Company */
+(function(){"use strict";
+const reduced=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cards=Array.from(document.querySelectorAll("[data-company]"));
+/** @type {Company[]} */
+const PORTFOLIO=cards.map(element=>{const link=element.querySelector(".company-link");return{slug:element.dataset.slug,name:element.querySelector(".company-select").textContent.trim(),category:element.querySelector(".category").textContent.trim(),summary:element.querySelector(".summary").textContent.trim(),description:element.querySelector(".description").textContent.trim(),url:link.href,status:element.querySelector(".company-status").textContent.trim(),color:getComputedStyle(element).getPropertyValue("--company").trim()||"#00f5a0",featured:element.dataset.featured==="true",order:Number(element.dataset.order),element}}).sort((a,b)=>a.order-b.order);
+let selected=Math.max(0,PORTFOLIO.findIndex(item=>item.featured)),contactTrigger=null;
+function selectCompany(index){const item=PORTFOLIO[index];if(!item)return;selected=index;
+ cards.forEach((card,i)=>{card.classList.toggle("active",i===index);card.querySelector(".company-select").setAttribute("aria-pressed",String(i===index))});
+ document.querySelectorAll(".core-node").forEach((node,i)=>{node.classList.toggle("active",i===index);node.setAttribute("aria-pressed",String(i===index))});
+ document.querySelectorAll(".connection").forEach(line=>{const active=Number(line.dataset.index)===index;line.classList.toggle("active",active);if(active)line.style.setProperty("--active",item.color)});
+ const detail=document.getElementById("company-detail");detail.style.setProperty("--detail",item.color);detail.querySelector(".detail-label").textContent="Projeto em foco · "+String(index+1).padStart(2,"0")+" / "+String(PORTFOLIO.length).padStart(2,"0");
+ document.getElementById("detail-name").textContent=item.name;document.getElementById("detail-cat").textContent=item.category;document.getElementById("detail-desc").textContent=item.description;document.getElementById("detail-link").href=item.url;document.getElementById("detail-link").setAttribute("aria-label","Conhecer "+item.name+" (abre em nova aba)");document.getElementById("core-name").textContent=item.name;document.getElementById("core-category").textContent=item.category}
+function buildCore(){const host=document.getElementById("core-nodes"),frag=document.createDocumentFragment();PORTFOLIO.forEach((item,i)=>{const button=document.createElement("button");button.type="button";button.className="core-node";button.dataset.pos=String(i);button.style.setProperty("--node",item.color);button.setAttribute("aria-label","Selecionar "+item.name);const name=document.createElement("strong"),meta=document.createElement("small");name.textContent=item.name;meta.textContent=String(i+1).padStart(2,"0")+" / "+String(PORTFOLIO.length).padStart(2,"0");button.append(name,meta);["mouseenter","focus","click"].forEach(event=>button.addEventListener(event,()=>selectCompany(i)));frag.appendChild(button)});host.appendChild(frag)}
+function buildParticles(){if(reduced)return;const host=document.getElementById("particles"),frag=document.createDocumentFragment(),count=innerWidth<700?14:28;for(let i=0;i<count;i++){const p=document.createElement("span"),seed=(i*47+13)%101;p.className="particle";p.style.left=((seed*37)%96+2)+"%";p.style.top=((seed*61)%92+4)+"%";p.style.setProperty("--s",(i%5===0?3:1.5)+"px");p.style.setProperty("--o",String(.18+(i%4)*.11));p.style.setProperty("--d",(7+i%7)+"s");p.style.setProperty("--dx",((i%3)*5-5)+"px");p.style.setProperty("--dy",(-5-i%8)+"px");p.style.animationDelay=(-i*.37)+"s";frag.appendChild(p)}host.appendChild(frag)}
+PORTFOLIO.forEach((item,i)=>{const button=item.element.querySelector(".company-select");["click","focus"].forEach(event=>button.addEventListener(event,()=>selectCompany(i)));item.element.addEventListener("mouseenter",()=>selectCompany(i))});
+const projectSelect=document.getElementById("ct-projeto"),other=projectSelect.querySelector('[value="Outro"]');PORTFOLIO.forEach(item=>{const option=document.createElement("option");option.value=option.textContent=item.name;projectSelect.insertBefore(option,other)});
+const header=document.getElementById("header"),toggle=document.getElementById("menu-toggle"),menu=document.getElementById("mobile-menu");
+function closeMenu(focus){toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-label","Abrir menu");menu.classList.remove("open");menu.hidden=true;document.body.classList.remove("menu-open");if(focus)toggle.focus()}
+toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")==="true";if(open)closeMenu(false);else{toggle.setAttribute("aria-expanded","true");toggle.setAttribute("aria-label","Fechar menu");menu.hidden=false;menu.classList.add("open");document.body.classList.add("menu-open");menu.querySelector("a").focus()}});
+menu.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>closeMenu(false)));addEventListener("scroll",()=>header.classList.toggle("scrolled",scrollY>24),{passive:true});
+if(!reduced&&matchMedia("(pointer:fine)").matches){const visual=document.querySelector(".core-visual"),stage=document.getElementById("core-stage");visual.addEventListener("pointermove",event=>{const r=visual.getBoundingClientRect();stage.style.setProperty("--px",(((event.clientX-r.left)/r.width-.5)*16).toFixed(1)+"px");stage.style.setProperty("--py",(((event.clientY-r.top)/r.height-.5)*16).toFixed(1)+"px")});visual.addEventListener("pointerleave",()=>{stage.style.setProperty("--px","0px");stage.style.setProperty("--py","0px")})}
+const reveals=document.querySelectorAll(".reveal");if(reduced||!("IntersectionObserver"in window))reveals.forEach(item=>item.classList.add("visible"));else{const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add("visible");observer.unobserve(entry.target)}}),{rootMargin:"0px 0px -8% 0px",threshold:.08});reveals.forEach(item=>observer.observe(item))}
+const modal=document.getElementById("contact-modal"),closeButton=document.getElementById("modal-close"),cancel=document.getElementById("modal-cancel"),form=document.getElementById("contact-form"),send=document.getElementById("ct-send"),msg=document.getElementById("ct-msg");
+function openContact(event){if(event)event.preventDefault();contactTrigger=document.activeElement;modal.removeAttribute("inert");modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.classList.add("modal-open");setTimeout(()=>document.getElementById("ct-nome").focus(),30)}
+function closeContact(){modal.classList.remove("open");modal.setAttribute("aria-hidden","true");modal.setAttribute("inert","");document.body.classList.remove("modal-open");if(contactTrigger&&contactTrigger.focus)contactTrigger.focus()}
+document.querySelectorAll(".open-contact").forEach(trigger=>trigger.addEventListener("click",openContact));closeButton.addEventListener("click",closeContact);cancel.addEventListener("click",closeContact);modal.addEventListener("mousedown",event=>{if(event.target===modal)closeContact()});
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&toggle.getAttribute("aria-expanded")==="true")closeMenu(true);if(!modal.classList.contains("open"))return;if(event.key==="Escape"){event.preventDefault();closeContact();return}if(event.key!=="Tab")return;const focusable=Array.from(modal.querySelectorAll("button,input,select,textarea,a[href]")).filter(el=>!el.disabled&&el.tabIndex!==-1&&el.offsetParent!==null);const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}});
+form.addEventListener("submit",async event=>{event.preventDefault();const nome=document.getElementById("ct-nome").value.trim(),email=document.getElementById("ct-email").value.trim(),whatsapp=document.getElementById("ct-whatsapp").value.trim(),projeto=projectSelect.value,mensagem=document.getElementById("ct-mensagem").value.trim(),website=document.getElementById("ct-website").value;msg.style.color="var(--danger)";if(!nome||!mensagem){msg.textContent="Preencha nome e mensagem.";return}if(!email&&!whatsapp){msg.textContent="Informe e-mail ou WhatsApp.";return}if(email&&!document.getElementById("ct-email").checkValidity()){msg.textContent="Informe um e-mail válido.";return}send.disabled=true;send.textContent="Enviando...";msg.textContent="";try{const response=await fetch("https://zdwgwpvlwqtsdgervcof.supabase.co/functions/v1/contato",{method:"POST",headers:{"Content-Type":"application/json","apikey":"sb_publishable_8yfc-M-6SZl5RTkLdMKe5w_9colNPe-"},body:JSON.stringify({nome,email,whatsapp,projeto,mensagem,website})}),data=await response.json();if(data&&data.ok){msg.style.color="var(--success)";msg.textContent="Mensagem enviada! Em breve retornamos.";form.reset();setTimeout(closeContact,1900)}else{msg.textContent=data&&data.error||"Não foi possível enviar."}}catch(error){msg.textContent="Falha de conexão. Tente novamente."}finally{send.disabled=false;send.textContent="Enviar"}});
+buildCore();buildParticles();document.getElementById("company-count").textContent=String(PORTFOLIO.length);selectCompany(selected);
+})();
 </script>
 </body>
 </html>
