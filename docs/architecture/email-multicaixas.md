@@ -83,7 +83,7 @@ Preservar feedback de erro, sucesso e entrega aceita com falha posterior no hist
 
 ## Assinaturas visuais por caixa — story 1.4
 
-Decisão aprovada para implementação, sem migração: um mapa compartilhado no backend associa `mailbox.id` autorizado à arte pública, texto alternativo e dimensões. `arcade_hub` e `cbai_solutions` usam explicitamente a arte Arcade; `privabr`, `jogadaca`, `conferecheck` e `liquida_pecas` usam suas respectivas artes fornecidas. `coben` permanece sem imagem enquanto sua definição estiver pendente. Não existe fallback visual genérico nem escolha de `signature_id`, URL ou HTML pelo navegador. Dados das artes não serão modificados por esta integração.
+Decisão aprovada para implementação, sem migração: um mapa compartilhado no backend associa `mailbox.id` autorizado à arte pública, texto alternativo e dimensões. `arcade_hub` e `cbai_solutions` usam explicitamente a arte Arcade; `privabr`, `jogadaca`, `conferecheck`, `liquida_pecas` e `coben` usam suas respectivas artes fornecidas. Não existe fallback visual genérico nem escolha de `signature_id`, URL ou HTML pelo navegador. Dados das artes não serão modificados por esta integração.
 
 `email-accounts` pode expor metadados opcionais de preview com URL e `alt`, obtidos desse mapa, sem alterar o contrato de autorização. `email-send` resolve novamente a assinatura pelo mesmo mapa e pela caixa autorizada; não confia no preview devolvido pelo cliente. Uma conta sem arte mantém identificação textual com nome e endereço confirmados, sem inventar pessoa, telefone, cargo ou site.
 
@@ -99,9 +99,9 @@ Sequência de publicação:
 
 1. Publicar somente os assets de assinatura em caminhos estáveis e versionados, mantendo as artes anteriores acessíveis para e-mails já enviados. Confirmar Vercel READY e GET anônimo HTTPS com status 200, `Content-Type` correto e dimensões esperadas de cada arquivo. Não apontar para Downloads nem publicar outros arquivos locais.
 2. Publicar o helper e as funções que expõem o preview e compõem o envio, somente depois de confirmar os assets. O contrato legado continua válido durante esta etapa. O backend deve estar disponível antes de publicar a UI que envia `quoted_text`.
-3. Publicar o frontend e validar preview desktop/mobile, CSP, rascunhos e falhas de imagem. Confirmar o SHA exato READY. Atualizar as evidências sem afirmar configuração visual de Coben até sua definição.
+3. Publicar o frontend e validar preview desktop/mobile, CSP, rascunhos e falhas de imagem. Confirmar o SHA exato READY. A arte Coben já foi recebida e publicada em atualização incremental; validações interativas continuam pendentes nesta rodada.
 
-O gate inclui matriz das seis caixas confirmadas e Coben condicional, texto/citação hostis escapados, marca imutável por caixa, pedido legado assinado, e igualdade do conteúdo persistido com os argumentos SMTP. Além dos mocks de chamada, conferir o MIME produzido pela versão fixa da biblioteca para detectar perda de texto, headers duplicados ou corrupção de URLs. Nenhum teste envia e-mail real; validação de HTML/MIME local não comprova aparência em Gmail, Outlook ou outros clientes externos.
+O gate previsto inclui matriz das sete caixas confirmadas, texto/citação hostis escapados, marca imutável por caixa, pedido legado assinado, e igualdade do conteúdo persistido com os argumentos SMTP. Além dos mocks de chamada, conferir o MIME produzido pela versão fixa da biblioteca para detectar perda de texto, headers duplicados ou corrupção de URLs. Essa matriz não foi executada nesta rodada por instrução; nenhum e-mail foi enviado. Validação de HTML/MIME local não comprova aparência em Gmail, Outlook ou outros clientes externos.
 
 ## Credenciais por caixa
 

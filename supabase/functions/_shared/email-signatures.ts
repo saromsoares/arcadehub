@@ -31,8 +31,8 @@ const SIGNATURES: Record<string, Omit<EmailSignature, "url"> | null> = {
     plainText: "Obrigado pelo seu contato!\nLíquida Peças | contato@liquidapecas.com.br",
   },
   coben: {
-    alt: "Coben | contato@coben.app",
-    plainText: "Coben | contato@coben.app",
+    alt: "Coben Life OS. Obrigado pelo seu contato! Thank you for contacting us! Gracias por contactarnos!",
+    plainText: "Obrigado pelo seu contato!\nCoben Life OS | contato@coben.app",
   },
 };
 const ASSET_FILE: Record<string, string> = {
@@ -42,6 +42,7 @@ const ASSET_FILE: Record<string, string> = {
   conferecheck: "conferecheck.png",
   privabr: "privabr.png",
   liquida_pecas: "liquida-pecas.png",
+  coben: "coben.png",
 };
 
 export function emailSignature(mailboxId: string): EmailSignature | null {

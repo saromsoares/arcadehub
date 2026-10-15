@@ -3025,7 +3025,7 @@ async function carregarCaixasEmail(){
       if (!a || typeof a.id !== 'string' || !a.id || ids.has(a.id) || typeof a.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) || typeof a.can_send !== 'boolean' || typeof a.can_sync !== 'boolean') throw new Error('Configuração de caixas inválida.');
       ids.add(a.id);
       const signature = a.signature;
-      const signatureFiles = { arcade_hub: 'arcade.png', cbai_solutions: 'arcade.png', jogadaca: 'jogadaca.png', conferecheck: 'conferecheck.png', privabr: 'privabr.png', liquida_pecas: 'liquida-pecas.png' };
+      const signatureFiles = { arcade_hub: 'arcade.png', cbai_solutions: 'arcade.png', jogadaca: 'jogadaca.png', conferecheck: 'conferecheck.png', privabr: 'privabr.png', liquida_pecas: 'liquida-pecas.png', coben: 'coben.png' };
       const expectedSignatureUrl = signatureFiles[a.id] ? 'https://arcadehub.tech/assets/email-signatures/' + signatureFiles[a.id] : null;
       if (signature !== null && signature !== undefined && (typeof signature !== 'object' || signature.url !== expectedSignatureUrl || typeof signature.alt !== 'string' || signature.alt.length > 300 || typeof signature.plainText !== 'string' || signature.plainText.length > 500)) throw new Error('Assinatura de caixa invÃ¡lida.');
       return { id: a.id, email: a.email, label: typeof a.label === 'string' ? a.label : '', can_send: a.can_send, can_sync: a.can_sync, status: a.status || '', signature: signature || null };
