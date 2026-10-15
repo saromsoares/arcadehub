@@ -55,4 +55,6 @@ Foi registrado apenas `20261015182925` como aplicado usando `migration repair --
 
 Após validar IMAP/SMTP do legado e publicar as funções autenticadas, o job 3 foi atualizado com token dedicado vindo do Vault, body explícito por mailbox e filtro de contas com IMAP verificado. A pausa durante o deploy foi revertida explicitamente, porque `cron.schedule` preserva o estado pausado ao atualizar um job nomeado. O agendamento continua a cada três minutos.
 
+Primeiro tick autenticado confirmado em 2026-10-15 18:45 UTC: job 3 com status `succeeded`, resposta HTTP 200, `ok=true`, `novos=0`, sem timeout. As 69 mensagens foram preservadas; 60 mensagens legadas tiveram a época IMAP reconciliada e seis permaneceram sem época conhecida. Nenhum conteúdo de mensagem foi exposto nessa verificação.
+
 Referências oficiais: [RLS e grants](https://supabase.com/docs/guides/database/postgres/row-level-security), [agendamento de Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions). O changelog de [Postgres 15.19/17.11](https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes) foi consultado; esta migração não usa as extensões ou operadores afetados descritos ali.
