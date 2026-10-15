@@ -4,7 +4,9 @@ Status: integração concluída em 2026-10-15, com migração aplicada, cinco fu
 
 ## Estado anterior à migração
 
-Backups das três funções estão em `.aiox/email-backend-before-20261015/supabase/functions/`. A integração atual usa credenciais globais `IMAP_USER`/`IMAP_PASS`, com fallback para `SMTP_USER`/`SMTP_PASS`; envio usa `SMTP_FROM` ou `SMTP_USER`.
+Registro histórico anterior à story 1.2; não descreve o backend hoje publicado.
+
+Backups das três funções estão em `.aiox/email-backend-before-20261015/supabase/functions/`. Naquele snapshot, a integração usava credenciais globais `IMAP_USER`/`IMAP_PASS`, com fallback para `SMTP_USER`/`SMTP_PASS`; envio usa `SMTP_FROM` ou `SMTP_USER`.
 
 - `email-sync` usa `service_role`, busca os últimos 60 registros por padrão e deduplica `uid_imap` globalmente. Não autentica a chamada no código, e o gateway está com `verify_jwt=false`.
 - `email-body` autentica o usuário, mas aceita UID do cliente e atualiza o registro por `id` usando `service_role`, sem autorização da caixa. A evolução deve resolver identidade exclusivamente do registro autorizado.
@@ -17,13 +19,13 @@ Backups das três funções estão em `.aiox/email-backend-before-20261015/supab
 
 O backend, as permissões e a caixa existente foram validados antes de habilitar a flag. Uma caixa sem credenciais verificadas aparece como pendente e não opera até autenticá-las; as sete caixas solicitadas já concluíram essa etapa. Qualquer erro de discovery ou contrato inválido bloqueia a operação multicaixas e apresenta a falha. Não há fallback automático para credenciais ou chamadas legadas.
 
-No servidor, chamadas antigas sem `mailbox_id` resolvem exclusivamente a caixa `arcade_hub`, com autorização explícita e seus secrets existentes. Identificador informado, mas inválido ou não autorizado, nunca recai nessa caixa. A migração precisa vincular o histórico existente à caixa legada antes das novas gravações.
+No servidor, chamadas antigas sem `mailbox_id` resolvem exclusivamente a caixa `arcade_hub`, com autorização explícita e seus secrets existentes. Identificador informado, mas inválido ou não autorizado, nunca recai nessa caixa. A migração vinculou o histórico existente à caixa legada antes das novas gravações.
 
 ## Discovery
 
-Para cadastrar as seis senhas localmente, executar `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\conectar-emails.ps1`. O assistente solicita a senha de cada caixa, com digitação oculta; Enter vazio pula uma conta. Depois, no dashboard autenticado, selecionar a caixa e clicar em **Verificar conexão** e **Sincronizar**. Usar a senha do webmail da caixa, não a senha do painel Hostinger. Nenhuma senha deve ser colada no chat.
+As seis senhas adicionais já foram cadastradas e verificadas. Para recadastro solicitado ou rotação, executar `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\conectar-emails.ps1`. O assistente solicita a senha de cada caixa, com digitação oculta; Enter vazio pula uma conta. Depois, no dashboard autenticado, selecionar a caixa e clicar em **Verificar conexão** e **Sincronizar**. Usar a senha do webmail da caixa, não a senha do painel Hostinger. Nenhuma senha deve ser colada no chat.
 
-Após autenticação e antes da leitura das mensagens, invocar `email-accounts`. Resposta proposta:
+Após autenticação e antes da leitura das mensagens, invocar `email-accounts`. Contrato publicado (exemplo mínimo):
 
 ```json
 {
@@ -85,7 +87,7 @@ Manter os secrets globais existentes exclusivamente para `arcade_hub`. Para cada
 
 Para essas contas Hostinger, usuário IMAP, usuário SMTP e remetente são o endereço cadastrado; IMAP e SMTP usam a mesma senha dessa caixa. Os hosts e portas são os confirmados nas referências. Senha ausente desabilita sincronização e envio daquela conta, sem reutilizar a senha da holding. Permissões e metadados ficam no banco; senhas ficam nos secrets das Edge Functions.
 
-O cadastro das senhas será executado pelo usuário em terminal local, sem enviá-las no chat. O helper [configurar-caixas-email.ps1](../../scripts/configurar-caixas-email.ps1) foi preparado com este fluxo:
+O cadastro das seis caixas adicionais foi concluído, com senhas digitadas pelo usuário em terminal local, sem enviá-las no chat. A caixa legada manteve suas credenciais existentes. Para futuras rotações das adicionais, preservar o mesmo procedimento. O helper [configurar-caixas-email.ps1](../../scripts/configurar-caixas-email.ps1) foi preparado com este fluxo:
 
 1. Validar caixa e projeto fixos; coletar senha com `Read-Host -AsSecureString`.
 2. Criar diretório temporário fora do repositório com ACL restrita ao usuário atual. Rejeitar senha com CR, LF ou NUL antes de qualquer operação remota; converter a senha válida apenas para gerar um `.env` efêmero com o valor em base64.
@@ -96,7 +98,7 @@ O cadastro das senhas será executado pelo usuário em terminal local, sem envi�
 
 O suporte a `--env-file` foi confirmado em `secrets set --help`; não se presume suporte a stdin. O helper passou por testes com CLI e entrada simulados: sucesso, falha ao invalidar antes/depois do cadastro, falha ao cadastrar, rejeição de senha com quebra de linha antes de chamar o CLI, preservação de caracteres especiais válidos e limpeza do arquivo temporário. Nenhuma senha real foi coletada ou cadastrada nesses testes.
 
-Uso local quando o usuário estiver pronto, após aplicar o cadastro das caixas no banco:
+Uso local para recadastro/rotação solicitada de uma caixa adicional já cadastrada:
 
 ```powershell
 .\scripts\configurar-caixas-email.ps1 -Mailbox cbai_solutions
@@ -108,13 +110,13 @@ IDs permitidos: `cbai_solutions`, `jogadaca`, `coben`, `privabr`, `liquida_pecas
 
 `email-check` recebe `{ mailbox_id }`, exige acesso da holding e testa IMAP LOGIN/SELECT e SMTP AUTH com TLS, sem enviar mensagem. Registra resultados independentes e timestamps somente para protocolos autenticados com sucesso. Falha deixa a respectiva capacidade indisponível. A interface oferece a verificação para contas autorizadas mesmo quando suas capacidades de envio/sincronização estão desabilitadas; erros não retornam senha, comando de autenticação ou transcript do servidor.
 
-A caixa legada mantém sua configuração existente e precisa da verificação equivalente para a readiness do novo fluxo. O backend não deve executar SMTP MAIL FROM, RCPT TO ou DATA em `email-check`.
+A caixa legada mantém sua configuração existente e já passou pela verificação equivalente para a prontidão do novo fluxo. O backend não deve executar SMTP MAIL FROM, RCPT TO ou DATA em `email-check`.
 
 ## Identidade IMAP e histórico
 
 Manter `uid_imap` no formato existente `INBOX:<uid>` e registrar `imap_uidvalidity` obtido ao selecionar a pasta. A identidade de deduplicação inclui caixa, pasta, UIDVALIDITY e UID; não deduplicar contas diferentes por UID ou `Message-ID` global. O banco deve garantir unicidade dessa identidade contra sincronizações concorrentes. O mecanismo é definido pela [RFC 9051, seção 2.3.1.1](https://www.rfc-editor.org/rfc/rfc9051.html#section-2.3.1.1).
 
-Os registros legados começam com UIDVALIDITY desconhecido. Não preencher todos com o valor atual indiscriminadamente: conferir o UID e o `Message-ID` original antes de reconciliar cada registro, preservando `id`, estado de leitura e corpo em cache. Os 66 recebidos inspecionados têm `Message-ID` e UID válidos, mas a igualdade com o servidor ainda precisa ser verificada. Ausência de correspondência não autoriza sobrescrever o histórico.
+Os registros legados começam com UIDVALIDITY desconhecido. Não preencher todos com o valor atual indiscriminadamente: conferir o UID e o `Message-ID` original antes de reconciliar cada registro, preservando `id`, estado de leitura e corpo em cache. Na primeira execução autenticada, 60 dos 66 recebidos legados tiveram sua época reconciliada por correspondência; seis permaneceram sem época conhecida naquele snapshot. Ausência de correspondência não autoriza sobrescrever o histórico.
 
 `email-body` compara a época armazenada com a devolvida pelo servidor. Se diferirem, não busca o corpo pelo UID antigo; mantém eventual cache histórico e solicita nova sincronização. Para legado sem época, exigir correspondência da identidade antes de associar conteúdo remoto. Quando UIDVALIDITY mudar, importar a nova identidade sem substituir mensagens anteriores.
 
@@ -133,26 +135,13 @@ Chamada humana exige usuário e permissão de caixa; chamada agendada exige o se
 - Realtime incorpora apenas mensagens da caixa e sessão vigentes. Exclusões usam `payload.old`; evento sem dados suficientes provoca recarga filtrada. O indicador de conexão deve refletir o estado real da assinatura.
 - Endereços e rótulos são escapados na renderização. Corpos HTML permanecem em iframe com sandbox.
 
-## Pendências para conectar as contas reais
+## Conexão e publicação concluídas
 
-Endereços adicionais confirmados pelo usuário em 2026-10-15:
+As sete caixas do [inventário atual](../PROJECT_CONTEXT.md) foram verificadas e sincronizadas em 2026-10-15. A identidade legada foi confirmada como `suporte@arcadehub.tech`. Migração aplicada, RLS e Realtime validados, cinco funções publicadas, cron com token dedicado observado em execução e `EMAIL_MULTICAIXAS=true` publicado.
 
-- `suporte@cbaisolutions.com.br`
-- `contato@jogadaca.ai`
-- `contato@coben.app`
-- `suporte@privabr.com.br`
-- `contato@liquidapecas.com.br`
-- `contato@conferecheck.com.br`
+A story 1.3 acrescentou Novo e-mail/Responder/Cancelar e cabeçalhos de conversa, com 30 testes backend, 27 Chrome e 14 verificações remotas negativas. Produção READY nos commits de entrega `1358930` e fechamento `d5ca892`. Nenhuma entrega externa foi testada; não há pendência de cadastrar novamente as sete senhas.
 
-Manter a caixa existente. Sua identidade de sincronização ainda não foi confirmada. A lista acima é inventário solicitado, não prova de conexão ou disponibilidade de credenciais.
-
-1. Concluir revisão da migração e autorização a partir das funções e do esquema remoto já inspecionados; nenhuma mudança remota é afirmada por este documento.
-2. Verificar as contas confirmadas acima na Hostinger e configurar suas credenciais e autorizações no servidor.
-3. Adaptar e validar discovery, sincronização, leitura do corpo e envio; manter credenciais exclusivamente no servidor.
-4. Vincular o histórico à caixa correta, garantir isolamento dos identificadores IMAP entre contas e aplicar autorização no banco e nas funções.
-5. Adaptar a autenticação do cron e validar recebimento, sincronização e autorização de envio em cada caixa antes de habilitar a flag em produção. Os testes desta implementação não enviam mensagens reais.
-
-Mocks no navegador devem cobrir legado, duas caixas, nenhuma conta, discovery negado ou inválido, troca durante carregamento/envio e logout durante leitura. Eles verificam a interface e o contrato proposto, sem comprovar autenticação Hostinger ou entrega de e-mail.
+Operação e acesso CLI: [runbook](../runbooks/email-operacao.md). Evidências: [story 1.2](../stories/1.2.story.md), [story 1.3](../stories/1.3.story.md) e [QA](../qa/reviews/1.3-email-envio.md).
 
 ## Referências operacionais
 

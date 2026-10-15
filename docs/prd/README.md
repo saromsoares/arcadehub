@@ -2,6 +2,10 @@
 
 PRDs e épicos da Arcade Hub criados via `@pm *create-prd` ou `@pm *create-epic`.
 
+## Estado atual
+
+Não há PRD funcional ou épico formal preenchido neste diretório. As entregas 1.1–1.3 derivam de solicitações do usuário registradas em [stories](../stories/README.md). O [contexto do projeto](../PROJECT_CONTEXT.md) descreve o estado implementado. A estrutura abaixo é um modelo para documentos futuros, não uma lista de arquivos já existentes.
+
 ## Estrutura
 
 ```

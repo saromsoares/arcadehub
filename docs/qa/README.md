@@ -2,6 +2,13 @@
 
 Quality gates e reviews produzidos por `@qa` (Quinn).
 
+## Pareceres existentes
+
+- [Story 1.2 — multicaixas](reviews/1.2-email-multicaixas.md).
+- [Story 1.3 — envio e resposta](reviews/1.3-email-envio.md): PASS local, 30 testes backend e 27 verificações Chrome; a story registra também 14 checks remotos negativos e publicação.
+
+Nenhum e-mail real foi enviado nos testes. Não há parecer preenchido para a story 1.1. A estrutura abaixo é uma convenção; consultar arquivos existentes, sem presumir que todo gate YAML já foi criado.
+
 ## Estrutura
 
 ```

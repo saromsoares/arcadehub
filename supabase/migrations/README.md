@@ -1,43 +1,24 @@
-# Supabase Migrations
+# Migrações Supabase
 
-Migrations versionadas para o projeto Supabase `zdwgwpvlwqtsdgervcof`.
+Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-10-15.
 
-## Convenção de Nome
+| Arquivo | Estado conhecido |
+| --- | --- |
+| `20260522_000001_enable_rls_baseline.sql` | Baseline RLS aplicado em 2026-05-22, conforme histórico do projeto; nome local legado. |
+| `20261015182925_email_multicaixas.sql` | Aplicado em 2026-10-15, testes transacionais remotos aprovados e versão `20261015182925` registrada no histórico. |
 
-```
-YYYYMMDD_HHMMSS_<slug>.sql
-```
+## Histórico local e remoto
 
-Cada migration deve ser **idempotente** (pode rodar 2x sem quebrar).
+O checkout não contém todas as migrações remotas: havia 18 versões remotas anteriores à migração multicaixas. Elas não foram reparadas, apagadas ou reaplicadas. **Não executar `db push` indiscriminadamente** nem marcar versões desconhecidas como aplicadas/revertidas para forçar igualdade.
 
-## Como Aplicar
+A migração multicaixas foi criada pelo CLI, revisada e aplicada isoladamente via `supabase db query --linked --project-ref ... --file`. Depois dos testes e da inspeção, somente sua versão foi registrada com `migration repair --status applied`. Esse é o registro do procedimento concluído, não uma instrução para repetir a aplicação em produção.
 
-### Opção A — Supabase Dashboard (rápida, manual)
+Novas migrações devem ser geradas com `supabase migration new <nome>` e revisadas com o estado real do banco antes de aplicar. Não renomear o baseline antigo apenas por estética. Usar o perfil isolado do [runbook de operação](../../docs/runbooks/email-operacao.md), sem novo login desnecessário.
 
-1. Acesse https://supabase.com/dashboard/project/zdwgwpvlwqtsdgervcof
-2. Vá em **SQL Editor**
-3. Cole o conteúdo do `.sql` e execute
-4. Confirme no **Database → Tables/Policies** que as RLS apareceram
+## Validação e retorno
 
-### Opção B — Supabase CLI (recomendado a partir do próximo deploy)
+Modelo, RLS, identidade e evidências: [banco multicaixas](../../docs/architecture/email-multicaixas-database.md). A suite `supabase/tests/email_multicaixas.sql` usa transação com rollback e fixtures sintéticas. O cron tem configuração própria em `supabase/operations/email-sync-cron.sql`.
 
-```bash
-supabase login
-supabase link --project-ref zdwgwpvlwqtsdgervcof
-supabase db push
-```
+O rollback `supabase/operations/email-multicaixas-rollback.sql` só serve antes de mensagens adicionais/identidades incompatíveis; **não usar no estado atual com sete caixas importadas**. Preferir preservar o esquema aditivo ao reverter aplicação.
 
-### Opção C — MCP Supabase (Claude Code)
-
-Via tool `mcp__claude_ai_Supabase__apply_migration`. Requer permissão explícita.
-
-## Migrations Aplicadas
-
-| Arquivo | Data | Descrição | Status |
-|---------|------|-----------|--------|
-| `20260522_000001_enable_rls_baseline.sql` | 2026-05-22 | RLS baseline + tabela `usuarios_empresas` + função `user_has_empresa_access` | ⏳ Pendente aplicação |
-
-## Referências
-
-- `docs/runbooks/jwt-rotation.md` — runbook para rotação JWT anon
-- `docs/architecture/data-architecture.md` — modelo consolidado (criar)
+Outros runbooks: [rotação JWT](../../docs/runbooks/jwt-rotation.md). Esta atualização de documentação não altera schema, secrets, cron ou histórico remoto.

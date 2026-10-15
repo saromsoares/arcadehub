@@ -2,7 +2,7 @@
 
 Story 1.2. Projeto `zdwgwpvlwqtsdgervcof`, em 2026-10-15. Migração `20261015182925` aplicada após revisão, com histórico registrado e testes transacionais remotos aprovados. A conexão das caixas e a publicação das funções são etapas independentes.
 
-## Estado observado
+## Snapshot anterior à migração (histórico)
 
 - PostgreSQL 17.6; `emails` contém 66 recebidos e 3 enviados. Os três enviados registram `suporte@arcadehub.tech` como remetente. Isso confirma o histórico SMTP, sem comprovar a identidade IMAP atual.
 - Os 66 recebidos têm `uid_imap` no formato `INBOX:n`, e Message-ID presente e distinto. A unicidade existente é global em `uid_imap`; não existe UIDVALIDITY armazenada.
@@ -11,9 +11,13 @@ Story 1.2. Projeto `zdwgwpvlwqtsdgervcof`, em 2026-10-15. Migração `2026101518
 - Job `email-sync-incremental`, ID 3, ativo a cada três minutos, chama a função sem Authorization e sem Vault. `pg_cron`, `pg_net` e `supabase_vault` estão instalados; não havia secrets no Vault. O comando completo não foi exportado para documentação pública.
 - Snapshot de colunas, índices, constraints, políticas, grants e publicação: `.aiox/email-schema-before-20261015.json`. Não contém conteúdo de mensagens ou credenciais.
 
+## Estado após ativação
+
+Sete caixas verificadas e sincronizadas; funções, cron autenticado e interface publicados. O snapshot abaixo registra a transição inicial, não as contagens atuais. A story 1.3 reutilizou a coluna `message_id` para identidade de saída e autorizou `reply_to_id` na requisição, sem nova migração ou coluna. Ver [contexto atual](../PROJECT_CONTEXT.md) e [operação](../runbooks/email-operacao.md).
+
 ## Modelo
 
-`email_mailboxes` contém inventário sem senhas. IDs: `arcade_hub`, `cbai_solutions`, `jogadaca`, `coben`, `privabr`, `liquida_pecas`, `conferecheck`. A caixa legada mantém `email=NULL` até a função confirmar a configuração existente. As seis adicionais têm os endereços exatos informados pelo usuário.
+`email_mailboxes` contém inventário sem senhas. IDs: `arcade_hub`, `cbai_solutions`, `jogadaca`, `coben`, `privabr`, `liquida_pecas`, `conferecheck`. No seed, a caixa legada começa com `email=NULL`; a verificação posterior já confirmou `suporte@arcadehub.tech`. As seis adicionais têm os endereços exatos informados pelo usuário.
 
 `enabled` é uma decisão administrativa de acesso; não significa que uma senha funciona. `imap_verified_at` e `smtp_verified_at` registram autenticação validada no servidor, sem enviar mensagens. O discovery combina esses estados com a presença do secret para apresentar capacidades. Novas contas sem credencial permanecem visíveis como pendentes. Somente o servidor altera inventário/verificações. Ao trocar a senha, incrementar `credentials_revision` e limpar as verificações antes de atualizar o secret e verificar novamente. O `email-check` captura essa revisão e só grava o resultado se ela continuar igual; uma verificação concorrente de senha antiga não pode restaurar o estado validado depois da rotação.
 
