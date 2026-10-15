@@ -54,7 +54,7 @@ No modo multicaixas, cada mensagem possui `mailbox_id`. A listagem consulta `ema
 | Função | Corpo no modo multicaixas |
 | --- | --- |
 | `email-sync` | `{ mailbox_id }` |
-| `email-send` | `{ mailbox_id, to, cc, subject, text }` |
+| `email-send` | `{ mailbox_id, to, cc, subject, text, reply_to_id? }` |
 | `email-body` | `{ mailbox_id, id, uid_imap }` |
 
 Os formatos de resposta já consumidos pela interface são preservados: sincronização usa `ok`, `novos` e `error`; envio usa `ok` e `error`; corpo usa `ok`, `corpo_texto`, `corpo_html` e `error`.
@@ -62,6 +62,22 @@ Os formatos de resposta já consumidos pela interface são preservados: sincroni
 O backend precisa autenticar e autorizar cada operação. Deve conferir que a mensagem pertence à caixa solicitada; `uid_imap` recebido do navegador não constitui autorização. A conta SMTP e o remetente são resolvidos no servidor a partir de `mailbox_id`. Uma caixa inválida ou não autorizada deve falhar, nunca usar a conta padrão. As consultas diretas precisam de RLS compatível; filtrar a interface não substitui autorização.
 
 As funções validam o usuário com Auth e a permissão de acesso da holding antes de abrir sockets ou consultar mensagens com privilégios administrativos. Usuários vinculados apenas a uma empresa filha não recebem automaticamente acesso ao correio da holding. `email-body` exige um registro autorizado mesmo quando `uid_imap` foi enviado; valida caixa, direção e identidade IMAP antes de usar cache ou buscar conteúdo.
+
+## Novo e-mail e resposta pela caixa selecionada — story 1.3
+
+Decisão aprovada para implementação: usar o SMTP e o remetente definidos no servidor para a caixa selecionada tanto em mensagem nova quanto em resposta. Esta seção descreve a evolução da story 1.3; não afirma que seus ajustes já foram publicados. O campo `message_id` existente comporta a identidade das mensagens enviadas, sem nova migração.
+
+`reply_to_id` é opcional e identifica o registro recebido que originou a resposta. Quando presente, precisa ser um ID válido; não aceitar valor malformado como ausência. Após autorizar a caixa, o servidor consulta `id`, `message_id` e `direcao` pelo cliente autenticado com RLS, restringindo por `id` e `mailbox_id`. Registro inexistente, de outra caixa ou com direção diferente de `in` impede o envio antes de criar tentativa ou abrir SMTP. O navegador não fornece remetente, `Message-ID`, `In-Reply-To`, `References` ou headers livres.
+
+Para cada tentativa, o servidor gera `<UUID@dominio-do-remetente-configurado>` e persiste esse mesmo valor em `emails.message_id` junto ao registro `pendente`, antes de chamar SMTP. Mensagem nova recebe somente esse identificador. Resposta com identificador original seguro recebe também `In-Reply-To` e `References`, ambos com o `message_id` do registro de origem. Esses cabeçalhos vinculam a resposta à mensagem anterior; a cadeia completa de ancestrais não é reconstruída, pois o histórico atual não armazena `References`. A semântica é definida na [RFC 5322, seção 3.6.4](https://www.rfc-editor.org/rfc/rfc5322.html#section-3.6.4).
+
+O identificador original é conteúdo externo: aceitar apenas um `msg-id` de formato conservador, com delimitadores `<...>`, tamanho limitado e sem caracteres de controle, espaços internos ou cabeçalhos adicionais. Valor ausente ou fora desse formato não bloqueia a resposta: omitir os dois cabeçalhos de encadeamento e manter o remetente, destinatário, assunto e conteúdo. A interface não promete agrupamento de conversa nesse caso; nenhum valor suspeito é repassado ao SMTP.
+
+Na versão fixa `denomailer@1.6.0`, usar `headers` com chaves explícitas `Message-ID`, `In-Reply-To` e `References`. Não existe opção pública `messageId`; `send()` retorna `Promise<void>`. A opção `inReplyTo` dessa versão escreve `InReplyTo:` sem hífens, portanto não deve ser usada. O caminho padrão inspecionado não gera `Message-ID` automaticamente. Não preencher `inReplyTo` ou `references` em paralelo aos headers customizados, evitando duplicidade. Essas decisões vêm do [tipo de configuração](https://github.com/EC-Nordbund/denomailer/blob/1.6.0/config/mail/mod.ts), do [cliente SMTP](https://github.com/EC-Nordbund/denomailer/blob/1.6.0/client/basic/client.ts#L109-L124) e do [retorno público de envio](https://github.com/EC-Nordbund/denomailer/blob/1.6.0/client/mod.ts#L128-L138).
+
+O compositor distingue **Novo e-mail** e **Responder**, mostra o remetente e mantém `reply_to_id` vinculado à caixa de origem. **Novo e-mail** limpa destinatário, cópia, assunto, corpo e referência de resposta após confirmar o descarte quando houver rascunho. **Cancelar** também limpa a referência; recusar o descarte mantém o estado inteiro. Abrir outra resposta ou trocar a caixa não pode transportar silenciosamente o vínculo anterior. Enquanto o envio estiver em andamento, bloquear ações que substituam o rascunho; conclusão de uma requisição antiga nunca apaga um rascunho mais recente.
+
+Preservar feedback de erro, sucesso e entrega aceita com falha posterior no histórico. Não reenviar automaticamente em resultado SMTP incerto. Validação local deve conferir remetente e domínio gerado para cada caixa, igualdade entre `message_id` persistido e transmitido, rejeição de resposta cruzada ou ID inválido, fallback sem headers para identificador original ausente/malformado e transições do compositor. Usar mocks de SMTP e navegador, sem entrega externa de teste.
 
 ## Credenciais por caixa
 

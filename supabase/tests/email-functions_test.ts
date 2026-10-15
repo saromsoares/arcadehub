@@ -19,6 +19,14 @@ let boxes: Row[] = [], message: Row | null = null, legacy: Row | null = null;
 let denyMailbox = false, insertFails = false, updateFails = false, revisionChanged = false;
 let calls: Call[] = [], sockets: FixtureSocket[] = [], transcripts: string[] = [];
 const encoder = new TextEncoder();
+const utf8Base64 = (value: string) => btoa(Array.from(encoder.encode(value), byte => String.fromCharCode(byte)).join(""));
+const received = (fields: Row = {}): Row => ({ id: 1, mailbox_id: "alpha", direcao: "in", uid_imap: "INBOX:7", imap_uidvalidity: 42, message_id: "<parent@example.test>", ...fields });
+function matchesQuery(row: Row, url: URL) {
+  return ["id", "mailbox_id", "direcao", "uid_imap", "imap_uidvalidity"].every(key => {
+    const value = url.searchParams.get(key);
+    return !value || (value === "is.null" ? row[key] === null : value === "eq." + row[key]);
+  });
+}
 
 class FixtureSocket {
   bytes: Uint8Array;
@@ -63,7 +71,10 @@ globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => 
     return response(denyMailbox ? [] : boxes.filter(b => (!url.searchParams.has("id") || "eq." + b.id === url.searchParams.get("id")) && b.enabled));
   }
   if (url.pathname === "/rest/v1/emails") {
-    if (request.method === "GET") return response(url.searchParams.get("imap_uidvalidity") === "is.null" ? (legacy ? [legacy] : []) : (message ? [message] : []));
+    if (request.method === "GET") {
+      const row = url.searchParams.get("imap_uidvalidity") === "is.null" ? legacy : message;
+      return response(row && matchesQuery(row, url) ? [row] : []);
+    }
     if (request.method === "POST") return insertFails ? response({ message: "Database unavailable", code: "XX000" }, 500) : response(request.headers.get("accept")?.includes("object") ? { id: 100 } : null, 201);
     if (request.method === "PATCH") return updateFails ? response({ message: "Database unavailable", code: "XX000" }, 500) : response(null);
   }
@@ -90,6 +101,9 @@ function reset() {
   denyMailbox = false; insertFails = false; updateFails = false; revisionChanged = false;
   calls = []; sockets = []; transcripts = [];
   Deno.env.delete("EMAIL_SYNC_CRON_TOKEN");
+  Deno.env.set("SMTP_USER", "legacy@example.test");
+  Deno.env.set("SMTP_PASS", "legacy-fixture-password");
+  Deno.env.set("MAILBOX_ALPHA_PASS_B64", btoa("fixture-password"));
 }
 function req(payload: Row = {}, token: string | null = "user-token", extra: Record<string, string> = {}) {
   return new Request("https://functions.invalid", { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...extra }, body: JSON.stringify(payload) });
@@ -159,14 +173,14 @@ Deno.test("Body lookup scopes message to authorized mailbox and rejects arbitrar
 });
 
 Deno.test("Cached body returns without provider access", async () => {
-  reset(); message = { id: 1, corpo_texto: "Cached body", corpo_html: null };
+  reset(); message = received({ corpo_texto: "Cached body", corpo_html: null });
   const response = await readBody(req({ mailbox_id: "alpha", id: 1 }));
   assert.equal((await response.json()).cached, true);
   assert.equal(sockets.length, 0);
 });
 
 Deno.test("UIDVALIDITY mismatch fails before fetching any body", async () => {
-  reset(); message = { id: 1, uid_imap: "INBOX:7", imap_uidvalidity: 41 };
+  reset(); message = received({ imap_uidvalidity: 41 });
   transcripts = [imapFixture()];
   const response = await readBody(req({ mailbox_id: "alpha", id: 1 }));
   assert.equal(response.status, 409); await response.arrayBuffer();
@@ -176,7 +190,7 @@ Deno.test("UIDVALIDITY mismatch fails before fetching any body", async () => {
 });
 
 Deno.test("Body uses stored UID and handles fragmented UTF-8 literal without mutating another mailbox", async () => {
-  reset(); message = { id: 1, uid_imap: "INBOX:7", imap_uidvalidity: 42 };
+  reset(); message = received();
   transcripts = [imapFixture(mail)];
   const response = await readBody(req({ mailbox_id: "alpha", id: 1, uid_imap: "INBOX:999" }));
   assert.equal(response.status, 200);
@@ -188,7 +202,7 @@ Deno.test("Body uses stored UID and handles fragmented UTF-8 literal without mut
 });
 
 Deno.test("Legacy body requires matching Message-ID before caching an unbound epoch", async () => {
-  reset(); message = { id: 1, uid_imap: "INBOX:7", imap_uidvalidity: null, message_id: "<wrong@example.test>" };
+  reset(); message = received({ imap_uidvalidity: null, message_id: "<wrong@example.test>" });
   transcripts = [imapFixture(mail)];
   const response = await readBody(req({ mailbox_id: "alpha", id: 1 }));
   assert.equal(response.status, 409); await response.arrayBuffer();
@@ -207,7 +221,7 @@ Deno.test("Sync inserts mailbox/epoch identity and parses flags and headers", as
 });
 
 Deno.test("Sync adopts legacy UID only when Message-ID also agrees", async () => {
-  reset(); legacy = { id: 12, message_id: "<identity@example.test>" }; transcripts = [imapFixture(mail)];
+  reset(); legacy = received({ id: 12, imap_uidvalidity: null, message_id: "<identity@example.test>" }); transcripts = [imapFixture(mail)];
   const response = await sync(req({ mailbox_id: "alpha" }));
   assert.equal(response.status, 200); await response.arrayBuffer();
   assert.equal(dbCalls("POST").length, 0);
@@ -216,7 +230,7 @@ Deno.test("Sync adopts legacy UID only when Message-ID also agrees", async () =>
 });
 
 Deno.test("Sync preserves legacy history when reused UID has a different Message-ID", async () => {
-  reset(); legacy = { id: 12, message_id: "<old@example.test>" }; transcripts = [imapFixture(mail)];
+  reset(); legacy = received({ id: 12, imap_uidvalidity: null, message_id: "<old@example.test>" }); transcripts = [imapFixture(mail)];
   const response = await sync(req({ mailbox_id: "alpha" }));
   assert.equal(response.status, 200); await response.arrayBuffer();
   assert.equal(dbCalls("PATCH").length, 0); assert.equal(dbCalls("POST").length, 1);
@@ -329,4 +343,127 @@ Deno.test("MIME fixtures decode multipart text/html, ignore attachment text and 
   const parsed = parseMessage(encoder.encode(raw));
   assert.equal(parsed.corpo_texto.trim(), "Olá"); assert.equal(parsed.corpo_html, "<p>Olá</p>");
   assert.equal(decodeWords("=?UTF-8?Q?Ol=C3=A1?= =?UTF-8?Q?_mundo?="), "Olá mundo");
+});
+
+// Story 1.3: inspect the actual bytes produced by the pinned SMTP library.
+function headerValues(wire: string, name: string) {
+  const section = wire.split("DATA\r\n")[1]?.split("\r\n\r\n")[0] || "";
+  return section.split("\r\n").filter(line => line.toLowerCase().startsWith(name.toLowerCase() + ":"))
+    .map(line => line.slice(name.length + 1).trim());
+}
+function authValues(wire: string) {
+  const lines = wire.split("\r\n"), start = lines.indexOf("AUTH LOGIN");
+  assert.ok(start >= 0, "SMTP AUTH LOGIN was expected");
+  return { username: lines[start + 1], password: lines[start + 2] };
+}
+
+Deno.test("Seven configured mailboxes resolve distinct SMTP identity and persist the exact generated Message-ID", async () => {
+  const identities = [
+    ["arcade_hub", "suporte@arcadehub.tech"],
+    ["cbai_solutions", "suporte@cbaisolutions.com.br"],
+    ["jogadaca", "contato@jogadaca.ai"],
+    ["coben", "contato@coben.app"],
+    ["privabr", "suporte@privabr.com.br"],
+    ["liquida_pecas", "contato@liquidapecas.com.br"],
+    ["conferecheck", "contato@conferecheck.com.br"],
+  ];
+  const messageIds = new Set<string>();
+  for (const [id, address] of identities) {
+    reset(); boxes = [{ ...mailbox, id, email: address, is_legacy: id === "arcade_hub" }];
+    const password = "fixture-for-" + id;
+    if (id === "arcade_hub") { Deno.env.set("SMTP_USER", address); Deno.env.set("SMTP_PASS", password); }
+    else Deno.env.set(`MAILBOX_${id.toUpperCase()}_PASS_B64`, utf8Base64(password));
+    transcripts = [smtpAccepted];
+    const response = await send(req({ ...delivery, mailbox_id: id, from: "forged@example.test", headers: { "Message-ID": "<forged@example.test>" } }));
+    assert.equal(response.status, 200, id);
+    const data = await response.json(), row = dbCalls("POST")[0].payload!, wire = sockets[0].written;
+    assert.equal(row.mailbox_id, id); assert.equal(row.de, address);
+    assert.deepEqual(authValues(wire), { username: btoa(address), password: utf8Base64(password) });
+    assert.ok(wire.includes(`MAIL FROM: <${address}>`));
+    assert.ok(!wire.includes("forged@example.test"));
+    assert.deepEqual(headerValues(wire, "Message-ID"), [row.message_id]);
+    assert.equal(data.message_id, row.message_id);
+    assert.match(String(row.message_id), /^<[0-9a-f-]{36}@[^<>\s]+>$/);
+    assert.ok(String(row.message_id).endsWith("@" + address.split("@")[1] + ">"));
+    assert.deepEqual(headerValues(wire, "In-Reply-To"), []);
+    assert.deepEqual(headerValues(wire, "References"), []);
+    assert.ok(!messageIds.has(data.message_id)); messageIds.add(data.message_id);
+    assert.ok(sockets[0].closed);
+  }
+});
+
+Deno.test("Authorized reply emits single correctly spelled thread headers and a distinct persisted Message-ID", async () => {
+  reset(); message = received(); transcripts = [smtpAccepted];
+  const response = await send(req({ ...delivery, reply_to_id: 1, message_id: "<forged@example.test>", references: "<forged@example.test>" }));
+  assert.equal(response.status, 200);
+  const data = await response.json(), wire = sockets[0].written, query = dbCalls("GET")[0];
+  assert.equal(query.authorization, "Bearer user-token");
+  assert.equal(query.url?.searchParams.get("id"), "eq.1");
+  assert.equal(query.url?.searchParams.get("mailbox_id"), "eq.alpha");
+  assert.equal(query.url?.searchParams.get("direcao"), "eq.in");
+  assert.deepEqual(headerValues(wire, "In-Reply-To"), ["<parent@example.test>"]);
+  assert.deepEqual(headerValues(wire, "References"), ["<parent@example.test>"]);
+  assert.deepEqual(headerValues(wire, "InReplyTo"), []);
+  assert.deepEqual(headerValues(wire, "Message-ID"), [data.message_id]);
+  assert.equal(dbCalls("POST")[0].payload?.message_id, data.message_id);
+  assert.notEqual(data.message_id, message.message_id);
+  assert.ok(!wire.includes("forged@example.test"));
+});
+
+Deno.test("Reply to another mailbox, outbound record or absent ID is rejected before persistence and SMTP", async () => {
+  for (const original of [received({ mailbox_id: "other" }), received({ direcao: "out" }), received({ id: 2 }), null]) {
+    reset(); message = original;
+    const response = await send(req({ ...delivery, reply_to_id: 1 }));
+    assert.equal(response.status, 404); await response.arrayBuffer();
+    assert.equal(dbCalls("POST").length, 0); assert.equal(sockets.length, 0);
+  }
+});
+
+Deno.test("Malformed reply identifiers do not become new mail or bypass lookup", async () => {
+  for (const id of [null, "", 0, -1, "abc", "1 OR 1=1", false, [], {}]) {
+    reset(); message = received();
+    const response = await send(req({ ...delivery, reply_to_id: id }));
+    assert.equal(response.status, 400); await response.arrayBuffer();
+    assert.equal(dbCalls("GET").length, 0); assert.equal(dbCalls("POST").length, 0); assert.equal(sockets.length, 0);
+  }
+});
+
+Deno.test("Missing or unsafe original Message-ID sends without thread headers and returns explicit warning", async () => {
+  for (const parentId of [null, "", "<parent@example.test>\r\nBcc: victim@example.test", "<one@example.test> <two@example.test>", "<á@example.test>", "<" + "x".repeat(901) + "@example.test>"]) {
+    reset(); message = received({ message_id: parentId }); transcripts = [smtpAccepted];
+    const response = await send(req({ ...delivery, reply_to_id: 1 })), data = await response.json(), wire = sockets[0].written;
+    assert.equal(response.status, 200); assert.equal(data.ok, true); assert.ok(data.warning);
+    assert.deepEqual(headerValues(wire, "In-Reply-To"), []);
+    assert.deepEqual(headerValues(wire, "References"), []);
+    assert.deepEqual(headerValues(wire, "Bcc"), []);
+    assert.ok(!wire.includes("victim@example.test"));
+    assert.deepEqual(headerValues(wire, "Message-ID"), [data.message_id]);
+  }
+});
+
+Deno.test("A new message after a reply cannot inherit threading headers or the previous Message-ID", async () => {
+  reset(); message = received(); transcripts = [smtpAccepted, smtpAccepted];
+  const first = await send(req({ ...delivery, reply_to_id: 1 })), firstData = await first.json();
+  const second = await send(req(delivery)), secondData = await second.json();
+  assert.equal(first.status, 200); assert.equal(second.status, 200);
+  assert.deepEqual(headerValues(sockets[0].written, "In-Reply-To"), ["<parent@example.test>"]);
+  assert.deepEqual(headerValues(sockets[1].written, "In-Reply-To"), []);
+  assert.deepEqual(headerValues(sockets[1].written, "References"), []);
+  assert.notEqual(secondData.message_id, firstData.message_id);
+  assert.equal(dbCalls("GET").length, 1);
+});
+
+Deno.test("SMTP auth encodes UTF-8 password exactly as connection verification does", async () => {
+  reset(); const password = "Sênha-🔒-漢字";
+  Deno.env.set("MAILBOX_ALPHA_PASS_B64", utf8Base64(password));
+  transcripts = [smtpAccepted];
+  const response = await send(req(delivery));
+  assert.equal(response.status, 200); await response.arrayBuffer();
+  assert.equal(authValues(sockets[0].written).password, utf8Base64(password));
+  transcripts = [imapFixture(), "220 ready\r\n250 ok\r\n235 authenticated\r\n221 bye\r\n"];
+  const checked = await check(req({ mailbox_id: "alpha" }));
+  assert.equal(checked.status, 200); assert.equal((await checked.json()).ok, true);
+  const plain = sockets[2].written.split("\r\n").find(line => line.startsWith("AUTH PLAIN "))!.slice(11);
+  const bytes = Uint8Array.from(atob(plain), c => c.charCodeAt(0));
+  assert.equal(new TextDecoder().decode(bytes), "\0alpha@example.test\0" + password);
 });

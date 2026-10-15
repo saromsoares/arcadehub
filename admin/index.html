@@ -1001,12 +1001,14 @@
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
       <button id="ev-in-btn" onclick="setEmailView('in')" style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">📥 Recebidos <span id="email-unread-badge" style="display:none;background:#fff;color:#1E6FFF;border-radius:9px;padding:0 6px;font-size:10px;margin-left:3px;"></span></button>
       <button id="ev-out-btn" onclick="setEmailView('out')" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">📤 Enviados</button>
-      <button onclick="abrirCompositor()" style="background:#10B981;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">✏️ Escrever</button>
+      <button onclick="abrirCompositor()" style="background:#10B981;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">✏️ Novo e-mail</button>
       <button id="email-sync-btn" onclick="sincronizarEmails()" style="margin-left:auto;background:#0A1628;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Sincronizar</button>
       <span id="email-sync-info" style="font-size:11px;color:#9CA3AF;width:100%;text-align:right;"></span>
     </div>
 
     <div id="email-compositor" role="region" aria-label="Escrever e-mail" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
+      <h3 id="email-composer-title" style="font-size:16px;color:#0A1628;margin:0 0 8px;">Novo e-mail</h3>
+      <p id="email-reply-context" style="display:none;font-size:12px;color:#6B7280;margin:0 0 12px;overflow-wrap:anywhere;"></p>
       <p style="font-size:12px;color:#374151;margin-bottom:14px;overflow-wrap:anywhere;">De: <strong id="email-from">Caixa atual</strong></p>
       <div style="display:grid;gap:10px;">
         <div>
@@ -1028,7 +1030,8 @@
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <button id="email-send-btn" onclick="enviarEmail()" style="background:#1E6FFF;color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">✉️ Enviar</button>
           <button onclick="toggleCc()" style="background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:600;cursor:pointer;">+ Cc</button>
-          <span id="email-feedback" style="font-size:12px;font-weight:600;"></span>
+          <button id="email-cancel-btn" onclick="cancelarCompositorEmail()" style="background:none;border:1px solid #D1D5DB;border-radius:7px;padding:8px 12px;color:#374151;font-size:12px;cursor:pointer;">Cancelar</button>
+          <span id="email-feedback" role="status" aria-live="polite" style="font-size:12px;font-weight:600;"></span>
         </div>
       </div>
     </div>
@@ -2944,6 +2947,7 @@ let emailSending = false;
 let emailSyncing = false;
 let emailChecking = false;
 let emailDraftMailbox = null;
+let emailReplyId = null;
 let emailsRealtimeOn = false;
 let emailView = 'in';
 let emailsAbertos = new Set();   // ids com corpo expandido
@@ -2967,6 +2971,10 @@ async function mensagemErroEmail(error){
 }
 function limparCompositorEmail(){
   emailDraftMailbox = null;
+  emailReplyId = null;
+  document.getElementById('email-composer-title').textContent = 'Novo e-mail';
+  document.getElementById('email-reply-context').textContent = '';
+  document.getElementById('email-reply-context').style.display = 'none';
   ['email-to','email-cc','email-subject','email-body'].forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).disabled = false; });
   document.getElementById('email-compositor').style.display = 'none';
   document.getElementById('email-cc-row').style.display = 'none';
@@ -3037,7 +3045,8 @@ function renderCaixasEmail(){
   checkButton.textContent = emailChecking ? 'Verificando…' : 'Verificar conexão';
   document.querySelector('[onclick="abrirCompositor()"]').disabled = !a?.can_send || emailSending || emailChecking;
   document.getElementById('email-send-btn').disabled = !a?.can_send || emailSending || emailChecking;
-  document.getElementById('email-send-btn').textContent = emailSending ? 'Enviando…' : 'Enviar';
+  document.getElementById('email-send-btn').textContent = emailSending ? 'Enviando…' : emailReplyId !== null ? 'Enviar resposta' : 'Enviar e-mail';
+  document.getElementById('email-cancel-btn').disabled = emailSending;
   document.getElementById('email-sync-btn').disabled = !a?.can_sync || emailSyncing || emailChecking;
   document.getElementById('email-sync-btn').textContent = emailSyncing ? 'Sincronizando…' : 'Sincronizar';
 }
@@ -3076,19 +3085,25 @@ function updateEmailToggle(){
 
 function setEmailView(v){
   emailView = v;
-  const comp = document.getElementById('email-compositor');
-  if(comp && v==='in') comp.style.display='none';
   renderEmails();
 }
 
 function abrirCompositor(){
-  if (!caixaEmailAtual()?.can_send || emailSending) return;
+  if (!caixaEmailAtual()?.can_send || emailSending || emailChecking) return;
+  if (temRascunhoEmail() && !confirm('Descartar o rascunho para escrever um novo e-mail?')) return;
+  limparCompositorEmail();
   emailDraftMailbox = emailMailboxId;
-  emailView = 'out';
   const comp = document.getElementById('email-compositor');
   if(comp) comp.style.display='block';
   renderEmails();
+  if(comp && comp.scrollIntoView) comp.scrollIntoView({behavior:'smooth',block:'start'});
   const to = document.getElementById('email-to'); if(to) to.focus();
+}
+function cancelarCompositorEmail(){
+  if (emailSending) return;
+  if (temRascunhoEmail() && !confirm('Descartar este rascunho?')) return;
+  limparCompositorEmail(); renderCaixasEmail();
+  document.querySelector('[onclick="abrirCompositor()"]').focus();
 }
 
 async function verificarCaixaEmail(){
@@ -3141,6 +3156,7 @@ async function enviarEmail(){
   const cc = document.getElementById('email-cc').value.trim();
   const subject = document.getElementById('email-subject').value.trim();
   const body = document.getElementById('email-body').value.trim();
+  const replyId = emailReplyId;
   const fb = document.getElementById('email-feedback');
   if (emailDraftMailbox !== emailMailboxId) { fb.textContent = 'Abra uma mensagem nesta caixa antes de enviar.'; return; }
   if(!to){ fb.style.color='#EF4444'; fb.textContent='Informe o destinatário.'; return; }
@@ -3150,11 +3166,15 @@ async function enviarEmail(){
   ['email-to','email-cc','email-subject','email-body'].forEach(id => { document.getElementById(id).disabled = true; });
   fb.style.color='#6B7280'; fb.textContent='';
   try {
-    const { data, error } = await sb.functions.invoke('email-send', { body: corpoPedidoEmail({ to, cc, subject, text: body }) });
+    const { data, error } = await sb.functions.invoke('email-send', { body: corpoPedidoEmail({ to, cc, subject, text: body, ...(replyId !== null ? { reply_to_id: replyId } : {}) }) });
     if (!contextoEmailAtual(ctx)) return;
     if(error) throw new Error(await mensagemErroEmail(error));
     if(!data || data.ok===false) throw new Error(data?.error||'Falha no envio.');
-    fb.style.color=data.warning?'#92400E':'#10B981'; fb.textContent=data.warning || '✓ Enviado!';
+    fb.style.color=data.warning?'#92400E':'#10B981'; fb.textContent=data.warning || (replyId !== null ? '✓ Resposta enviada!' : '✓ E-mail enviado!');
+    emailReplyId = null;
+    document.getElementById('email-composer-title').textContent = 'Novo e-mail';
+    document.getElementById('email-reply-context').textContent = '';
+    document.getElementById('email-reply-context').style.display = 'none';
     document.getElementById('email-to').value='';
     document.getElementById('email-cc').value='';
     document.getElementById('email-subject').value='';
@@ -3315,12 +3335,15 @@ function toggleEmailHtml(id){
 }
 function responderEmail(id){
   const e = emailVisivel(id);
-  if(!e || !caixaEmailAtual()?.can_send || emailSending) return;
+  if(!e || e.direcao !== 'in' || !caixaEmailAtual()?.can_send || emailSending || emailChecking) return;
   if (temRascunhoEmail() && !confirm('Descartar o rascunho para responder a esta mensagem?')) return;
   limparCompositorEmail();
   emailDraftMailbox = emailMailboxId;
+  emailReplyId = e.id;
+  document.getElementById('email-composer-title').textContent = 'Responder e-mail';
+  document.getElementById('email-reply-context').textContent = 'Em resposta a: ' + (e.assunto || '(sem assunto)');
+  document.getElementById('email-reply-context').style.display = 'block';
   const addr = extrairEmailAddr(e.de);
-  emailView = 'out';
   const comp = document.getElementById('email-compositor');
   if(comp) comp.style.display = 'block';
   const to = document.getElementById('email-to'); if(to) to.value = addr;
@@ -3406,7 +3429,7 @@ function renderEmails(){
         <div style="font-size:12px;color:#6B7280;margin:6px 0 0;cursor:pointer;" onclick="toggleEmailCorpo(decodeURIComponent('${safeId}'))">De: ${escapeHtml(e.de||'—')}</div>
         <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap;">
           <button onclick="toggleEmailCorpo(decodeURIComponent('${safeId}'))" style="background:#0A1628;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${aberto?'📕 Fechar':'📖 Abrir'}</button>
-          <button onclick="responderEmail(decodeURIComponent('${safeId}'))" style="background:#1E6FFF;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">↩ Responder</button>
+          <button onclick="responderEmail(decodeURIComponent('${safeId}'))" ${!caixaEmailAtual()?.can_send || emailSending || emailChecking ? 'disabled' : ''} style="background:#1E6FFF;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">↩ Responder</button>
           <button onclick="marcarEmailLido(decodeURIComponent('${safeId}'), ${naoLido?'true':'false'})" style="background:${naoLido?'#10B981':'#E5E7EB'};color:${naoLido?'#fff':'#374151'};border:none;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">${naoLido?'✓ Marcar lido':'↩ Não lido'}</button>
           <button onclick="excluirEmail(decodeURIComponent('${safeId}'))" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:13px;margin-left:auto;" title="Excluir">🗑</button>
         </div>
