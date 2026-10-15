@@ -1,6 +1,6 @@
 # E-mail multicaixas — arquitetura de implementação
 
-Status: migração aplicada e cinco funções publicadas em 2026-10-15. A caixa legada foi autenticada na Hostinger como `suporte@arcadehub.tech`; sincronização, leitura e isolamento foram verificados remotamente sem enviar e-mails. As seis caixas adicionais estão cadastradas como pendentes de senha. O frontend habilita o seletor e só libera as operações confirmadas pelo servidor.
+Status: integração concluída em 2026-10-15, com migração aplicada, cinco funções publicadas e sete caixas verificadas por IMAP/SMTP na Hostinger. A caixa legada é `suporte@arcadehub.tech`; as seis adicionais tiveram credenciais cadastradas pelo assistente local e sincronização confirmada. O discovery retorna todas com `status = verified`, `can_sync = true` e `can_send = true`. Nenhuma entrega de e-mail externo foi testada. O frontend habilita o seletor e só libera as operações confirmadas pelo servidor.
 
 ## Estado anterior à migração
 
@@ -15,7 +15,7 @@ Backups das três funções estão em `.aiox/email-backend-before-20261015/supab
 
 `EMAIL_MULTICAIXAS = true` habilita o contrato validado. Durante a preparação, `false` preservou as chamadas legadas. A caixa existente foi confirmada como `suporte@arcadehub.tech` no bootstrap real.
 
-O backend, as permissões e a caixa existente foram validados antes de habilitar a flag. Caixas adicionais aparecem como pendentes e não operam até autenticar suas credenciais. Qualquer erro de discovery ou contrato inválido bloqueia a operação multicaixas e apresenta a falha. Não há fallback automático para credenciais ou chamadas legadas.
+O backend, as permissões e a caixa existente foram validados antes de habilitar a flag. Uma caixa sem credenciais verificadas aparece como pendente e não opera até autenticá-las; as sete caixas solicitadas já concluíram essa etapa. Qualquer erro de discovery ou contrato inválido bloqueia a operação multicaixas e apresenta a falha. Não há fallback automático para credenciais ou chamadas legadas.
 
 No servidor, chamadas antigas sem `mailbox_id` resolvem exclusivamente a caixa `arcade_hub`, com autorização explícita e seus secrets existentes. Identificador informado, mas inválido ou não autorizado, nunca recai nessa caixa. A migração precisa vincular o histórico existente à caixa legada antes das novas gravações.
 
