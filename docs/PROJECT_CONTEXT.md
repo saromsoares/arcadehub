@@ -82,4 +82,6 @@ Artefatos locais ignorados: `.aiox/email-multicaixas-results.json`, `.aiox/email
 
 Extensão posterior, [story 1.4](stories/1.4.story.md): assinaturas visuais automáticas e preview implementados para as sete caixas usando seis PNG fornecidos; Arcade e CBAI compartilham a arte autorizada. A arte Coben foi recebida e adicionada em 2026-10-15. Nenhum e-mail externo foi enviado; testes automatizados e validação interativa seguem pendentes.
 
+Histórico de publicação: `c8edc14` publicou os cinco assets iniciais; `d0fcf06` integrou backend/frontend e `372ec6d` registrou evidências. `ebcee73` publicou somente coben.png, confirmado por GET anônimo HTTP 200/image/png com hash idêntico. Depois foram republicados somente email-accounts/email-send e o frontend Coben no commit `00fe18ea63d3e3ffa2d2677c8bd5c64edec0e58c`, confirmado Vercel produção READY (`dpl_5x49oieokm3vYN7FxKELQhwtnVuV`). O admin público retornou HTTP 200 com o mapa coben.png. Não houve alteração de segredo/schema nem envio de e-mail. A story permanece In Progress pelas validações não executadas, sem pendência visual de Coben.
+
 Limites atuais: anexos e cadastro de novas caixas não foram implementados nesta entrega. Memórias antigas de JWT/advisors e integrações financeiras não foram revalidadas integralmente aqui; consultar os respectivos runbooks antes de concluir seu estado atual.

@@ -8,6 +8,12 @@ Em `https://arcadehub.tech/admin/`, entrar com a conta autorizada da holding, ab
 
 Cada operação usa a identidade da caixa selecionada. `mailbox_id` não é necessariamente o ID da empresa financeira: `coben` difere de `coben_life_os`, e `privabr` difere de `priva_br`. A lista é obtida por `email-accounts`, não pelo array `COMPANIES`.
 
+## Assinaturas publicadas
+
+As sete caixas têm assinatura visual automática e prévia no compositor. Arcade e CBAI compartilham a mesma arte por decisão do usuário; Coben usa coben.png desde a atualização incremental de 2026-10-15. Seis PNG públicos ficam em `assets/email-signatures/`; o mapa autorizado fica em `supabase/functions/_shared/email-signatures.ts`. A imagem não é adicionada ao textarea: o servidor monta texto novo, identificação textual/imagem e histórico separado (`quoted_text`), preservando `reply_to_id` e os cabeçalhos da conversa.
+
+Uma arte nova deve estar pública antes de ativar seu mapa no backend e frontend. A sequência observada foi `c8edc14` → `d0fcf06` → `372ec6d` para a entrega inicial e `ebcee73` → deploy accounts/send → `00fe18e` para Coben. O último código foi confirmado READY e admin HTTP 200. URLs antigas devem continuar acessíveis para mensagens já enviadas. Nenhum teste novo, validação interativa ou envio real foi executado nesta rodada; GET/MIME dos PNG não comprova renderização em clientes de e-mail.
+
 ## Acesso técnico já configurado
 
 O CLI 2.121.0 conseguiu acessar o projeto mesmo quando o conector não autorizava a operação. O perfil isolado preserva o login padrão de outros projetos. Usar os caminhos locais existentes, sem imprimir seu conteúdo:
