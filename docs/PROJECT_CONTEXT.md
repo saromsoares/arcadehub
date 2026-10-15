@@ -80,4 +80,6 @@ Artefatos locais ignorados: `.aiox/email-multicaixas-results.json`, `.aiox/email
 4. Migrações locais não refletem todo o histórico remoto. Não executar `db push` indiscriminadamente. Ver [procedimento e histórico](../supabase/migrations/README.md).
 5. Frontend estático publica pelo push em `main` → Vercel, projeto `arcadehub`, team `asxtecnology`; `git push` é exclusivo do @devops. Edge Functions exigem deploy separado. Em mudanças de contrato, publicar backend antes do frontend e confirmar SHA exato READY.
 
-Limites atuais: anexos, assinaturas e novas caixas não foram implementados nesta entrega. Memórias antigas de JWT/advisors e integrações financeiras não foram revalidadas integralmente aqui; consultar os respectivos runbooks antes de concluir seu estado atual.
+Extensão posterior, [story 1.4](stories/1.4.story.md): assinaturas visuais automáticas e preview implementados para seis caixas usando cinco PNG fornecidos; Arcade e CBAI compartilham a arte autorizada. Coben continua sem arte, com identificação textual. Assets públicos verificados antes do backend/frontend; nenhum teste novo ou envio externo nesta rodada, por instrução. A definição visual de Coben mantém a story em andamento.
+
+Limites atuais: anexos e cadastro de novas caixas não foram implementados nesta entrega. Memórias antigas de JWT/advisors e integrações financeiras não foram revalidadas integralmente aqui; consultar os respectivos runbooks antes de concluir seu estado atual.

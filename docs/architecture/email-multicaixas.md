@@ -56,7 +56,7 @@ No modo multicaixas, cada mensagem possui `mailbox_id`. A listagem consulta `ema
 | Função | Corpo no modo multicaixas |
 | --- | --- |
 | `email-sync` | `{ mailbox_id }` |
-| `email-send` | `{ mailbox_id, to, cc, subject, text, reply_to_id? }` |
+| `email-send` | `{ mailbox_id, to, cc, subject, text, reply_to_id?, quoted_text? }` |
 | `email-body` | `{ mailbox_id, id, uid_imap }` |
 
 Os formatos de resposta já consumidos pela interface são preservados: sincronização usa `ok`, `novos` e `error`; envio usa `ok` e `error`; corpo usa `ok`, `corpo_texto`, `corpo_html` e `error`.
@@ -80,6 +80,28 @@ Na versão fixa `denomailer@1.6.0`, usar `headers` com chaves explícitas `Messa
 O compositor distingue **Novo e-mail** e **Responder**, mostra o remetente e mantém `reply_to_id` vinculado à caixa de origem. **Novo e-mail** limpa destinatário, cópia, assunto, corpo e referência de resposta após confirmar o descarte quando houver rascunho. **Cancelar** também limpa a referência; recusar o descarte mantém o estado inteiro. Abrir outra resposta ou trocar a caixa não pode transportar silenciosamente o vínculo anterior. Enquanto o envio estiver em andamento, bloquear ações que substituam o rascunho; conclusão de uma requisição antiga nunca apaga um rascunho mais recente.
 
 Preservar feedback de erro, sucesso e entrega aceita com falha posterior no histórico. Não reenviar automaticamente em resultado SMTP incerto. Validação local deve conferir remetente e domínio gerado para cada caixa, igualdade entre `message_id` persistido e transmitido, rejeição de resposta cruzada ou ID inválido, fallback sem headers para identificador original ausente/malformado e transições do compositor. Usar mocks de SMTP e navegador, sem entrega externa de teste.
+
+## Assinaturas visuais por caixa — story 1.4
+
+Decisão aprovada para implementação, sem migração: um mapa compartilhado no backend associa `mailbox.id` autorizado à arte pública, texto alternativo e dimensões. `arcade_hub` e `cbai_solutions` usam explicitamente a arte Arcade; `privabr`, `jogadaca`, `conferecheck` e `liquida_pecas` usam suas respectivas artes fornecidas. `coben` permanece sem imagem enquanto sua definição estiver pendente. Não existe fallback visual genérico nem escolha de `signature_id`, URL ou HTML pelo navegador. Dados das artes não serão modificados por esta integração.
+
+`email-accounts` pode expor metadados opcionais de preview com URL e `alt`, obtidos desse mapa, sem alterar o contrato de autorização. `email-send` resolve novamente a assinatura pelo mesmo mapa e pela caixa autorizada; não confia no preview devolvido pelo cliente. Uma conta sem arte mantém identificação textual com nome e endereço confirmados, sem inventar pessoa, telefone, cargo ou site.
+
+O frontend atualizado envia `text` somente com o texto novo e sempre inclui `quoted_text`: string vazia em mensagem nova; histórico em texto simples separado em resposta. Uma citação não vazia exige `reply_to_id` válido, cuja autorização e escopo continuam sendo conferidos no servidor. Recomenda-se enviar a citação que a interface apresenta, sem uma nova busca IMAP durante o envio: a citação é conteúdo escrito pelo remetente, não prova de identidade ou permissão. Ambos os textos são escapados antes de gerar HTML; não inserir o HTML original recebido nem aceitar HTML livre do pedido.
+
+A montagem é única e ocorre no servidor: **texto novo → identificação textual e imagem da assinatura → histórico citado**. O HTML põe o histórico em `blockquote`, com a assinatura fora dele. Texto simples usa a mesma ordem e identificação textual, sem URL da imagem ou marcação HTML. Assinaturas já presentes no histórico são preservadas como citação; não contam como duplicação da assinatura ativa. Guardar exatamente as versões finais de texto e HTML em `emails` antes de entregá-las ao SMTP, preservando as regras de tentativa, resultado incerto e cabeçalhos da story 1.3.
+
+Compatibilidade deliberada: pedidos antigos sem `quoted_text` tratam `text` como corpo integral e recebem a assinatura ao final, sem tentar separar marcadores editáveis como `--- Em ... escreveu`. Assim continuam assinados e enviáveis, embora uma resposta de cliente antigo mantenha a assinatura depois do corpo integral. A posição entre texto novo e histórico é garantida pelo contrato separado da UI atualizada. Ausência, string vazia e valor de tipo inválido não devem ser confundidos; este último é rejeitado. Limites de tamanho devem evitar truncamento silencioso que torne o envio diferente do preview.
+
+Usar `content` e `html` explícitos no `denomailer@1.6.0`; o [código de composição da biblioteca](https://github.com/EC-Nordbund/denomailer/blob/1.6.0/config/mail/content.ts) gera partes `text/plain` e `text/html` em quoted-printable. `<img src="https://arcadehub.tech/...">` permanece referência remota no HTML: não é attachment, CID ou base64 e não exige buscar a imagem no servidor durante o envio. O layout deve usar CSS inline simples, `alt`, dimensão proporcional e identificação textual visível mesmo com imagens bloqueadas. O preview usa a caixa do rascunho, não apenas o filtro selecionado; não injeta assinatura no textarea a cada renderização. Na CSP atual do admin, URLs de preview precisam ser same-origin ou ter a origem HTTPS canônica autorizada explicitamente, sem liberar imagens de qualquer domínio.
+
+Sequência de publicação:
+
+1. Publicar somente os assets de assinatura em caminhos estáveis e versionados, mantendo as artes anteriores acessíveis para e-mails já enviados. Confirmar Vercel READY e GET anônimo HTTPS com status 200, `Content-Type` correto e dimensões esperadas de cada arquivo. Não apontar para Downloads nem publicar outros arquivos locais.
+2. Publicar o helper e as funções que expõem o preview e compõem o envio, somente depois de confirmar os assets. O contrato legado continua válido durante esta etapa. O backend deve estar disponível antes de publicar a UI que envia `quoted_text`.
+3. Publicar o frontend e validar preview desktop/mobile, CSP, rascunhos e falhas de imagem. Confirmar o SHA exato READY. Atualizar as evidências sem afirmar configuração visual de Coben até sua definição.
+
+O gate inclui matriz das seis caixas confirmadas e Coben condicional, texto/citação hostis escapados, marca imutável por caixa, pedido legado assinado, e igualdade do conteúdo persistido com os argumentos SMTP. Além dos mocks de chamada, conferir o MIME produzido pela versão fixa da biblioteca para detectar perda de texto, headers duplicados ou corrupção de URLs. Nenhum teste envia e-mail real; validação de HTML/MIME local não comprova aparência em Gmail, Outlook ou outros clientes externos.
 
 ## Credenciais por caixa
 

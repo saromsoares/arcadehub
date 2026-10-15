@@ -1,7 +1,10 @@
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { admin, authorizeMailbox, body, credentials, endpoint, HttpError, json, requireCredentials, validAddress } from "../_shared/email.ts";
+import { emailSignature } from "../_shared/email-signatures.ts";
 
 const text = (value: unknown, maximum: number) => String(value ?? "").trim().slice(0, maximum);
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
+const bodyHtml = (value: string) => escapeHtml(value).replace(/\r\n|\r|\n/g, "<br>\n");
 function addresses(value: unknown) {
   const list = text(value, 2000).split(/[;,]/).map(s => s.trim()).filter(Boolean);
   if (list.length > 25 || list.some(s => !validAddress(s))) throw new HttpError(400, "Confira os endereços dos destinatários.");
@@ -15,8 +18,20 @@ export const handler = endpoint(async req => {
   if (!validAddress(config.from)) throw new HttpError(409, "Remetente da caixa não configurado.");
   const to = addresses(input.to ?? input.para), cc = addresses(input.cc), bcc = addresses(input.bcc ?? input.cco);
   const subject = text(input.subject ?? input.assunto, 200);
-  const content = text(input.text ?? input.texto ?? input.corpo, 50000), html = text(input.html, 100000);
-  if (!to.length || !subject || (!content && !html) || /[\r\n]/.test(subject)) throw new HttpError(400, "Preencha destinatário, assunto e mensagem.");
+  const content = text(input.text ?? input.texto ?? input.corpo, 50000);
+  const quotedText = input.quoted_text === undefined ? "" : text(input.quoted_text, 50000);
+  if (input.quoted_text !== undefined && typeof input.quoted_text !== "string") throw new HttpError(400, "Histórico citado inválido.");
+  if (/\0/.test(content) || /\0/.test(quotedText)) throw new HttpError(400, "A mensagem contém caracteres inválidos.");
+  if (quotedText && input.reply_to_id === undefined) throw new HttpError(400, "O histórico citado exige uma resposta vinculada.");
+  if (!to.length || !subject || !content || /[\r\n]/.test(subject)) throw new HttpError(400, "Preencha destinatário, assunto e mensagem.");
+  const signature = emailSignature(mailbox.id);
+  const signatureText = signature ? signature.plainText : "";
+  const plainContent = [content, signatureText, quotedText].filter(Boolean).join("\n\n");
+  const signatureHtml = signature
+    ? `<br><br><div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.5;color:#475569">${bodyHtml(signature.plainText)}</div>${signature.url ? `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:640px;width:100%"><tr><td><img src="${signature.url}" alt="${escapeHtml(signature.alt)}" width="640" style="display:block;border:0;width:100%;max-width:640px;height:auto"></td></tr></table>` : ""}`
+    : "";
+  const quoteHtml = quotedText ? `<blockquote style="margin:20px 0 0;padding:0 0 0 14px;border-left:3px solid #cbd5e1;color:#475569">${bodyHtml(quotedText)}</blockquote>` : "";
+  const htmlContent = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#1f2937">${bodyHtml(content)}${signatureHtml}${quoteHtml}</div>`;
   const messageId = `<${crypto.randomUUID()}@${config.from.split("@")[1].toLowerCase()}>`;
   const headers: Record<string, string> = { "Message-ID": messageId };
   let replyWithoutThread = false;
@@ -37,7 +52,7 @@ export const handler = endpoint(async req => {
   const attempt = await admin.from("emails").insert({
     mailbox_id: mailbox.id, direcao: "out", de: config.from, para: to.join(", "),
     cc: cc.join(", ") || null, cco: bcc.join(", ") || null, assunto: subject,
-    corpo_texto: content || null, corpo_html: html || null, status: "pendente", enviado_por: user.id, message_id: messageId,
+    corpo_texto: plainContent || null, corpo_html: htmlContent, status: "pendente", enviado_por: user.id, message_id: messageId,
   }).select("id").single();
   if (attempt.error) throw attempt.error;
   const client = new SMTPClient({ connection: { hostname: config.smtp.host, port: config.smtp.port, tls: true,
@@ -46,7 +61,7 @@ export const handler = endpoint(async req => {
   let sent = false;
   try {
     await client.send({ from: config.from, to, cc: cc.length ? cc : undefined, bcc: bcc.length ? bcc : undefined,
-      subject, content: content || "auto", html: html || undefined, headers });
+      subject, content: plainContent || "auto", html: htmlContent, headers });
     sent = true;
   } catch {
     // SMTP can fail after accepting DATA; do not automatically retry this attempt.
