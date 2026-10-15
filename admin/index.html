@@ -39,6 +39,14 @@
     overflow-y: auto;
   }
   #main { margin-left: 230px; padding: 28px 32px; min-height: 100vh; }
+  #tab-email { min-width: 0; overflow-wrap: anywhere; }
+  #tab-email button:disabled, #tab-email select:disabled { opacity: .55; cursor: not-allowed; }
+  #tab-email :is(button, select, input, textarea):focus-visible { outline: 3px solid #1E6FFF; outline-offset: 3px; }
+  @media (max-width: 640px) {
+    body:has(#tab-email.active) #sidebar { position: relative; width: 100%; max-height: 200px; }
+    #main:has(#tab-email.active) { margin-left: 0; padding: 20px 14px; }
+    #tab-email button { min-height: 44px; }
+  }
 
   /* Nav */
   .nav-logo { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255,255,255,0.07); }
@@ -982,7 +990,12 @@
     <div class="page-title" id="pt-email">E-mail
       <span id="email-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
     </div>
-    <div class="page-sub" id="ps-email">Caixa de e-mail da Arcade Hub (Hostinger): mensagens recebidas e enviadas.</div>
+    <div class="page-sub" id="ps-email">Caixas de e-mail da Hostinger: mensagens recebidas e enviadas.</div>
+    <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:16px;margin-bottom:16px;">
+      <label for="email-mailbox" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">Caixa de e-mail</label>
+      <select id="email-mailbox" onchange="trocarCaixaEmail(this.value)" aria-describedby="email-mailbox-status" style="width:100%;max-width:520px;min-height:44px;padding:9px;border:1px solid #D1D5DB;border-radius:7px;font:inherit;"></select>
+      <p id="email-mailbox-status" role="status" style="font-size:12px;color:#6B7280;margin-top:8px;"></p>
+    </div>
 
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
       <button id="ev-in-btn" onclick="setEmailView('in')" style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">📥 Recebidos <span id="email-unread-badge" style="display:none;background:#fff;color:#1E6FFF;border-radius:9px;padding:0 6px;font-size:10px;margin-left:3px;"></span></button>
@@ -993,6 +1006,7 @@
     </div>
 
     <div id="email-compositor" role="region" aria-label="Escrever e-mail" style="display:none;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:18px;max-width:760px;">
+      <p style="font-size:12px;color:#374151;margin-bottom:14px;overflow-wrap:anywhere;">De: <strong id="email-from">Caixa atual</strong></p>
       <div style="display:grid;gap:10px;">
         <div>
           <label for="email-to" style="display:block;font-size:11px;font-weight:600;color:#6B7280;margin-bottom:4px;">Para <span style="color:#9CA3AF;font-weight:400;">(separe vários por vírgula)</span></label>
@@ -1242,6 +1256,7 @@ async function showDashboard(user) {
 // números do grupo continuavam acessíveis no estado da página, e um login
 // seguinte herdava os registros do usuário anterior quando a RLS devolvia zero linhas.
 async function resetState() {
+  resetEmailState();
   lancamentos = {}; planejado = {};
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
@@ -1278,6 +1293,7 @@ async function resetState() {
 }
 
 async function doLogout() {
+  resetEmailState(); // Invalida respostas de e-mail antes de aguardar a rede.
   // A tela vai embora PRIMEIRO. A limpeza dos canais pode esperar o timeout do
   // WebSocket, e até lá os números do grupo (e qualquer senha revelada) ficariam
   // à mostra para quem já clicou em Sair.
@@ -2013,6 +2029,9 @@ async function saveEstrutura(src) {
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
 async function loadAll() {
+  const emailSession = emailSessionVersion;
+  await carregarCaixasEmail();
+  if (emailSession !== emailSessionVersion) return ['sessão encerrada'];
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
   const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos'];
@@ -2024,7 +2043,7 @@ async function loadAll() {
     sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
     sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
     sb.from('contatos').select('*').order('created_at', { ascending: false }),
-    sb.from('emails').select('*').order('created_at', { ascending: false }).limit(200),
+    consultarEmailsDaCaixa(),
     // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
     sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
@@ -2041,7 +2060,10 @@ async function loadAll() {
   if (acData) acoesCal = acData;
   if (mpData) mpRecebimentos = mpData;
   if (ctData) contatos = ctData;
-  if (emData) emails = emData;
+  if (emailSession === emailSessionVersion) {
+    emailListError = respostas[7]?.error ? 'Não foi possível carregar as mensagens. Tente sincronizar novamente.' : '';
+    if (emData) emails = emData.filter(emailDaCaixa);
+  }
   if (eData) {
     estrutura_id = eData.id;
     estrutura.caixa_inicial = eData.caixa_inicial||0;
@@ -2906,11 +2928,121 @@ async function excluirAcesso(id){
 
 // ─── E-MAIL ──────────────────────────────────────────────────────────────────
 let emails = [];
+// Só habilitar após validar o contrato e a autorização no servidor.
+// Ver docs/architecture/email-multicaixas.md. Não contém endereços ou credenciais.
+const EMAIL_MULTICAIXAS = false;
+let emailAccounts = [];
+let emailMailboxId = '';
+let emailAccountsError = '';
+let emailAccountsReady = false;
+let emailLoading = false;
+let emailListError = '';
+let emailSessionVersion = 0;
+let emailListVersion = 0;
+let emailSending = false;
+let emailSyncing = false;
+let emailDraftMailbox = null;
 let emailsRealtimeOn = false;
 let emailView = 'in';
 let emailsAbertos = new Set();   // ids com corpo expandido
 let emailsHtmlView = new Set();  // ids exibindo versão HTML
 let emailsCarregando = new Set();// ids buscando corpo
+
+function caixaEmailAtual(){ return emailAccounts.find(a => a.id === emailMailboxId); }
+function contextoEmail(){ return { session: emailSessionVersion, mailbox: emailMailboxId }; }
+function contextoEmailAtual(ctx){ return ctx.session === emailSessionVersion && ctx.mailbox === emailMailboxId; }
+function emailDaCaixa(e){ return EMAIL_MULTICAIXAS ? e.mailbox_id === emailMailboxId : e.mailbox_id == null; }
+function emailVisivel(id){ return emails.find(e => String(e.id) === String(id) && emailDaCaixa(e)); }
+function corpoPedidoEmail(body = {}, mailbox = emailMailboxId){
+  return EMAIL_MULTICAIXAS ? { ...body, mailbox_id: mailbox } : body;
+}
+function limparCompositorEmail(){
+  emailDraftMailbox = null;
+  ['email-to','email-cc','email-subject','email-body'].forEach(id => { document.getElementById(id).value = ''; document.getElementById(id).disabled = false; });
+  document.getElementById('email-compositor').style.display = 'none';
+  document.getElementById('email-cc-row').style.display = 'none';
+  document.getElementById('email-feedback').textContent = '';
+}
+function temRascunhoEmail(){
+  return ['email-to','email-cc','email-subject','email-body'].some(id => document.getElementById(id).value.trim());
+}
+function resetEmailState(){
+  emailSessionVersion++; emailListVersion++;
+  emailAccounts = []; emailMailboxId = ''; emailAccountsReady = false;
+  emailAccountsError = ''; emailListError = ''; emailLoading = false;
+  emailSending = false; emailSyncing = false; emailView = 'in'; emails = [];
+  emailsAbertos.clear(); emailsHtmlView.clear(); emailsCarregando.clear();
+  limparCompositorEmail();
+  document.getElementById('emails-list').replaceChildren();
+  document.getElementById('email-sync-info').textContent = '';
+  document.getElementById('email-live-dot').style.display = 'none';
+  renderCaixasEmail(); updateEmailBadge();
+}
+async function carregarCaixasEmail(){
+  const session = emailSessionVersion;
+  emailAccountsReady = false; emailAccountsError = '';
+  if (!EMAIL_MULTICAIXAS) {
+    emailAccounts = [{ id: '', email: '', label: 'Caixa atual da Arcade Hub', can_send: true, can_sync: true }];
+    emailMailboxId = ''; emailAccountsReady = true; renderCaixasEmail(); return;
+  }
+  try {
+    const { data, error } = await sb.functions.invoke('email-accounts');
+    if (session !== emailSessionVersion) return;
+    if (error) throw error;
+    if (data?.version !== 1 || data?.capabilities?.mailbox_scoping !== true || !Array.isArray(data.accounts)) throw new Error('Configuração de caixas incompatível.');
+    const ids = new Set();
+    emailAccounts = data.accounts.map(a => {
+      if (!a || typeof a.id !== 'string' || !a.id || ids.has(a.id) || typeof a.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) || typeof a.can_send !== 'boolean' || typeof a.can_sync !== 'boolean') throw new Error('Configuração de caixas inválida.');
+      ids.add(a.id);
+      return { id: a.id, email: a.email, label: typeof a.label === 'string' ? a.label : '', can_send: a.can_send, can_sync: a.can_sync };
+    });
+    emailMailboxId = emailAccounts[0]?.id || '';
+    emailAccountsReady = true;
+  } catch (_e) {
+    if (session !== emailSessionVersion) return;
+    emailAccounts = []; emailMailboxId = '';
+    emailAccountsError = 'Não foi possível carregar as caixas. Recarregue a página para tentar novamente.';
+  }
+  if (session === emailSessionVersion) renderCaixasEmail();
+}
+function renderCaixasEmail(){
+  const select = document.getElementById('email-mailbox');
+  select.replaceChildren();
+  for (const a of emailAccounts) {
+    const option = document.createElement('option'); option.value = a.id;
+    option.textContent = a.email ? (a.label ? a.label + ' · ' : '') + a.email : a.label;
+    select.appendChild(option);
+  }
+  if (!emailAccounts.length) { const option = document.createElement('option'); option.textContent = emailAccountsReady ? 'Nenhuma caixa disponível' : 'Caixas indisponíveis'; select.appendChild(option); }
+  select.value = emailMailboxId;
+  select.disabled = !emailAccountsReady || emailAccounts.length < 2 || emailSending || emailSyncing;
+  const a = caixaEmailAtual();
+  document.getElementById('email-mailbox-status').textContent = emailAccountsError || (!EMAIL_MULTICAIXAS ? 'Caixa existente. As outras contas ainda precisam ser conectadas.' : emailAccountsReady && !a ? 'Nenhuma caixa de e-mail foi liberada para seu acesso.' : a ? 'Recebidos e enviados da caixa selecionada.' : 'Carregando caixas…');
+  document.getElementById('email-from').textContent = a?.email || a?.label || 'Nenhuma caixa selecionada';
+  document.querySelector('[onclick="abrirCompositor()"]').disabled = !a?.can_send || emailSending;
+  document.getElementById('email-send-btn').disabled = !a?.can_send || emailSending;
+  document.getElementById('email-send-btn').textContent = emailSending ? 'Enviando…' : 'Enviar';
+  document.getElementById('email-sync-btn').disabled = !a?.can_sync || emailSyncing;
+  document.getElementById('email-sync-btn').textContent = emailSyncing ? 'Sincronizando…' : 'Sincronizar';
+}
+async function trocarCaixaEmail(id){
+  if (id === emailMailboxId) return;
+  if (emailSending || emailSyncing || !emailAccounts.some(a => a.id === id) || (temRascunhoEmail() && !confirm('Descartar o rascunho para trocar de caixa?'))) { renderCaixasEmail(); return; }
+  emailMailboxId = id; emailListVersion++;
+  emails = []; emailView = 'in'; emailListError = '';
+  emailsAbertos.clear(); emailsHtmlView.clear(); emailsCarregando.clear();
+  limparCompositorEmail();
+  document.getElementById('email-sync-info').textContent = '';
+  renderEmails();
+  await recarregarEmails();
+}
+function consultarEmailsDaCaixa(){
+  if (!emailAccountsReady || !caixaEmailAtual()) return Promise.resolve({ data: [], error: emailAccountsError ? { message: emailAccountsError } : null });
+  let query = sb.from('emails').select('*');
+  if (EMAIL_MULTICAIXAS) query = query.eq('mailbox_id', emailMailboxId);
+  return query.order('created_at', { ascending: false }).limit(300);
+}
+function filtrarPedidoEmail(query){ return EMAIL_MULTICAIXAS ? query.eq('mailbox_id', emailMailboxId) : query; }
 
 function toggleCc(){
   const r = document.getElementById('email-cc-row');
@@ -2934,6 +3066,8 @@ function setEmailView(v){
 }
 
 function abrirCompositor(){
+  if (!caixaEmailAtual()?.can_send || emailSending) return;
+  emailDraftMailbox = emailMailboxId;
   emailView = 'out';
   const comp = document.getElementById('email-compositor');
   if(comp) comp.style.display='block';
@@ -2942,84 +3076,132 @@ function abrirCompositor(){
 }
 
 async function sincronizarEmails(){
-  const btn = document.getElementById('email-sync-btn');
+  if (emailSyncing || !caixaEmailAtual()?.can_sync) return;
+  const ctx = contextoEmail();
+  emailSyncing = true; renderCaixasEmail();
   const info = document.getElementById('email-sync-info');
-  if(btn){ btn.disabled=true; btn.textContent='⏳ Sincronizando...'; }
+  if(info) info.textContent = '';
   try {
-    const { data, error } = await sb.functions.invoke('email-sync');
+    const { data, error } = EMAIL_MULTICAIXAS
+      ? await sb.functions.invoke('email-sync', { body: corpoPedidoEmail() })
+      : await sb.functions.invoke('email-sync');
+    if (!contextoEmailAtual(ctx)) return;
     if(error) throw error;
-    if(data && data.ok===false) throw new Error(data.error||'Falha na sincronização.');
-    await recarregarEmails();
+    if(!data || data.ok===false) throw new Error(data?.error||'Falha na sincronização.');
+    if (!await recarregarEmails() || !contextoEmailAtual(ctx)) return;
     if(info){ const n = (data && typeof data.novos==='number') ? data.novos : 0; info.style.color='#10B981'; info.textContent = n>0 ? `✓ ${n} novo(s) e-mail(s) recebido(s)` : '✓ Caixa atualizada'; }
   } catch(e){
+    if (!contextoEmailAtual(ctx)) return;
     if(info){ info.style.color='#EF4444'; info.textContent='Erro: '+((e&&e.message)?e.message:String(e)); }
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='🔄 Sincronizar'; }
+    if (ctx.session === emailSessionVersion) { emailSyncing = false; renderCaixasEmail(); }
   }
 }
 
 async function enviarEmail(){
+  if (emailSending || !caixaEmailAtual()?.can_send) return;
+  const ctx = contextoEmail();
   const to = document.getElementById('email-to').value.trim();
   const cc = document.getElementById('email-cc').value.trim();
   const subject = document.getElementById('email-subject').value.trim();
   const body = document.getElementById('email-body').value.trim();
   const fb = document.getElementById('email-feedback');
-  const btn = document.getElementById('email-send-btn');
+  if (emailDraftMailbox !== emailMailboxId) { fb.textContent = 'Abra uma mensagem nesta caixa antes de enviar.'; return; }
   if(!to){ fb.style.color='#EF4444'; fb.textContent='Informe o destinatário.'; return; }
   if(!subject){ fb.style.color='#EF4444'; fb.textContent='Informe o assunto.'; return; }
   if(!body){ fb.style.color='#EF4444'; fb.textContent='Escreva a mensagem.'; return; }
-  btn.disabled = true; const orig = btn.textContent; btn.textContent='⏳ Enviando...';
+  emailSending = true; renderCaixasEmail();
+  ['email-to','email-cc','email-subject','email-body'].forEach(id => { document.getElementById(id).disabled = true; });
   fb.style.color='#6B7280'; fb.textContent='';
   try {
-    const { data, error } = await sb.functions.invoke('email-send', { body:{ to, cc, subject, text: body } });
+    const { data, error } = await sb.functions.invoke('email-send', { body: corpoPedidoEmail({ to, cc, subject, text: body }) });
+    if (!contextoEmailAtual(ctx)) return;
     if(error) throw error;
-    if(data && data.ok===false) throw new Error(data.error||'Falha no envio.');
+    if(!data || data.ok===false) throw new Error(data?.error||'Falha no envio.');
     fb.style.color='#10B981'; fb.textContent='✓ Enviado!';
     document.getElementById('email-to').value='';
     document.getElementById('email-cc').value='';
     document.getElementById('email-subject').value='';
     document.getElementById('email-body').value='';
     await recarregarEmails();
+    if (!contextoEmailAtual(ctx)) return;
     emailView = 'out';
     renderEmails();
   } catch(e){
+    if (!contextoEmailAtual(ctx)) return;
     fb.style.color='#EF4444'; fb.textContent='Erro: '+((e&&e.message)?e.message:String(e));
   } finally {
-    btn.disabled=false; btn.textContent=orig;
+    if (ctx.session === emailSessionVersion) {
+      emailSending = false;
+      ['email-to','email-cc','email-subject','email-body'].forEach(id => { document.getElementById(id).disabled = false; });
+      renderCaixasEmail();
+    }
   }
 }
 
 async function recarregarEmails(){
-  const { data } = await sb.from('emails').select('*').order('created_at',{ascending:false}).limit(300);
-  if(data){ emails = data; renderEmails(); }
+  const ctx = contextoEmail(), version = ++emailListVersion;
+  emailLoading = true; emailListError = ''; renderEmails();
+  try {
+    const { data, error } = await consultarEmailsDaCaixa();
+    if (!contextoEmailAtual(ctx) || version !== emailListVersion) return false;
+    if (error) throw error;
+    emails = (data || []).filter(emailDaCaixa);
+    return true;
+  } catch (_e) {
+    if (contextoEmailAtual(ctx) && version === emailListVersion) {
+      emails = []; emailListError = 'Não foi possível carregar as mensagens. Tente sincronizar novamente.';
+    }
+    return false;
+  } finally {
+    if (contextoEmailAtual(ctx) && version === emailListVersion) { emailLoading = false; renderEmails(); }
+  }
 }
 
 async function marcarEmailLido(id, lido){
-  const e = emails.find(x=>String(x.id)===String(id));
+  const ctx = contextoEmail(), e = emailVisivel(id);
   if(!e) return;
   const antes = e.lido;
   e.lido = lido;
   renderEmails();
-  try { await db(sb.from('emails').update({ lido }).eq('id', id), 'marcar e-mail'); }
-  catch (err) { e.lido = antes; renderEmails(); }
+  try {
+    const { error } = await filtrarPedidoEmail(sb.from('emails').update({ lido }).eq('id', id));
+    if (error) throw error;
+  } catch (_e) { if (contextoEmailAtual(ctx)) { e.lido = antes; renderEmails(); toast('Não foi possível marcar o e-mail.', 'erro'); } }
 }
 
 async function excluirEmail(id){
+  if (!emailVisivel(id)) return;
   if(!confirm('Excluir este e-mail do histórico?')) return;
-  await db(sb.from('emails').delete().eq('id', id), 'excluir e-mail');
-  emails = emails.filter(x=>String(x.id)!==String(id));
-  renderEmails();
+  const ctx = contextoEmail();
+  try {
+    const { error } = await filtrarPedidoEmail(sb.from('emails').delete().eq('id', id));
+    if (!contextoEmailAtual(ctx)) return;
+    if (error) throw error;
+    emails = emails.filter(x=>String(x.id)!==String(id));
+    renderEmails();
+  } catch (_e) { if (contextoEmailAtual(ctx)) toast('Não foi possível excluir o e-mail.', 'erro'); }
 }
 
 function iniciarRealtimeEmails(){
   if(emailsRealtimeOn) return;
+  if (!emailAccountsReady || !caixaEmailAtual()) return;
+  const session = emailSessionVersion;
   emailsRealtimeOn = true;
   try {
     sb.channel('emails-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'emails'},(payload)=>{
-        const row = payload.new||payload.old; if(!row) return;
+        if (session !== emailSessionVersion) return;
+        const row = payload.eventType === 'DELETE' ? payload.old : payload.new;
+        if (!row?.id) { recarregarEmails(); return; }
         if(payload.eventType==='DELETE'){ emails = emails.filter(e=>e.id!==row.id); }
         else {
+          if (!emailDaCaixa(row)) {
+            // Se a mensagem foi movida ou o evento não identifica a caixa,
+            // confirma o estado em uma consulta filtrada, sem presumir a origem.
+            if ((row.mailbox_id == null && EMAIL_MULTICAIXAS) || emails.some(e => e.id === row.id)) recarregarEmails();
+            return;
+          }
           const i=emails.findIndex(e=>e.id===row.id);
           if(i>=0){
             // Preserva o corpo carregado sob demanda (não vem em todo evento realtime)
@@ -3032,14 +3214,16 @@ function iniciarRealtimeEmails(){
         }
         emails.sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
         renderEmails();
-        const dot=document.getElementById('email-live-dot'); if(dot) dot.style.display='inline';
       })
-      .subscribe();
+      .subscribe(status => {
+        if (session !== emailSessionVersion) return;
+        document.getElementById('email-live-dot').style.display = status === 'SUBSCRIBED' ? 'inline' : 'none';
+      });
   } catch(_e){ emailsRealtimeOn=false; }
 }
 
 function updateEmailBadge(){
-  const naoLidos = emails.filter(e=>e.direcao==='in' && !e.lido).length;
+  const naoLidos = emails.filter(e=>emailDaCaixa(e) && e.direcao==='in' && !e.lido).length;
   const b = document.getElementById('email-unread-badge');
   if(b){ if(naoLidos>0){ b.style.display='inline'; b.textContent=naoLidos; } else b.style.display='none'; }
 }
@@ -3052,7 +3236,7 @@ function extrairEmailAddr(de){
   return m2 ? m2[0].trim() : '';
 }
 async function toggleEmailCorpo(id){
-  const e = emails.find(x=>String(x.id)===String(id));
+  const e = emailVisivel(id);
   if(!e) return;
   if(emailsAbertos.has(String(id))){
     emailsAbertos.delete(String(id));
@@ -3066,22 +3250,27 @@ async function toggleEmailCorpo(id){
   if(!temCorpo){ carregarCorpoEmail(id); }
 }
 async function carregarCorpoEmail(id){
-  const e = emails.find(x=>String(x.id)===String(id));
+  let e = emailVisivel(id);
+  const ctx = contextoEmail();
   if(!e || emailsCarregando.has(String(id))) return;
   emailsCarregando.add(String(id));
   renderEmails();
   try{
-    const { data, error } = await sb.functions.invoke('email-body', { body:{ id: e.id, uid_imap: e.uid_imap } });
+    const { data, error } = await sb.functions.invoke('email-body', { body: corpoPedidoEmail({ id: e.id, uid_imap: e.uid_imap }) });
+    if (!contextoEmailAtual(ctx)) return;
+    e = emailVisivel(id); // Realtime/recarga pode substituir o objeto durante a leitura.
+    if (!e) return;
     if(error) throw error;
     if(data && data.ok){
+      delete e._corpoErro;
       e.corpo_texto = data.corpo_texto || '';
       e.corpo_html = data.corpo_html || '';
       if(e.corpo_html && !e.corpo_texto) emailsHtmlView.add(String(id));
     } else {
       e._corpoErro = (data && data.error) || 'Falha ao carregar.';
     }
-  }catch(err){ e._corpoErro = (err && err.message) || 'Falha ao carregar.'; }
-  finally{ emailsCarregando.delete(String(id)); renderEmails(); }
+  }catch(err){ if (contextoEmailAtual(ctx) && emailVisivel(id)) emailVisivel(id)._corpoErro = (err && err.message) || 'Falha ao carregar.'; }
+  finally{ if (contextoEmailAtual(ctx)) { emailsCarregando.delete(String(id)); renderEmails(); } }
 }
 function toggleEmailHtml(id){
   const k = String(id);
@@ -3089,8 +3278,11 @@ function toggleEmailHtml(id){
   renderEmails();
 }
 function responderEmail(id){
-  const e = emails.find(x=>String(x.id)===String(id));
-  if(!e) return;
+  const e = emailVisivel(id);
+  if(!e || !caixaEmailAtual()?.can_send || emailSending) return;
+  if (temRascunhoEmail() && !confirm('Descartar o rascunho para responder a esta mensagem?')) return;
+  limparCompositorEmail();
+  emailDraftMailbox = emailMailboxId;
   const addr = extrairEmailAddr(e.de);
   emailView = 'out';
   const comp = document.getElementById('email-compositor');
@@ -3121,12 +3313,19 @@ function preencherIframesEmail(){
 }
 
 function renderEmails(){
+  renderCaixasEmail();
   iniciarRealtimeEmails();
   updateEmailBadge();
   updateEmailToggle();
   const box = document.getElementById('emails-list');
   if(!box) return;
-  const lista = emails.filter(e => emailView==='in' ? e.direcao==='in' : e.direcao!=='in');
+  if (emailAccountsError || emailListError || emailLoading || !caixaEmailAtual()) {
+    const notice = document.createElement('p');
+    notice.setAttribute('role', 'status'); notice.style.cssText = 'padding:24px;background:#fff;border-radius:12px;color:#6B7280;font-size:13px;';
+    notice.textContent = emailAccountsError || emailListError || (emailLoading ? 'Carregando mensagens…' : 'Nenhuma caixa disponível.');
+    box.replaceChildren(notice); return;
+  }
+  const lista = emails.filter(e => emailDaCaixa(e) && (emailView==='in' ? e.direcao==='in' : e.direcao!=='in'));
   if(!lista.length){
     box.innerHTML = `<div style="text-align:center;color:#9CA3AF;padding:30px;font-size:13px;background:#fff;border:1px solid #E5E7EB;border-radius:12px;">${emailView==='in'?'Nenhum e-mail recebido. Clique em <strong>🔄 Sincronizar</strong> para buscar na caixa.':'Nenhum e-mail enviado ainda.'}</div>`;
     return;
