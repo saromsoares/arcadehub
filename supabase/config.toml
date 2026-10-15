@@ -1,0 +1,14 @@
+project_id = "arcadehub"
+
+# Every endpoint validates the user inside the handler. Only sync accepts the
+# dedicated cron token; no function trusts a publishable key as user identity.
+[functions.email-accounts]
+verify_jwt = false
+[functions.email-check]
+verify_jwt = false
+[functions.email-sync]
+verify_jwt = false
+[functions.email-body]
+verify_jwt = false
+[functions.email-send]
+verify_jwt = false

@@ -995,6 +995,7 @@
       <label for="email-mailbox" style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">Caixa de e-mail</label>
       <select id="email-mailbox" onchange="trocarCaixaEmail(this.value)" aria-describedby="email-mailbox-status" style="width:100%;max-width:520px;min-height:44px;padding:9px;border:1px solid #D1D5DB;border-radius:7px;font:inherit;"></select>
       <p id="email-mailbox-status" role="status" style="font-size:12px;color:#6B7280;margin-top:8px;"></p>
+      <button id="email-check-btn" onclick="verificarCaixaEmail()" style="display:none;margin-top:8px;padding:8px 12px;border:1px solid #D1D5DB;border-radius:7px;background:#fff;cursor:pointer;">Verificar conexão</button>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
@@ -2930,7 +2931,7 @@ async function excluirAcesso(id){
 let emails = [];
 // Só habilitar após validar o contrato e a autorização no servidor.
 // Ver docs/architecture/email-multicaixas.md. Não contém endereços ou credenciais.
-const EMAIL_MULTICAIXAS = false;
+const EMAIL_MULTICAIXAS = true;
 let emailAccounts = [];
 let emailMailboxId = '';
 let emailAccountsError = '';
@@ -2941,6 +2942,7 @@ let emailSessionVersion = 0;
 let emailListVersion = 0;
 let emailSending = false;
 let emailSyncing = false;
+let emailChecking = false;
 let emailDraftMailbox = null;
 let emailsRealtimeOn = false;
 let emailView = 'in';
@@ -2951,10 +2953,17 @@ let emailsCarregando = new Set();// ids buscando corpo
 function caixaEmailAtual(){ return emailAccounts.find(a => a.id === emailMailboxId); }
 function contextoEmail(){ return { session: emailSessionVersion, mailbox: emailMailboxId }; }
 function contextoEmailAtual(ctx){ return ctx.session === emailSessionVersion && ctx.mailbox === emailMailboxId; }
-function emailDaCaixa(e){ return EMAIL_MULTICAIXAS ? e.mailbox_id === emailMailboxId : e.mailbox_id == null; }
+function emailDaCaixa(e){ return EMAIL_MULTICAIXAS ? e.mailbox_id === emailMailboxId : e.mailbox_id == null || e.mailbox_id === 'arcade_hub'; }
 function emailVisivel(id){ return emails.find(e => String(e.id) === String(id) && emailDaCaixa(e)); }
 function corpoPedidoEmail(body = {}, mailbox = emailMailboxId){
   return EMAIL_MULTICAIXAS ? { ...body, mailbox_id: mailbox } : body;
+}
+async function mensagemErroEmail(error){
+  try {
+    const response = await error?.context?.clone().json();
+    if (typeof response?.error === 'string') return response.error;
+  } catch (_e) { /* Erro de rede ou resposta sem JSON. */ }
+  return error?.message || 'Não foi possível concluir a operação.';
 }
 function limparCompositorEmail(){
   emailDraftMailbox = null;
@@ -2970,7 +2979,7 @@ function resetEmailState(){
   emailSessionVersion++; emailListVersion++;
   emailAccounts = []; emailMailboxId = ''; emailAccountsReady = false;
   emailAccountsError = ''; emailListError = ''; emailLoading = false;
-  emailSending = false; emailSyncing = false; emailView = 'in'; emails = [];
+  emailSending = false; emailSyncing = false; emailChecking = false; emailView = 'in'; emails = [];
   emailsAbertos.clear(); emailsHtmlView.clear(); emailsCarregando.clear();
   limparCompositorEmail();
   document.getElementById('emails-list').replaceChildren();
@@ -2994,7 +3003,7 @@ async function carregarCaixasEmail(){
     emailAccounts = data.accounts.map(a => {
       if (!a || typeof a.id !== 'string' || !a.id || ids.has(a.id) || typeof a.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email) || typeof a.can_send !== 'boolean' || typeof a.can_sync !== 'boolean') throw new Error('Configuração de caixas inválida.');
       ids.add(a.id);
-      return { id: a.id, email: a.email, label: typeof a.label === 'string' ? a.label : '', can_send: a.can_send, can_sync: a.can_sync };
+      return { id: a.id, email: a.email, label: typeof a.label === 'string' ? a.label : '', can_send: a.can_send, can_sync: a.can_sync, status: a.status || '' };
     });
     emailMailboxId = emailAccounts[0]?.id || '';
     emailAccountsReady = true;
@@ -3015,19 +3024,26 @@ function renderCaixasEmail(){
   }
   if (!emailAccounts.length) { const option = document.createElement('option'); option.textContent = emailAccountsReady ? 'Nenhuma caixa disponível' : 'Caixas indisponíveis'; select.appendChild(option); }
   select.value = emailMailboxId;
-  select.disabled = !emailAccountsReady || emailAccounts.length < 2 || emailSending || emailSyncing;
+  select.disabled = !emailAccountsReady || emailAccounts.length < 2 || emailSending || emailSyncing || emailChecking;
   const a = caixaEmailAtual();
   document.getElementById('email-mailbox-status').textContent = emailAccountsError || (!EMAIL_MULTICAIXAS ? 'Caixa existente. As outras contas ainda precisam ser conectadas.' : emailAccountsReady && !a ? 'Nenhuma caixa de e-mail foi liberada para seu acesso.' : a ? 'Recebidos e enviados da caixa selecionada.' : 'Carregando caixas…');
   document.getElementById('email-from').textContent = a?.email || a?.label || 'Nenhuma caixa selecionada';
-  document.querySelector('[onclick="abrirCompositor()"]').disabled = !a?.can_send || emailSending;
-  document.getElementById('email-send-btn').disabled = !a?.can_send || emailSending;
+  if (EMAIL_MULTICAIXAS && a) {
+    document.getElementById('email-mailbox-status').textContent = emailChecking ? 'Verificando acesso à Hostinger…' : a.status === 'pending_credentials' ? 'Aguardando cadastro da senha desta caixa. Após cadastrá-la, clique em Verificar conexão.' : a.status === 'needs_verification' ? 'Verifique a conexão para liberar recebimento e envio desta caixa.' : 'Recebimento e envio verificados na Hostinger.';
+  }
+  const checkButton = document.getElementById('email-check-btn');
+  checkButton.style.display = EMAIL_MULTICAIXAS && a ? 'inline-block' : 'none';
+  checkButton.disabled = emailChecking || emailSending || emailSyncing;
+  checkButton.textContent = emailChecking ? 'Verificando…' : 'Verificar conexão';
+  document.querySelector('[onclick="abrirCompositor()"]').disabled = !a?.can_send || emailSending || emailChecking;
+  document.getElementById('email-send-btn').disabled = !a?.can_send || emailSending || emailChecking;
   document.getElementById('email-send-btn').textContent = emailSending ? 'Enviando…' : 'Enviar';
-  document.getElementById('email-sync-btn').disabled = !a?.can_sync || emailSyncing;
+  document.getElementById('email-sync-btn').disabled = !a?.can_sync || emailSyncing || emailChecking;
   document.getElementById('email-sync-btn').textContent = emailSyncing ? 'Sincronizando…' : 'Sincronizar';
 }
 async function trocarCaixaEmail(id){
   if (id === emailMailboxId) return;
-  if (emailSending || emailSyncing || !emailAccounts.some(a => a.id === id) || (temRascunhoEmail() && !confirm('Descartar o rascunho para trocar de caixa?'))) { renderCaixasEmail(); return; }
+  if (emailSending || emailSyncing || emailChecking || !emailAccounts.some(a => a.id === id) || (temRascunhoEmail() && !confirm('Descartar o rascunho para trocar de caixa?'))) { renderCaixasEmail(); return; }
   emailMailboxId = id; emailListVersion++;
   emails = []; emailView = 'in'; emailListError = '';
   emailsAbertos.clear(); emailsHtmlView.clear(); emailsCarregando.clear();
@@ -3075,8 +3091,28 @@ function abrirCompositor(){
   const to = document.getElementById('email-to'); if(to) to.focus();
 }
 
+async function verificarCaixaEmail(){
+  if (!EMAIL_MULTICAIXAS || !caixaEmailAtual() || emailChecking || emailSending || emailSyncing) return;
+  const ctx = contextoEmail(), account = caixaEmailAtual();
+  const info = document.getElementById('email-sync-info');
+  emailChecking = true; renderCaixasEmail(); info.textContent = '';
+  try {
+    const { data, error } = await sb.functions.invoke('email-check', { body: corpoPedidoEmail() });
+    if (!contextoEmailAtual(ctx)) return;
+    if (error) throw new Error(await mensagemErroEmail(error));
+    if (!data || typeof data.imap !== 'boolean' || typeof data.smtp !== 'boolean') throw new Error('Resposta de verificação inválida.');
+    account.can_sync = data.imap; account.can_send = data.smtp;
+    account.status = data.imap && data.smtp ? 'verified' : 'needs_verification';
+    info.style.color = data.ok ? '#10B981' : '#B91C1C';
+    info.textContent = data.message || 'Verificação concluída.';
+  } catch (_e) {
+    if (contextoEmailAtual(ctx)) { info.style.color = '#B91C1C'; info.textContent = 'Não foi possível verificar esta caixa. Confira a senha cadastrada e tente novamente.'; }
+  } finally {
+    if (ctx.session === emailSessionVersion) { emailChecking = false; renderCaixasEmail(); }
+  }
+}
 async function sincronizarEmails(){
-  if (emailSyncing || !caixaEmailAtual()?.can_sync) return;
+  if (emailSyncing || emailChecking || !caixaEmailAtual()?.can_sync) return;
   const ctx = contextoEmail();
   emailSyncing = true; renderCaixasEmail();
   const info = document.getElementById('email-sync-info');
@@ -3086,7 +3122,7 @@ async function sincronizarEmails(){
       ? await sb.functions.invoke('email-sync', { body: corpoPedidoEmail() })
       : await sb.functions.invoke('email-sync');
     if (!contextoEmailAtual(ctx)) return;
-    if(error) throw error;
+    if(error) throw new Error(await mensagemErroEmail(error));
     if(!data || data.ok===false) throw new Error(data?.error||'Falha na sincronização.');
     if (!await recarregarEmails() || !contextoEmailAtual(ctx)) return;
     if(info){ const n = (data && typeof data.novos==='number') ? data.novos : 0; info.style.color='#10B981'; info.textContent = n>0 ? `✓ ${n} novo(s) e-mail(s) recebido(s)` : '✓ Caixa atualizada'; }
@@ -3099,7 +3135,7 @@ async function sincronizarEmails(){
 }
 
 async function enviarEmail(){
-  if (emailSending || !caixaEmailAtual()?.can_send) return;
+  if (emailSending || emailChecking || !caixaEmailAtual()?.can_send) return;
   const ctx = contextoEmail();
   const to = document.getElementById('email-to').value.trim();
   const cc = document.getElementById('email-cc').value.trim();
@@ -3116,9 +3152,9 @@ async function enviarEmail(){
   try {
     const { data, error } = await sb.functions.invoke('email-send', { body: corpoPedidoEmail({ to, cc, subject, text: body }) });
     if (!contextoEmailAtual(ctx)) return;
-    if(error) throw error;
+    if(error) throw new Error(await mensagemErroEmail(error));
     if(!data || data.ok===false) throw new Error(data?.error||'Falha no envio.');
-    fb.style.color='#10B981'; fb.textContent='✓ Enviado!';
+    fb.style.color=data.warning?'#92400E':'#10B981'; fb.textContent=data.warning || '✓ Enviado!';
     document.getElementById('email-to').value='';
     document.getElementById('email-cc').value='';
     document.getElementById('email-subject').value='';
@@ -3260,7 +3296,7 @@ async function carregarCorpoEmail(id){
     if (!contextoEmailAtual(ctx)) return;
     e = emailVisivel(id); // Realtime/recarga pode substituir o objeto durante a leitura.
     if (!e) return;
-    if(error) throw error;
+    if(error) throw new Error(await mensagemErroEmail(error));
     if(data && data.ok){
       delete e._corpoErro;
       e.corpo_texto = data.corpo_texto || '';
@@ -3378,11 +3414,12 @@ function renderEmails(){
       </div>`;
     }
     const falhou = e.status==='falha';
+    const pendente = e.status==='pendente' || e.status==='rascunho';
     return `<div style="background:#fff;border:1px solid ${falhou?'#EF4444':'#E5E7EB'};border-left:4px solid ${falhou?'#EF4444':'#10B981'};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
         <div>
           <strong style="font-size:14px;color:#0A1628;">${escapeHtml(e.assunto||'(sem assunto)')}</strong>
-          <span style="display:inline-block;background:${falhou?'#FEE2E2':'#D1FAE5'};color:${falhou?'#B91C1C':'#065F46'};border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px;">${falhou?'FALHOU':'ENVIADO'}</span>
+          <span style="display:inline-block;background:${pendente?'#FEF3C7':falhou?'#FEE2E2':'#D1FAE5'};color:${pendente?'#92400E':falhou?'#B91C1C':'#065F46'};border-radius:8px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px;">${pendente?'NÃO CONFIRMADO':falhou?'FALHOU':'ENVIADO'}</span>
         </div>
         <span style="font-size:11px;color:#9CA3AF;white-space:nowrap;">${data}</span>
       </div>

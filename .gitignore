@@ -53,3 +53,6 @@ AGENTS.md
 # Residual/temp files
 patch*.py
 copy-showcase-site.md
+
+# Supabase CLI local cache
+supabase/.temp/
