@@ -101,7 +101,7 @@ Sequência de publicação:
 2. Publicar o helper e as funções que expõem o preview e compõem o envio, somente depois de confirmar os assets. O contrato legado continua válido durante esta etapa. O backend deve estar disponível antes de publicar a UI que envia `quoted_text`.
 3. Publicar o frontend e validar preview desktop/mobile, CSP, rascunhos e falhas de imagem. Confirmar o SHA exato READY. A arte Coben já foi recebida e publicada em atualização incremental; validações interativas continuam pendentes nesta rodada.
 
-O gate previsto inclui matriz das sete caixas confirmadas, texto/citação hostis escapados, marca imutável por caixa, pedido legado assinado, e igualdade do conteúdo persistido com os argumentos SMTP. Além dos mocks de chamada, conferir o MIME produzido pela versão fixa da biblioteca para detectar perda de texto, headers duplicados ou corrupção de URLs. Essa matriz não foi executada nesta rodada por instrução; nenhum e-mail foi enviado. Validação de HTML/MIME local não comprova aparência em Gmail, Outlook ou outros clientes externos.
+O gate previsto inclui matriz das sete caixas, texto/citação hostis escapados, marca imutável por caixa e pedido legado assinado. A suíte Deno atual passou 31/31 com SMTP/MIME local; compara as partes decodificadas com o histórico persistido, confirma uma imagem ativa por novo e-mail e testa a ordem/escaping da resposta Coben. Nenhum e-mail foi enviado. Validação local não comprova aparência em Gmail, Outlook ou outros clientes externos; a revisão interativa do dashboard autenticado permanece pendente.
 
 ## Credenciais por caixa
 

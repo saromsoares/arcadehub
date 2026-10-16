@@ -2,6 +2,7 @@
 // Run: npx --yes deno test --allow-env supabase/tests/email-functions_test.ts
 // No --allow-net: an accidentally unmocked socket is denied by Deno.
 import assert from "node:assert/strict";
+import { emailSignature } from "../functions/_shared/email-signatures.ts";
 
 Deno.env.set("SUPABASE_URL", "https://qa.invalid");
 Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "qa-service-key");
@@ -368,6 +369,10 @@ Deno.test("Seven configured mailboxes resolve distinct SMTP identity and persist
     ["conferecheck", "contato@conferecheck.com.br"],
   ];
   const messageIds = new Set<string>();
+  const signatureFiles: Record<string, string> = {
+    arcade_hub: "arcade.png", cbai_solutions: "arcade.png", jogadaca: "jogadaca.png",
+    conferecheck: "conferecheck.png", privabr: "privabr.png", liquida_pecas: "liquida-pecas.png", coben: "coben.png",
+  };
   for (const [id, address] of identities) {
     reset(); boxes = [{ ...mailbox, id, email: address, is_legacy: id === "arcade_hub" }];
     const password = "fixture-for-" + id;
@@ -378,6 +383,20 @@ Deno.test("Seven configured mailboxes resolve distinct SMTP identity and persist
     assert.equal(response.status, 200, id);
     const data = await response.json(), row = dbCalls("POST")[0].payload!, wire = sockets[0].written;
     assert.equal(row.mailbox_id, id); assert.equal(row.de, address);
+    const signature = emailSignature(id)!;
+    assert.ok(String(row.corpo_texto).includes(signature.plainText), `${id}: plain text signature persisted`);
+    assert.ok(String(row.corpo_html).includes(signature.url!), `${id}: authorized signature image persisted`);
+    assert.ok(String(row.corpo_html).includes(signature.alt), `${id}: image alt persisted`);
+    const smtpMessage = wire.split("DATA\r\n")[1]?.split("\r\n.\r\n")[0] || "";
+    const parsedMime = parseMessage(encoder.encode(smtpMessage));
+    assert.ok(parsedMime.corpo_texto.includes(signature.plainText), `${id}: plain text signature included in SMTP MIME`);
+    assert.ok(parsedMime.corpo_html.includes(signatureFiles[id]), `${id}: signature image included in decoded SMTP MIME`);
+    assert.ok(parsedMime.corpo_html.includes(signature.alt), `${id}: image alt included in decoded SMTP MIME`);
+    const normalizeBody = (value: string) => value.replace(/\r\n/g, "\n").trimEnd();
+    assert.equal(normalizeBody(parsedMime.corpo_texto), normalizeBody(String(row.corpo_texto)), `${id}: SMTP plain part matches persisted history`);
+    assert.equal(normalizeBody(parsedMime.corpo_html), normalizeBody(String(row.corpo_html)), `${id}: SMTP HTML part matches persisted history`);
+    assert.equal((String(row.corpo_html).match(/<img\b/g) || []).length, 1, `${id}: exactly one active signature image`);
+    assert.match(wire, /Content-Type: multipart\/alternative/i, `${id}: text and HTML MIME alternatives`);
     assert.deepEqual(authValues(wire), { username: btoa(address), password: utf8Base64(password) });
     assert.ok(wire.includes(`MAIL FROM: <${address}>`));
     assert.ok(!wire.includes("forged@example.test"));
@@ -390,6 +409,27 @@ Deno.test("Seven configured mailboxes resolve distinct SMTP identity and persist
     assert.ok(!messageIds.has(data.message_id)); messageIds.add(data.message_id);
     assert.ok(sockets[0].closed);
   }
+});
+
+Deno.test("Coben reply keeps its visual signature between new text and escaped quoted history", async () => {
+  reset();
+  boxes = [{ ...mailbox, id: "coben", email: "contato@coben.app", is_legacy: false }];
+  Deno.env.set("MAILBOX_COBEN_PASS_B64", utf8Base64("fixture-for-coben"));
+  message = received({ mailbox_id: "coben" }); transcripts = [smtpAccepted];
+  const response = await send(req({ ...delivery, mailbox_id: "coben", text: "Resposta nova", quoted_text: "<script>original</script>", reply_to_id: 1 }));
+  assert.equal(response.status, 200);
+  const row = dbCalls("POST")[0].payload!, wire = sockets[0].written;
+  const plain = String(row.corpo_texto), html = String(row.corpo_html);
+  assert.ok(plain.indexOf("Resposta nova") < plain.indexOf("Coben Life OS | contato@coben.app"));
+  assert.ok(plain.indexOf("Coben Life OS | contato@coben.app") < plain.indexOf("<script>original</script>"));
+  assert.ok(html.indexOf("Resposta nova") < html.indexOf("coben.png"));
+  assert.ok(html.indexOf("coben.png") < html.indexOf("<blockquote"));
+  assert.ok(html.includes("&lt;script&gt;original&lt;/script&gt;"));
+  const smtpMessage = wire.split("DATA\r\n")[1]?.split("\r\n.\r\n")[0] || "";
+  const parsedMime = parseMessage(encoder.encode(smtpMessage));
+  assert.ok(parsedMime.corpo_html.includes("coben.png"));
+  assert.ok(parsedMime.corpo_html.indexOf("Resposta nova") < parsedMime.corpo_html.indexOf("coben.png"));
+  assert.ok(parsedMime.corpo_html.indexOf("coben.png") < parsedMime.corpo_html.indexOf("<blockquote"));
 });
 
 Deno.test("Authorized reply emits single correctly spelled thread headers and a distinct persisted Message-ID", async () => {

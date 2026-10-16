@@ -2,14 +2,14 @@
 
 Stories de desenvolvimento da Arcade Hub criadas via `@sm *draft` ou `@sm *create-story`.
 
-## Inventário em 2026-10-15
+## Inventário em 2026-10-16
 
 | Story | Entrega | Status do documento |
 | --- | --- | --- |
 | [1.1](1.1.story.md) | Rebranding ARCADE CORE | Ready for Review; implementação presente, parecer QA ainda não preenchido |
 | [1.2](1.2.story.md) | Sete caixas Hostinger | Done |
 | [1.3](1.3.story.md) | Novo e-mail e resposta pela caixa selecionada | Done |
-| [1.4](1.4.story.md) | Assinatura visual das sete caixas, incluindo Coben | Publicada; In Progress por testes/validação interativa não executados nesta rodada |
+| [1.4](1.4.story.md) | Assinatura visual das sete caixas, incluindo Coben | Publicada; backend/MIME QA PASS; In Progress pela validação visual interativa pendente |
 
 Estado consolidado e limites de validação: [contexto do projeto](../PROJECT_CONTEXT.md). Atualização de memória/documentação não reabre stories nem altera pareceres históricos.
 

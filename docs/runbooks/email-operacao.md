@@ -12,7 +12,7 @@ Cada operação usa a identidade da caixa selecionada. `mailbox_id` não é nece
 
 As sete caixas têm assinatura visual automática e prévia no compositor. Arcade e CBAI compartilham a mesma arte por decisão do usuário; Coben usa coben.png desde a atualização incremental de 2026-10-15. Seis PNG públicos ficam em `assets/email-signatures/`; o mapa autorizado fica em `supabase/functions/_shared/email-signatures.ts`. A imagem não é adicionada ao textarea: o servidor monta texto novo, identificação textual/imagem e histórico separado (`quoted_text`), preservando `reply_to_id` e os cabeçalhos da conversa.
 
-Uma arte nova deve estar pública antes de ativar seu mapa no backend e frontend. A sequência observada foi `c8edc14` → `d0fcf06` → `372ec6d` para a entrega inicial e `ebcee73` → deploy accounts/send → `00fe18e` para Coben. O último código foi confirmado READY e admin HTTP 200. URLs antigas devem continuar acessíveis para mensagens já enviadas. Nenhum teste novo, validação interativa ou envio real foi executado nesta rodada; GET/MIME dos PNG não comprova renderização em clientes de e-mail.
+Uma arte nova deve estar pública antes de ativar seu mapa no backend e frontend. A sequência observada foi `c8edc14` → `d0fcf06` → `372ec6d` para a entrega inicial e `ebcee73` → deploy accounts/send → `00fe18e` para Coben. O último código foi confirmado READY e admin HTTP 200. URLs antigas devem continuar acessíveis para mensagens já enviadas. Em 2026-10-16 a suíte Deno passou 31/31, incluindo composição SMTP/MIME simulada sem rede ou e-mails reais. A conferência interativa do dashboard autenticado e a renderização em clientes de e-mail ainda não foram verificadas.
 
 ## Acesso técnico já configurado
 
