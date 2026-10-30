@@ -69,9 +69,11 @@ Cinco funções publicadas: `email-accounts`, `email-check`, `email-sync`, `emai
 | [Story 1.1 — ARCADE CORE](stories/1.1.story.md) | Código presente em produção; documento ainda `Ready for Review`, sem parecer QA preenchido. Não declarar esse gate concluído. |
 | [Story 1.2 — multicaixas](stories/1.2.story.md) | Done; migração `20261015182925` aplicada e registrada; sete caixas verificadas e sincronizadas. |
 | [Story 1.3 — envio e resposta](stories/1.3.story.md) | Done; código `1358930`, fechamento `d5ca892`, produção Vercel READY e admin HTTP 200. |
-| [Story 1.5 — portfólio público](stories/1.5.story.md) | De Olho.ai e ClickDrop implementados; 13 checks diretos aprovados; publicação em acompanhamento via @devops. Validação visual desktop/mobile e console pendente por indisponibilidade da ferramenta; story In Progress. |
+| [Story 1.5 — portfólio público](stories/1.5.story.md) | Código `3a01a4c` publicado em produção Vercel READY; conteúdo público HTTP 200 confirmado. In Progress pela validação visual interativa pendente. |
 
 Story 1.3: **30 testes backend, 27 verificações Chrome e 14 verificações remotas negativas aprovados**. Nenhum e-mail externo foi enviado nos testes. SMTP autenticado não comprova entrega a destinatário; agrupamento em clientes externos não foi testado. [Parecer QA](qa/reviews/1.3-email-envio.md).
+
+Story 1.5: em 2026-10-30, De Olho.ai e ClickDrop substituíram Giro na Máxima e Croqui.ai somente na home pública. O commit `3a01a4c6e9f48794ccbebe8bb433f7ec32414a0a` foi confirmado em produção READY (`dpl_B8yDadGmm7sr47NSQMKV7tJ9eYnU`). GET de `https://arcadehub.tech/` retornou HTTP 200 com seis cards, os novos domínios e HTML correspondente ao checkout. Treze verificações diretas passaram; CSS, JavaScript e os outros quatro cards permaneceram iguais. Browser host/Computer Use indisponíveis impediram validação visual desktop/mobile e console; QA estático registrou CONCERNS sem defeito concreto bloqueante. A story permanece In Progress por essa validação pendente; admin e dados financeiros não foram alterados.
 
 Artefatos locais ignorados: `.aiox/email-multicaixas-results.json`, `.aiox/email-reply-mobile.png`, `.aiox/email-reply-remote-results.json`, `.aiox/email-final-inventory.json`. Contagens são snapshots datados. O script antigo `.aiox/email-remote-smoke.mjs` contém expectativa de caixas adicionais pendentes: atualizar essa expectativa antes de reutilizar.
 
