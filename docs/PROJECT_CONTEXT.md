@@ -1,6 +1,6 @@
 # Arcade Hub — contexto atual do projeto
 
-Atualizado em **2026-10-16** a partir do código, das stories e das verificações desta sessão. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
+Atualizado em **2026-10-30** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
 ## Produto e código
 
@@ -19,16 +19,18 @@ O site não tem gates genéricos npm de build/lint/test. Mudanças de interface 
 | Empresa | ID no admin | Exposição |
 | --- | --- | --- |
 | Arcade Hub | `arcade_hub` | Holding no admin |
-| Giro na Máxima | `gironamaxima` | Público e admin |
+| De Olho.ai | — | Público: https://deolho.ai/; substitui Giro na Máxima |
+| Giro na Máxima | `gironamaxima` | Somente admin; cadastro financeiro preservado |
 | PrivaBR | `priva_br` | Público e admin |
 | Coben Life OS | `coben_life_os` | Público e admin |
 | Kanbia | `kanbia` | Público e admin |
-| Croqui.ai | `croqui_ai` | Público e admin |
+| ClickDrop | — | Público: https://clickdrop.app/; substitui Croqui.ai |
+| Croqui.ai | `croqui_ai` | Somente admin; cadastro financeiro preservado |
 | Jogadaça.ai | `jogadaca` | Público e admin |
 | Líquida Peças | `liquida_pecas` | Somente admin |
 | Xepou | `xepou` | Somente admin |
 
-São **seis empresas no site público e holding + oito filhas no admin**. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. Caixas CBAI/ConfereCheck não implicam inclusão de novas empresas nesses arrays.
+São **seis empresas no site público e holding + oito filhas no admin**. A [story 1.5](stories/1.5.story.md) atualiza somente o portfólio público: De Olho.ai apresenta conteúdo sobre tecnologia e IA; ClickDrop apresenta conversão e organização de arquivos, com status Em beta conforme seu site oficial. Os IDs e cadastros financeiros de Giro na Máxima e Croqui.ai permanecem no admin; esta alteração não migra dados nem cadastra novas empresas financeiras. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. Caixas CBAI/ConfereCheck não implicam inclusão de novas empresas nesses arrays.
 
 ## Dashboard e dados
 
@@ -67,6 +69,7 @@ Cinco funções publicadas: `email-accounts`, `email-check`, `email-sync`, `emai
 | [Story 1.1 — ARCADE CORE](stories/1.1.story.md) | Código presente em produção; documento ainda `Ready for Review`, sem parecer QA preenchido. Não declarar esse gate concluído. |
 | [Story 1.2 — multicaixas](stories/1.2.story.md) | Done; migração `20261015182925` aplicada e registrada; sete caixas verificadas e sincronizadas. |
 | [Story 1.3 — envio e resposta](stories/1.3.story.md) | Done; código `1358930`, fechamento `d5ca892`, produção Vercel READY e admin HTTP 200. |
+| [Story 1.5 — portfólio público](stories/1.5.story.md) | De Olho.ai e ClickDrop implementados; 13 checks diretos aprovados; publicação em acompanhamento via @devops. Validação visual desktop/mobile e console pendente por indisponibilidade da ferramenta; story In Progress. |
 
 Story 1.3: **30 testes backend, 27 verificações Chrome e 14 verificações remotas negativas aprovados**. Nenhum e-mail externo foi enviado nos testes. SMTP autenticado não comprova entrega a destinatário; agrupamento em clientes externos não foi testado. [Parecer QA](qa/reviews/1.3-email-envio.md).
 
