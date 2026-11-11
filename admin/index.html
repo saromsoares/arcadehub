@@ -1347,6 +1347,39 @@ let logoutPendente = null;
 
 let loginEmAndamento = null;
 
+// checkAuth (sessão já salva) e o submit do login disparavam duas cargas.
+// A primeira pintava a tela e escondia o overlay; a segunda ligava o overlay
+// de novo e, se uma leitura não voltasse, a tela ficava em "Carregando" para sempre.
+let painelEpoch = 0;
+let painelEpochCarregado = -1;
+let painelCarregando = null;
+let painelCarregandoEpoch = -1;
+
+function comTempoLimite(promise, ms) {
+  return new Promise((resolve) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      resolve({ data: null, error: { message: 'tempo esgotado' } });
+    }, ms);
+    Promise.resolve(promise).then(
+      (value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({ data: null, error: error instanceof Error ? error : { message: String(error) } });
+      }
+    );
+  });
+}
+
 // Enter repetido enfileirava várias tentativas na mesma promessa de logout e todas
 // seguiam juntas — cada login bem-sucedido chama initDashboard, e dois initDashboard
 // concorrentes derrubam os canais um do outro. Uma tentativa por vez.
@@ -1393,9 +1426,38 @@ async function showDashboard(user) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'block';
-  document.getElementById('loading-overlay').style.display = 'flex';
-  document.getElementById('user-email-display').textContent = user.email;
-  await initDashboard();
+  const emailEl = document.getElementById('user-email-display');
+  if (emailEl && user && user.email) emailEl.textContent = user.email;
+  if (painelEpochCarregado === painelEpoch) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    return;
+  }
+  if (painelCarregando && painelCarregandoEpoch === painelEpoch) return painelCarregando;
+  const epoch = painelEpoch;
+  const job = (async () => {
+    document.getElementById('loading-overlay').style.display = 'flex';
+    try {
+      const falhas = await initDashboard(epoch);
+      if (epoch !== painelEpoch) return;
+      painelEpochCarregado = epoch;
+      if (falhas.length) toast('Não foi possível carregar: ' + falhas.join(', ') + '. Os números podem estar incompletos — recarregue.', 'erro');
+      else toast('Arcade Hub v2.0 carregado — ' + COMPANIES.length + ' empresas ativas!');
+    } catch (e) {
+      console.error('[initDashboard]', e);
+      if (epoch === painelEpoch) toast('Não foi possível abrir o painel. Recarregue a página.', 'erro');
+    } finally {
+      if (epoch === painelEpoch) document.getElementById('loading-overlay').style.display = 'none';
+    }
+  })();
+  painelCarregando = job;
+  painelCarregandoEpoch = epoch;
+  try { return await job; }
+  finally {
+    if (painelCarregando === job) {
+      painelCarregando = null;
+      painelCarregandoEpoch = -1;
+    }
+  }
 }
 
 // Sair precisa esvaziar a memória: senhas reveladas, e-mails, contatos e os
@@ -1433,7 +1495,7 @@ async function resetState() {
   // login criar canais novos por cima dos antigos, duplicando os callbacks
   // removeAllChannels é ASSÍNCRONO: sem esperar, o login seguinte podia assinar
   // canais novos enquanto a limpeza ainda corria — e a limpeza derrubava os novos.
-  try { await sb.removeAllChannels(); } catch(_e){}
+  try { await comTempoLimite(sb.removeAllChannels(), 4000); } catch(_e){}
   mpRealtimeOn = false; contatosRealtimeOn = false;
   if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
@@ -1447,6 +1509,9 @@ async function resetState() {
 }
 
 async function doLogout() {
+  painelEpoch++;
+  painelEpochCarregado = -1;
+  document.getElementById('loading-overlay').style.display = 'none';
   resetEmailState(); // Invalida respostas de e-mail antes de aguardar a rede.
   // A tela vai embora PRIMEIRO. A limpeza dos canais pode esperar o timeout do
   // WebSocket, e até lá os números do grupo (e qualquer senha revelada) ficariam
@@ -2268,30 +2333,44 @@ async function saveEstrutura(src) {
 }
 
 // ─── LOAD DATA ───────────────────────────────────────────────────────────────
-async function loadAll() {
+async function loadAll(epoch) {
   const emailSession = emailSessionVersion;
-  await carregarCaixasEmail();
-  if (emailSession !== emailSessionVersion) return ['sessão encerrada'];
+  await comTempoLimite(carregarCaixasEmail(), 8000);
+  if (emailSession !== emailSessionVersion || epoch !== painelEpoch) return ['sessão encerrada'];
+  // Permissões primeiro: quem não vê Mercado Pago ou Stripe não espera essas tabelas.
+  const perm = await comTempoLimite(
+    sb.from('usuarios_paginas_bloqueadas').select('paginas').maybeSingle(),
+    8000
+  );
+  if (emailSession !== emailSessionVersion || epoch !== painelEpoch) return ['sessão encerrada'];
+  if (perm && !perm.error) paginasBloqueadas = new Set((perm.data && perm.data.paginas) || []);
+  const leitura = (pedido) => comTempoLimite(pedido, 12000);
+  const vazio = Promise.resolve({ data: [], error: null });
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
   const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos','Stripe','permissões'];
   const respostas = await Promise.all([
-    sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
-    sb.from('planejado').select('*').eq('ano', EXERCICIO),
-    sb.from('estrutura').select('*').eq('ano', EXERCICIO).limit(1).maybeSingle(),
-    sb.from('custos_extras').select('*').eq('ano', EXERCICIO).order('created_at', { ascending: true }),
-    sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true }),
-    sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
-    sb.from('contatos').select('*').order('created_at', { ascending: false }),
-    consultarEmailsDaCaixa(),
+    leitura(sb.from('lancamentos').select('*').eq('ano', EXERCICIO)),
+    leitura(sb.from('planejado').select('*').eq('ano', EXERCICIO)),
+    leitura(sb.from('estrutura').select('*').eq('ano', EXERCICIO).limit(1).maybeSingle()),
+    leitura(sb.from('custos_extras').select('*').eq('ano', EXERCICIO).order('created_at', { ascending: true })),
+    leitura(sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true })),
+    paginaLiberada('mercadopago')
+      ? leitura(sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }))
+      : vazio,
+    leitura(sb.from('contatos').select('*').order('created_at', { ascending: false })),
+    leitura(consultarEmailsDaCaixa()),
     // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
-    sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
-    sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
-    sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false }),
-    sb.from('usuarios_empresas').select('empresa_id'),
-    sb.from('stripe_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
-    sb.from('usuarios_paginas_bloqueadas').select('paginas').maybeSingle(),
+    leitura(sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true })),
+    leitura(sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true })),
+    leitura(sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false })),
+    leitura(sb.from('usuarios_empresas').select('empresa_id')),
+    paginaLiberada('stripe')
+      ? leitura(sb.from('stripe_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }))
+      : vazio,
+    Promise.resolve(perm),
   ]);
+  if (emailSession !== emailSessionVersion || epoch !== painelEpoch) return ['sessão encerrada'];
   const pbData = respostas[13] && !respostas[13].error ? respostas[13].data : null;
   paginasBloqueadas = new Set((pbData && pbData.paginas) || []);
   const falhas = respostas.map((r, i) => {
@@ -5835,14 +5914,13 @@ function makeAllEditable() {
 }
 
 // ─── INIT (called after auth) ────────────────────────────────────────────────
-async function initDashboard() {
+async function initDashboard(epoch) {
   await resetState();    // nunca herdar o estado de uma sessão anterior
-  const falhas = await loadAll();
-  document.getElementById('loading-overlay').style.display = 'none';
+  if (epoch !== painelEpoch) return [];
+  const falhas = await loadAll(epoch);
+  if (epoch !== painelEpoch) return falhas || [];
   renderAll();
-  // um toast de sucesso por cima do erro esconderia a falha de carga
-  if (falhas.length) toast('Não foi possível carregar: ' + falhas.join(', ') + '. Os números podem estar incompletos — recarregue.', 'erro');
-  else toast('Arcade Hub v2.0 carregado — ' + COMPANIES.length + ' empresas ativas!');
+  return falhas || [];
 }
 </script>
 </body>
