@@ -1172,7 +1172,7 @@
 
       <div class="section-title" style="flex-wrap:wrap;">
         <span>Mercado Pago</span>
-        <button type="button" id="mp-receber-copiar" onclick="copiarDadosMercadoPago()" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
+        <button type="button" id="mp-receber-copiar" onclick="copiarDadosReceber('mp-receber','mp-receber-copiar')" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
       </div>
       <dl class="emp-card" id="mp-receber">
         <div class="emp-row"><dt>Chave Pix</dt><dd>66.910.447/0001-06<span class="sub">CNPJ</span></dd></div>
@@ -1182,6 +1182,19 @@
         <div class="emp-row"><dt>Conta</dt><dd>7675787289-7</dd></div>
       </dl>
       <div class="info-box">Dados para receber, conferidos no Mercado Pago em 11/11/2026.</div>
+
+      <div class="section-title" style="flex-wrap:wrap;">
+        <span>Nubank</span>
+        <button type="button" id="nu-receber-copiar" onclick="copiarDadosReceber('nu-receber','nu-receber-copiar')" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
+      </div>
+      <dl class="emp-card" id="nu-receber">
+        <div class="emp-row"><dt>Nome</dt><dd>ARCADE<span class="sub">Nu Empresas</span></dd></div>
+        <div class="emp-row"><dt>Agência</dt><dd>0001</dd></div>
+        <div class="emp-row"><dt>Conta</dt><dd>823491390-4</dd></div>
+        <div class="emp-row"><dt>Banco</dt><dd>0260</dd></div>
+        <div class="emp-row"><dt>Instituição</dt><dd>Nu Pagamentos S.A. - Instituição de Pagamento</dd></div>
+      </dl>
+      <div class="info-box">Dados da conta Nu Empresas, conferidos no Nubank em 11/11/2026.</div>
 
       <div class="section-title"><span>Endereço</span></div>
       <dl class="emp-card">
@@ -3541,12 +3554,13 @@ async function verificarMestra(){
   return false;
 }
 
-async function copiarDadosMercadoPago() {
-  const btn = document.getElementById('mp-receber-copiar');
-  const linhas = [...document.querySelectorAll('#mp-receber .emp-row')].map(row => {
+async function copiarDadosReceber(cardId, btnId) {
+  const btn = document.getElementById(btnId);
+  const linhas = [...document.querySelectorAll('#' + cardId + ' .emp-row')].map(row => {
     const rotulo = row.querySelector('dt').textContent.trim();
     const valor = row.querySelector('dd').firstChild.textContent.trim();
-    return rotulo + ': ' + valor;
+    const sub = row.querySelector('dd .sub');
+    return rotulo + ': ' + valor + (sub ? ' (' + sub.textContent.trim() + ')' : '');
   });
   try {
     await navigator.clipboard.writeText(linhas.join('\n'));
