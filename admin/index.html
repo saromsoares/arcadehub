@@ -585,8 +585,7 @@
   </div>
   <div class="nav-items">
     <div class="nav-section">Visão Geral</div>
-    <button class="nav-item active" onclick="showTab('painel',this)">📊 Painel Fintech</button>
-    <button class="nav-item" onclick="showTab('dashboard',this)">📈 Dashboard</button>
+    <button class="nav-item active" onclick="showTab('painel',this)">📊 Painel</button>
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
     <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
     <button class="nav-item" onclick="showTab('stripe',this)">💠 Stripe</button>
@@ -654,55 +653,29 @@
     <span style="font-size:16px;line-height:1;">&#8592;</span> Voltar
   </button>
 
-  <!-- PAINEL FINTECH -->
+  <!-- PAINEL -->
   <div id="tab-painel" class="tab-content active">
-    <div class="page-title" id="pt-painel">Painel Fintech</div>
-    <div class="page-sub" id="ps-painel">Painel executivo consolidado de todas as empresas do grupo Arcade Hub.</div>
+    <div class="page-title" id="pt-painel">Painel</div>
+    <div class="page-sub" id="ps-painel">Consolidado do grupo: indicadores, evolução do ano e resultado por empresa.</div>
     <div class="kpi-grid" id="painel-kpis"></div>
-    <div class="two-col">
-      <div>
-        <div class="section-title"><span>Semáforo por KPI</span></div>
-        <div class="table-wrap">
-          <table><thead><tr>
-            <th>KPI</th><th>Realizado</th><th>Meta</th><th>Atingimento</th><th>Status</th>
-          </tr></thead><tbody id="semaforo-kpi"></tbody></table>
-        </div>
-      </div>
-      <div>
-        <div class="section-title"><span>Semáforo por Empresa</span></div>
-        <div class="table-wrap">
-          <table><thead><tr>
-            <th>Empresa</th><th>At. Receita</th><th>At. Resultado</th><th>Status</th>
-          </tr></thead><tbody id="semaforo-empresa"></tbody></table>
-        </div>
-      </div>
-    </div>
-    <div class="section-title"><span>Comparativo Mensal Consolidado — Todas as Empresas</span></div>
+    <div class="section-title"><span>Receita e resultado no ano</span></div>
     <div class="chart-wrap"><canvas id="chart-painel" height="100"></canvas></div>
-    <div class="section-title"><span>Receita por Empresa — YTD</span></div>
-    <div class="chart-wrap"><canvas id="chart-painel-empresas" height="120"></canvas></div>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div id="tab-dashboard" class="tab-content">
-    <div class="page-title" id="pt-dashboard">Dashboard Executivo Consolidado</div>
-    <div class="kpi-grid" id="dash-kpis"></div>
-    <div class="section-title"><span>Consolidado Mensal</span></div>
-    <div class="table-wrap"><table><thead><tr id="dash-months-header"></tr></thead><tbody id="dash-table"></tbody></table></div>
-    <div class="section-title"><span>Visão por Empresa — YTD</span></div>
-    <div class="table-wrap">
-      <table><thead><tr>
-        <th>Empresa</th><th>Receita YTD</th><th>Custos Totais</th><th>Resultado YTD</th><th>Margem</th><th>Headcount Médio</th>
-      </tr></thead><tbody id="dash-empresa-table"></tbody></table>
+    <div class="section-title"><span>Consolidado mensal</span></div>
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table style="min-width:900px;"><thead><tr id="painel-months-header"></tr></thead><tbody id="painel-month-table"></tbody></table>
     </div>
-    <div class="section-title"><span>Evolução Receita vs Resultado</span></div>
-    <div class="chart-wrap"><canvas id="chart-dash" height="100"></canvas></div>
+    <div class="section-title"><span>Por empresa — ano até agora</span></div>
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table style="min-width:760px;"><thead><tr>
+        <th>Empresa</th><th>Receita</th><th>Custos</th><th>Resultado</th><th>Margem</th><th>Headcount médio</th><th>Status</th>
+      </tr></thead><tbody id="painel-empresa-table"></tbody></table>
+    </div>
   </div>
 
   <!-- LANÇAMENTOS -->
   <div id="tab-lancamentos" class="tab-content">
     <div class="page-title" id="pt-lancamentos">Lançamentos Mensais <span class="saving" id="saving-lanc">💾 Salvando...</span></div>
-    <div class="page-sub" id="ps-lancamentos">📌 <strong>Único lugar para lançar contas.</strong> Escolha a empresa (a própria Arcade Hub também é uma opção) e lance a receita do mês e cada custo como um item em <strong>Custos do Mês</strong> — categoria, quem pagou e como. Alimenta Estrutura, Balanço e Dashboards.</div>
+    <div class="page-sub" id="ps-lancamentos">📌 <strong>Único lugar para lançar contas.</strong> Escolha a empresa (a própria Arcade Hub também é uma opção) e lance a receita do mês e cada custo como um item em <strong>Custos do Mês</strong> — categoria, quem pagou e como. Alimenta o Painel, a Estrutura e o Balanço.</div>
     <div class="btn-group" id="lanc-months"></div>
     <div class="btn-group" id="lanc-companies"></div>
     <div class="two-col">
@@ -1465,8 +1438,8 @@ async function resetState() {
   if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
   if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
-  [chartPainel, chartPainelEmpresas, chartDash, chartComp].forEach(c => { try { c && c.destroy(); } catch(_e){} });
-  chartPainel = chartPainelEmpresas = chartDash = chartComp = null;
+  [chartPainel, chartComp].forEach(c => { try { c && c.destroy(); } catch(_e){} });
+  chartPainel = chartComp = null;
   if (typeof empresaCharts !== 'undefined' && empresaCharts) {
     Object.values(empresaCharts).forEach(c => { try { c && c.destroy(); } catch(_e){} });
     empresaCharts = {};
@@ -1603,7 +1576,7 @@ function agendarSave(fluxo, fn, ms = 700) {
 function cancelarSavesPendentes() {
   Object.keys(saveTimers).forEach(k => clearTimeout(saveTimers[k]));
 }
-let chartPainel = null, chartPainelEmpresas = null, chartDash = null, chartComp = null;
+let chartPainel = null, chartComp = null;
 let currentEmpresaId = null;
 let selBalancoSocio = 'TODOS';
 // ─── Mercado Pago ───
@@ -2374,7 +2347,6 @@ function renderAll() {
   const companiesYTD = getCompaniesYTD();
 
   renderPainel(cons, ytd, totals, companiesYTD);
-  renderDashboard(cons, ytd, totals, companiesYTD);
   renderLancamentos();
   renderPlanejado();
   renderComparativo(cons, ytd, companiesYTD);
@@ -2410,16 +2382,16 @@ function renderNavEmpresas() {
     </button>`).join('');
 }
 
-// ─── PAINEL FINTECH ───────────────────────────────────────────────────────────
+// ─── PAINEL ───────────────────────────────────────────────────────────────────
 function renderPainel(cons, ytd, totals, companiesYTD) {
-  const { caixaAtual, burnRate, runway, margem, totalCusto } = totals;
+  const { caixaAtual, burnRate, runway, margem, totalCusto, totalInv } = totals;
   const m = estrutura.metas;
 
-  // KPIs consolidados de TODAS as empresas
   document.getElementById('painel-kpis').innerHTML = [
     kpiCard('Receita Total YTD', fmt(ytd.receita), `Meta: ${fmt(ytd.receitaP)}`, '#1E6FFF'),
     kpiCard('Resultado YTD', fmt(ytd.resultado), `Meta: ${fmt(ytd.resultadoP)}`, ytd.resultado>=0?'#10B981':'#EF4444'),
     kpiCard('Margem Grupo', fmtPct(margem), `Meta: ${fmtPct(m.margem)}`, margem>=(m.margem||0)?'#10B981':'#EF4444'),
+    kpiCard('Investimento Inicial', fmt(totalInv), '', '#8B5CF6'),
     kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
     kpiCard('Runway', `${fmtNum(runway)} meses`, `Meta: ${fmtNum(m.runway)} meses`, runway>=(m.runway||6)?'#10B981':'#EF4444'),
     kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
@@ -2427,35 +2399,11 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
     kpiCard('Empresas Ativas', `${FILHAS.length}`, 'Empresas filhas', '#1E6FFF'),
   ].join('');
 
-  // Semáforo KPI
-  const kpis = [
-    ['Receita YTD', ytd.receita, ytd.receitaP, fmt, false],
-    ['Resultado YTD', ytd.resultado, ytd.resultadoP, fmt, false],
-    ['Burn Rate', burnRate, m.burnRateMax||0, fmt, true],
-    ['Runway', runway, m.runway, v=>`${fmtNum(v)} meses`, false],
-    ['Margem Grupo', margem, m.margem, fmtPct, false],
-    ['Custo Mensal Hub', totalCusto, m.burnRateMax||totalCusto||1, fmt, true],
-  ];
-  document.getElementById('semaforo-kpi').innerHTML = kpis.map(([label,real,plan,f,inv])=>{
-    const s = getStatus(real, plan, inv);
-    return `<tr><td><strong>${label}</strong></td><td>${f(real)}</td><td style="color:#6B7280">${f(plan)}</td>
-      <td>${plan>0?fmtPct(real/plan):'—'}</td><td>${badgeHtml(s)}</td></tr>`;
-  }).join('');
-
-  // Semáforo por empresa (TODAS as empresas, incluindo novas)
-  document.getElementById('semaforo-empresa').innerHTML = companiesYTD.map(c=>`
-    <tr style="cursor:pointer" onclick="${c.isMae?'':` showEmpresaIndividual('${c.id}')`}">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-sem-'+c.id})}${c.isMae?' <span style="font-size:10px;color:#6B7280">(Hub)</span>':''}</td>
-      <td>${fmtPct(c.atR)}</td><td>${fmtPct(c.atRe)}</td><td>${badgeHtml(c.status)}</td>
-    </tr>`).join('');
-
-  // Gráfico consolidado
-  const labels = cons.map(c=>c.mes);
   if (chartPainel) chartPainel.destroy();
   chartPainel = new Chart(document.getElementById('chart-painel'), {
     type: 'bar',
     data: {
-      labels,
+      labels: cons.map(c=>c.mes),
       datasets: [
         { label:'Receita Realizada', data:cons.map(c=>c.receita), backgroundColor:'#1E6FFF', borderRadius:4 },
         { label:'Receita Planejada', data:cons.map(c=>c.receitaP), backgroundColor:'#BFDBFE', borderRadius:4 },
@@ -2465,50 +2413,14 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
     options: { responsive:true, plugins:{legend:{labels:{font:{size:12}}}}, scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}} }
   });
 
-  // Gráfico por empresa (barras horizontais YTD)
-  const sortedEmpresas = [...companiesYTD].sort((a,b)=>b.receita-a.receita);
-  if (chartPainelEmpresas) chartPainelEmpresas.destroy();
-  chartPainelEmpresas = new Chart(document.getElementById('chart-painel-empresas'), {
-    type: 'bar',
-    data: {
-      labels: sortedEmpresas.map(c=>c.name),
-      datasets: [
-        { label:'Receita YTD', data:sortedEmpresas.map(c=>c.receita), backgroundColor:sortedEmpresas.map(c=>c.color), borderRadius:4 },
-        { label:'Resultado YTD', data:sortedEmpresas.map(c=>c.resultado), backgroundColor:sortedEmpresas.map(c=>c.resultado>=0?'#10B98166':'#EF444466'), borderRadius:4 },
-      ]
-    },
-    options: {
-      indexAxis:'y', responsive:true,
-      plugins:{legend:{labels:{font:{size:12}}}},
-      scales:{x:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}
-    }
-  });
-}
-
-// ─── DASHBOARD ───────────────────────────────────────────────────────────────
-function renderDashboard(cons, ytd, totals, companiesYTD) {
-  const { caixaAtual, burnRate, runway, margem, totalInv, totalCusto } = totals;
-
-  document.getElementById('dash-kpis').innerHTML = [
-    kpiCard('Receita Total YTD', fmt(ytd.receita), '', '#1E6FFF'),
-    kpiCard('Resultado Operacional YTD', fmt(ytd.resultado), '', ytd.resultado>=0?'#10B981':'#EF4444'),
-    kpiCard('Margem Operacional YTD', fmtPct(margem), '', '#1E6FFF'),
-    kpiCard('Investimento Inicial', fmt(totalInv), '', '#8B5CF6'),
-    kpiCard('Custo Mensal Geral', fmt(totalCusto), '', '#F59E0B'),
-    kpiCard('Caixa Atual', fmt(caixaAtual), '', caixaAtual>=0?'#10B981':'#EF4444'),
-    kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
-    kpiCard('Runway', `${fmtNum(runway)} meses`, '', runway>=6?'#10B981':'#EF4444'),
-  ].join('');
-
-  document.getElementById('dash-months-header').innerHTML =
-    `<th>Indicador</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}`;
-
-  const rows = [
+  document.getElementById('painel-months-header').innerHTML =
+    `<th>Indicador</th>${MONTHS.map(mes=>`<th>${mes}</th>`).join('')}`;
+  const monthRows = [
     {label:'Receita Bruta', fn:c=>c.receita},
     {label:'Resultado Operacional', fn:c=>c.resultado},
     {label:'Margem Operacional', fn:c=>c.receita>0?fmtPct(c.resultado/c.receita):'—', noFmt:true},
   ];
-  document.getElementById('dash-table').innerHTML = rows.map((r,ri)=>`
+  document.getElementById('painel-month-table').innerHTML = monthRows.map((r,ri)=>`
     <tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td><strong>${r.label}</strong></td>
       ${cons.map(c=>{
@@ -2519,27 +2431,15 @@ function renderDashboard(cons, ytd, totals, companiesYTD) {
       }).join('')}
     </tr>`).join('');
 
-  document.getElementById('dash-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
-    <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-dash-'+c.id})}</strong></td>
+  document.getElementById('painel-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
+    <tr style="background:${i%2===0?'#FAFAFA':'#fff'};cursor:${c.isMae?'default':'pointer'}" onclick="${c.isMae?'':`showEmpresaIndividual('${c.id}')`}">
+      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-painel-'+c.id})}</strong>${c.isMae?' <span style="font-size:10px;color:#6B7280">(Hub)</span>':''}</td>
       <td>${fmt(c.receita)}</td><td>${fmt(c.custos)}</td>
       <td style="${c.resultado<0?'color:#DC2626;font-weight:600':'color:#059669;font-weight:600'}">${fmt(c.resultado)}</td>
       <td>${c.receita>0?fmtPct(c.resultado/c.receita):'—'}</td>
       <td>${fmtNum(c.hcAvg)}</td>
+      <td>${badgeHtml(c.status)}</td>
     </tr>`).join('');
-
-  if (chartDash) chartDash.destroy();
-  chartDash = new Chart(document.getElementById('chart-dash'), {
-    type:'line',
-    data:{
-      labels:cons.map(c=>c.mes),
-      datasets:[
-        {label:'Receita',data:cons.map(c=>c.receita),borderColor:'#1E6FFF',tension:0.3,pointRadius:4,fill:false,borderWidth:2.5},
-        {label:'Resultado',data:cons.map(c=>c.resultado),borderColor:'#10B981',tension:0.3,pointRadius:4,fill:false,borderWidth:2.5},
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}}
-  });
 }
 
 // ─── LANÇAMENTOS ─────────────────────────────────────────────────────────────
@@ -5745,6 +5645,7 @@ function voltarPagina() {
 }
 
 function showTab(name, btn) {
+  if (name === 'dashboard') name = 'painel';
   if (!paginaLiberada(name)) {
     if (name !== 'painel') showTab('painel');
     return;
