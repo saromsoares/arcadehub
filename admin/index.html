@@ -2798,7 +2798,6 @@ function saldoDisponivelStripe() {
 }
 
 function estadoCaixaSaldos() {
-  if (!paginaLiberada('mercadopago') || !paginaLiberada('stripe')) return { estado: 'sem-acesso' };
   const mp = saldoDisponivelMercadoPago();
   const st = saldoDisponivelStripe();
   if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st };
@@ -2810,7 +2809,6 @@ function textoCaixaAtual() {
   const caixa = estadoCaixaSaldos();
   if (caixa.estado === 'ok') return { valor: fmt(caixa.valor), sub: 'saldo disponível · Mercado Pago + Stripe', color: caixa.valor >= 0 ? '#10B981' : '#EF4444' };
   if (caixa.estado === 'consultando') return { valor: '…', sub: 'consultando Mercado Pago e Stripe', color: '#9CA3AF' };
-  if (caixa.estado === 'sem-acesso') return { valor: '—', sub: 'saldos não liberados nesta conta', color: '#9CA3AF' };
   return { valor: '—', sub: 'não foi possível ler os dois saldos', color: '#EF4444' };
 }
 
@@ -2835,8 +2833,8 @@ function pintarCaixasAtuais() {
 }
 
 function garantirSaldos() {
-  if (paginaLiberada('mercadopago') && mpSaldo === null && !mpSaldoLoading) carregarSaldoMP();
-  if (paginaLiberada('stripe') && stripeSaldo === null && !stripeSaldoLoading) carregarSaldoStripe();
+  if (mpSaldo === null && !mpSaldoLoading) carregarSaldoMP();
+  if (stripeSaldo === null && !stripeSaldoLoading) carregarSaldoStripe();
 }
 
 async function carregarSaldoMP(){

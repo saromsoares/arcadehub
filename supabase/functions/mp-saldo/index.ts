@@ -24,9 +24,6 @@ async function requireMercadoPago(req: Request) {
   const access = await admin.from("usuarios_empresas").select("empresa_id").eq("user_id", data.user.id).eq("empresa_id", "arcade_hub").maybeSingle();
   if (access.error) return json({ ok: false, error: "Não foi possível verificar o acesso." }, 503);
   if (!access.data) return json({ ok: false, error: "A conta Mercado Pago é da holding." }, 403);
-  const blocks = await admin.from("usuarios_paginas_bloqueadas").select("paginas").eq("user_id", data.user.id).maybeSingle();
-  if (blocks.error) return json({ ok: false, error: "Não foi possível verificar o acesso." }, 503);
-  if ((blocks.data?.paginas || []).includes("mercadopago")) return json({ ok: false, error: "Esta área não está liberada." }, 403);
   return null;
 }
 
