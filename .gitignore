@@ -56,3 +56,6 @@ copy-showcase-site.md
 
 # Supabase CLI local cache
 supabase/.temp/
+
+# Snapshots locais do Playwright MCP
+.playwright-mcp/

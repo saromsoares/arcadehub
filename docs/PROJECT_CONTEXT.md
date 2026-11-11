@@ -1,6 +1,6 @@
 # Arcade Hub — contexto atual do projeto
 
-Atualizado em **2026-10-30** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
+Atualizado em **2026-11-10** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
 ## Produto e código
 
@@ -19,24 +19,24 @@ O site não tem gates genéricos npm de build/lint/test. Mudanças de interface 
 | Empresa | ID no admin | Exposição |
 | --- | --- | --- |
 | Arcade Hub | `arcade_hub` | Holding no admin |
-| De Olho.ai | — | Público: https://deolho.ai/; substitui Giro na Máxima |
-| Giro na Máxima | `gironamaxima` | Somente admin; cadastro financeiro preservado |
+| De Olho.ai | — | Público: https://deolho.ai/; substitui Giro na Máxima no site |
+| Giro na Máxima | — | Retirada do admin em 2026-11-10. Histórico permanece no banco sob `gironamaxima` e não volta para `COMPANIES` |
 | PrivaBR | `priva_br` | Público e admin |
 | Coben Life OS | `coben_life_os` | Público e admin |
-| Kanbia | `kanbia` | Público e admin |
-| ClickDrop | — | Público: https://clickdrop.app/; substitui Croqui.ai |
-| Croqui.ai | `croqui_ai` | Somente admin; cadastro financeiro preservado |
+| Kanbia | — | Público. Retirada do admin em 2026-11-10. Histórico permanece no banco sob `kanbia` |
+| ClickDrop | `clickdrop` | Público e admin: https://clickdrop.app/ |
+| Croqui.ai | — | Retirada do admin em 2026-11-10. Histórico permanece no banco sob `croqui_ai` |
 | Jogadaça.ai | `jogadaca` | Público e admin |
 | Líquida Peças | `liquida_pecas` | Somente admin |
-| Xepou | `xepou` | Somente admin |
+| Xepou | — | Retirada do admin em 2026-11-10. Histórico permanece no banco sob `xepou` |
 
-São **seis empresas no site público e holding + oito filhas no admin**. A [story 1.5](stories/1.5.story.md) atualiza somente o portfólio público: De Olho.ai apresenta conteúdo sobre tecnologia e IA; ClickDrop apresenta conversão e organização de arquivos, com status Em beta conforme seu site oficial. Os IDs e cadastros financeiros de Giro na Máxima e Croqui.ai permanecem no admin; esta alteração não migra dados nem cadastra novas empresas financeiras. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. Caixas CBAI/ConfereCheck não implicam inclusão de novas empresas nesses arrays.
+São **seis empresas no site público e holding + cinco filhas no admin**. A [story 1.5](stories/1.5.story.md) atualizou o portfólio público em 2026-10-30: De Olho.ai apresenta conteúdo sobre tecnologia e IA; ClickDrop apresenta conversão e organização de arquivos, com status Em beta conforme seu site oficial. Em 2026-11-10 o admin retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai da lista e passou a cadastrar ClickDrop (`clickdrop`). Essa retirada não apaga lançamentos antigos nem migra saldos. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. Caixas CBAI/ConfereCheck não implicam inclusão de novas empresas nesses arrays.
 
 ## Dashboard e dados
 
-O admin reúne indicadores financeiros, comparativo, Mercado Pago, contatos do site, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. Manter os fluxos financeiros existentes; esta entrega de e-mail não os alterou.
+O admin reúne indicadores financeiros, comparativo, Mercado Pago, contatos do site, leads por projeto, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. A mudança de 2026-11-10 só retira Giro na Máxima, Kanbia, Xepou e Croqui.ai de `COMPANIES` e inclui `clickdrop`. Os lançamentos históricos desses IDs permanecem no banco.
 
-Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.supabase.co`. Tabelas relevantes incluem `lancamentos`, `planejado`, `custos_extras`, `estrutura`, `calendario_acoes`, `usuarios_empresas`, `mp_recebimentos`, `contatos`, `emails` e `email_mailboxes`. A lista não substitui inventário do banco.
+Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.supabase.co`. Tabelas relevantes incluem `lancamentos`, `planejado`, `custos_extras`, `estrutura`, `calendario_acoes`, `usuarios_empresas`, `mp_recebimentos`, `contatos`, `leads`, `emails` e `email_mailboxes`. A lista não substitui inventário do banco.
 
 O módulo de e-mail exige vínculo à holding via `user_has_empresa_access('arcade_hub')`. Ter apenas vínculo a uma filha não concede acesso às caixas. O frontend usa chave publishable; credenciais SMTP/IMAP e chaves privilegiadas ficam no servidor.
 

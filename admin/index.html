@@ -146,6 +146,26 @@
   }
   .btn-month.active { background: #1E6FFF; color: #fff; border-color: #1E6FFF; }
 
+  .leads-form { background:#fff; border:1px solid #E5E7EB; border-radius:12px; padding:16px; margin-bottom:16px; }
+  .leads-form-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+  .leads-form-grid .wide { grid-column:1 / -1; }
+  .leads-form label { display:block; font-size:11px; font-weight:700; color:#6B7280; letter-spacing:.3px; text-transform:uppercase; margin-bottom:4px; }
+  .leads-form input, .leads-form select, .leads-form textarea {
+    width:100%; box-sizing:border-box; border:1px solid #E5E7EB; border-radius:7px;
+    padding:9px 11px; font:inherit; font-size:13px; color:#111827; background:#fff;
+  }
+  .leads-form textarea { min-height:84px; resize:vertical; }
+  .leads-form input:focus, .leads-form select:focus, .leads-form textarea:focus { outline:3px solid #1E6FFF; border-color:#1E6FFF; }
+  .leads-board { display:flex; gap:12px; overflow-x:auto; align-items:flex-start; padding-bottom:8px; }
+  .leads-col { flex:0 0 250px; background:#F8FAFC; border:1px solid #E5E7EB; border-radius:12px; min-height:180px; }
+  .leads-col-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid #E5E7EB; font-size:12px; font-weight:700; }
+  .lead-card { background:#fff; border:1px solid #E5E7EB; border-left:4px solid #1E6FFF; border-radius:10px; padding:10px 12px; margin:8px; cursor:grab; }
+  .lead-card strong { display:block; font-size:14px; color:#111827; }
+  .lead-card p { margin:4px 0 0; color:#4B5563; font-size:12px; line-height:1.4; }
+  .lead-obs { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; }
+  .lead-card button, .leads-form button { font-family:inherit; cursor:pointer; }
+  @media (max-width: 700px) { .leads-form-grid { grid-template-columns:1fr; } }
+
   /* Inputs */
   .inp {
     border: 1px solid #E5E7EB; border-radius: 6px; padding: 5px 8px;
@@ -549,6 +569,7 @@
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
     <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
     <button class="nav-item" onclick="showTab('contatos',this)">✉️ Contatos <span id="nav-contatos-badge" style="display:none;background:#EF4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;"></span></button>
+    <button class="nav-item" id="nav-leads" onclick="showTab('leads',this)">🎯 Leads</button>
     <button class="nav-item" onclick="showTab('email',this)">📧 E-mail</button>
 
     <div class="nav-section">Operações</div>
@@ -985,6 +1006,30 @@
     <div id="contatos-list"></div>
   </div>
 
+  <!-- LEADS POR PROJETO -->
+  <div id="tab-leads" class="tab-content">
+    <div class="page-title" id="pt-leads">Leads</div>
+    <div class="page-sub" id="ps-leads">Funil dos projetos liberados para o seu usuário. O lead guarda nome, e-mail, região, telefone, observação e status.</div>
+    <div class="btn-group" id="leads-companies"></div>
+    <form id="lead-form" class="leads-form">
+      <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:12px;" id="lead-form-title">Novo lead</div>
+      <div class="leads-form-grid">
+        <div><label for="lead-nome">Nome*</label><input id="lead-nome" name="nome" type="text" maxlength="160" required autocomplete="name"></div>
+        <div><label for="lead-email">E-mail</label><input id="lead-email" name="email" type="email" maxlength="160" autocomplete="email"></div>
+        <div><label for="lead-regiao">Região</label><input id="lead-regiao" name="regiao" type="text" maxlength="120" placeholder="Cidade ou estado"></div>
+        <div><label for="lead-telefone">Telefone</label><input id="lead-telefone" name="telefone" type="tel" maxlength="40" autocomplete="tel" placeholder="(DDD) 9 0000-0000"></div>
+        <div class="wide"><label for="lead-observacao">Observação</label><textarea id="lead-observacao" name="observacao" maxlength="4000"></textarea></div>
+        <div><label for="lead-status">Status</label><select id="lead-status" name="status"></select></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+        <button type="submit" style="background:#1E6FFF;color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:700;">Salvar lead</button>
+        <button type="button" id="lead-cancel" style="background:#fff;color:#374151;border:1px solid #E5E7EB;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;">Cancelar</button>
+        <span id="lead-msg" role="status" style="font-size:12px;color:#B91C1C;"></span>
+      </div>
+    </form>
+    <div class="leads-board" id="leads-board"></div>
+  </div>
+
   <!-- E-MAIL -->
   <div id="tab-email" class="tab-content">
     <div class="page-title" id="pt-email">E-mail
@@ -1273,7 +1318,13 @@ async function resetState() {
   lancamentos = {}; planejado = {};
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
-  contatos = []; emails = [];
+  contatos = []; emails = []; leads = []; leadEditId = null;
+  leadsEpoch += 1;
+  leadSalvando = false;
+  leadFila.clear();
+  empresasAcessiveis = null;
+  empresasAcessiveisErro = false;
+  selLeadCompany = 'arcade_hub';
   acessosEmpresas = []; planosEmpresas = [];
   if (typeof senhasReveladas !== 'undefined') senhasReveladas.clear();
   if (typeof acessosVisiveis !== 'undefined') acessosVisiveis.clear();
@@ -1361,13 +1412,10 @@ function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 // Empresas filhas: todas as demais
 const COMPANIES = [
   { id:'arcade_hub',    name:'Arcade Hub',      color:'#1E6FFF', emoji:'🏦', segmento:'Holding / Fintech',       isMae: true,  website:'' },
-  { id:'gironamaxima',  name:'Giro na Máxima',  color:'#F97316', emoji:'🔄', segmento:'Tecnologia & IA',          isMae: false, website:'https://gironamaxima.com.br/' },
   { id:'priva_br',      name:'PrivaBR',          color:'#14B8A6', emoji:'🔐', segmento:'Privacidade & Dados',      isMae: false, website:'https://www.privabr.com.br/' },
   { id:'coben_life_os', name:'Coben Life OS',   color:'#3B82F6', emoji:'🧬', segmento:'Life OS & Produtividade',  isMae: false, website:'https://www.coben.app/' },
-  { id:'kanbia',        name:'Kanbia',           color:'#10D9A0', emoji:'🤖', segmento:'Pós-venda & IA',          isMae: false, website:'https://www.instagram.com/kanbia.oficial/' },
-  { id:'croqui_ai',     name:'Croqui.ai',       color:'#FF5E57', emoji:'📐', segmento:'Arquitetura & IA',         isMae: false, website:'https://app.croqui.ai/' },
+  { id:'clickdrop',     name:'ClickDrop',       color:'#FF796F', emoji:'📁', segmento:'Arquivos & Produtividade', isMae: false, website:'https://clickdrop.app/' },
   { id:'liquida_pecas', name:'Líquida Peças',   color:'#DC2626', emoji:'🔧', segmento:'Marketplace de Peças',     isMae: false, website:'' },
-  { id:'xepou',         name:'Xepou',           color:'#EAB308', emoji:'🍞', segmento:'Foodtech & Marketplace',   isMae: false, website:'https://www.xepou.app/' },
   { id:'jogadaca',      name:'Jogadaça.ai',     color:'#8B5CF6', emoji:'⚽', segmento:'IA & Sports Trading',      isMae: false, website:'https://www.jogadaca.ai/' },
 ];
 
@@ -1443,6 +1491,22 @@ let mpPollTimer = null;
 // ─── Contatos do site ───
 let contatos = [];
 let contatosRealtimeOn = false;
+let leads = [];
+let selLeadCompany = 'arcade_hub';
+let leadEditId = null;
+let leadsEpoch = 0;
+let leadSalvando = false;
+let empresasAcessiveis = null;
+let empresasAcessiveisErro = false;
+const leadFila = new Map();
+const LEAD_STATUS = [
+  { id:'novo', label:'Novo', color:'#1E6FFF' },
+  { id:'em_contato', label:'Contato feito', color:'#0EA5E9' },
+  { id:'qualificado', label:'Qualificado', color:'#8B5CF6' },
+  { id:'proposta', label:'Proposta', color:'#F59E0B' },
+  { id:'ganho', label:'Ganho', color:'#10B981' },
+  { id:'perdido', label:'Perdido', color:'#EF4444' },
+];
 let custosExtras = []; // Array de custos extras carregados do Supabase
 let acoesCal = [];     // Array de acoes do calendario operacional
 let calExtraDates = []; // Datas vazias adicionadas manualmente (sem acoes)
@@ -2047,7 +2111,7 @@ async function loadAll() {
   if (emailSession !== emailSessionVersion) return ['sessão encerrada'];
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
-  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos'];
+  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos'];
   const respostas = await Promise.all([
     sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
     sb.from('planejado').select('*').eq('ano', EXERCICIO),
@@ -2060,11 +2124,14 @@ async function loadAll() {
     // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
     sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true }),
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
+    sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false }),
+    sb.from('usuarios_empresas').select('empresa_id'),
   ]);
   const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
   if (falhas.length) console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
   const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
-         { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }] = respostas;
+         { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }, { data: ldData },
+         { data: ueData }] = respostas;
   if (axData) acessosEmpresas = axData;
   if (plData) planosEmpresas = plData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
@@ -2073,6 +2140,12 @@ async function loadAll() {
   if (acData) acoesCal = acData;
   if (mpData) mpRecebimentos = mpData;
   if (ctData) contatos = ctData;
+  if (ldData) leads = ldData.map(l => ({ ...l, statusConfirmado: leadStatus(l.status).id }));
+  if (respostas[11] && respostas[11].error) empresasAcessiveisErro = true;
+  else {
+    empresasAcessiveisErro = false;
+    empresasAcessiveis = new Set((ueData || []).map(r => r.empresa_id));
+  }
   if (emailSession === emailSessionVersion) {
     emailListError = respostas[7]?.error ? 'Não foi possível carregar as mensagens. Tente sincronizar novamente.' : '';
     if (emData) emails = emData.filter(emailDaCaixa);
@@ -2111,6 +2184,7 @@ function renderAll() {
   renderCalendario();
   renderMercadoPago();
   renderContatos();
+  renderLeads();
   renderEmails();
   renderAcessos();
   renderNavEmpresas();
@@ -2639,11 +2713,14 @@ function renderMercadoPago(){
 function socioLabel(s){ return s.charAt(0) + s.slice(1).toLowerCase(); }
 function mpEmpresaSelect(r){
   const cur = r.empresa_id || '';
+  const conhecida = !cur || cur.startsWith('aporte:') || COMPANIES.some(c => c.id === cur);
+  const legado = conhecida ? '' : `<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)} (fora da lista)</option>`;
   const empOpts = COMPANIES.map(c => `<option value="${c.id}"${cur===c.id?' selected':''}>${escapeHtml(c.emoji+' '+c.name)}</option>`).join('');
   const apOpts = SOCIOS.map(s => `<option value="aporte:${s}"${cur==='aporte:'+s?' selected':''}>💰 Aporte — ${escapeHtml(socioLabel(s))}</option>`).join('');
   const naoAtrib = !cur;
-  return `<select onchange="atribuirEmpresaMP('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:150px;background:${naoAtrib?'#FFFBEB':'#fff'};">`
+  return `<select onchange="atribuirEmpresaMP('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:170px;background:${naoAtrib?'#FFFBEB':'#fff'};">`
     + `<option value="">— não atribuído —</option>`
+    + legado
     + `<optgroup label="Receita de empresa">${empOpts}</optgroup>`
     + `<optgroup label="Aporte de sócio (caixa)">${apOpts}</optgroup>`
     + `</select>`;
@@ -2740,6 +2817,313 @@ function renderContatos(){
     </div>`;
   }).join('');
 }
+
+// ─── LEADS POR PROJETO ───────────────────────────────────────────────────────
+function leadStatus(id) {
+  return LEAD_STATUS.find(s => s.id === id) || LEAD_STATUS[0];
+}
+
+function empresasDeLead() {
+  if (!empresasAcessiveis) return [];
+  return COMPANIES.filter(c => empresasAcessiveis.has(c.id));
+}
+
+function definirFormLeadAtivo(ativo) {
+  const form = document.getElementById('lead-form');
+  if (!form) return;
+  form.querySelectorAll('input, select, textarea, button').forEach(el => {
+    el.disabled = !ativo || (leadSalvando && el.type === 'submit');
+  });
+}
+
+function limparLeadForm() {
+  leadEditId = null;
+  const form = document.getElementById('lead-form');
+  if (form) form.reset();
+  const titulo = document.getElementById('lead-form-title');
+  if (titulo) titulo.textContent = 'Novo lead';
+  const msg = document.getElementById('lead-msg');
+  if (msg) msg.textContent = '';
+  const status = document.getElementById('lead-status');
+  if (status) status.value = 'novo';
+}
+
+function leadFormTemRascunho() {
+  const nome = document.getElementById('lead-nome')?.value.trim() || '';
+  const email = document.getElementById('lead-email')?.value.trim() || '';
+  const regiao = document.getElementById('lead-regiao')?.value.trim() || '';
+  const telefone = document.getElementById('lead-telefone')?.value.trim() || '';
+  const observacao = document.getElementById('lead-observacao')?.value.trim() || '';
+  const status = document.getElementById('lead-status')?.value || 'novo';
+  if (!leadEditId) return Boolean(nome || email || regiao || telefone || observacao || status !== 'novo');
+  const lead = leads.find(l => l.id === leadEditId);
+  if (!lead) return true;
+  return nome !== (lead.nome || '')
+    || email !== (lead.email || '')
+    || regiao !== (lead.regiao || '')
+    || telefone !== (lead.telefone || '')
+    || observacao !== (lead.observacao || '')
+    || status !== leadStatus(lead.status).id;
+}
+
+function selecionarProjetoLead(id) {
+  if (!empresasDeLead().some(c => c.id === id)) return;
+  if (id === selLeadCompany) return;
+  if (leadFormTemRascunho() && !confirm('Trocar de projeto descarta o que está no formulário. Continuar?')) return;
+  limparLeadForm();
+  selLeadCompany = id;
+  renderLeads();
+}
+
+function preencherFormLead(lead) {
+  leadEditId = lead.id;
+  document.getElementById('lead-nome').value = lead.nome || '';
+  document.getElementById('lead-email').value = lead.email || '';
+  document.getElementById('lead-regiao').value = lead.regiao || '';
+  document.getElementById('lead-telefone').value = lead.telefone || '';
+  document.getElementById('lead-observacao').value = lead.observacao || '';
+  document.getElementById('lead-status').value = leadStatus(lead.status).id;
+  document.getElementById('lead-form-title').textContent = 'Editar lead';
+  document.getElementById('lead-msg').textContent = '';
+  document.getElementById('lead-nome').focus();
+}
+
+function renderLeads() {
+  const empresas = document.getElementById('leads-companies');
+  const board = document.getElementById('leads-board');
+  const statusSel = document.getElementById('lead-status');
+  if (!empresas || !board || !statusSel) return;
+  if (!statusSel.options.length) {
+    statusSel.innerHTML = LEAD_STATUS.map(s => `<option value="${s.id}">${escapeHtml(s.label)}</option>`).join('');
+  }
+  if (empresasAcessiveisErro || !empresasAcessiveis) {
+    empresas.innerHTML = '';
+    board.innerHTML = `<p style="margin:0;color:#6B7280;font-size:13px;">${empresasAcessiveisErro ? 'Não foi possível carregar os projetos liberados.' : 'Carregando projetos...'}</p>`;
+    definirFormLeadAtivo(false);
+    return;
+  }
+  const liberadas = empresasDeLead();
+  if (!liberadas.length) {
+    empresas.innerHTML = '';
+    board.innerHTML = '<p style="margin:0;color:#6B7280;font-size:13px;">Nenhum projeto liberado para o seu usuário.</p>';
+    definirFormLeadAtivo(false);
+    return;
+  }
+  definirFormLeadAtivo(true);
+  if (!liberadas.some(c => c.id === selLeadCompany)) {
+    limparLeadForm();
+    selLeadCompany = liberadas[0].id;
+  }
+  empresas.innerHTML = liberadas.map(c =>
+    `<button type="button" class="btn-company" data-lead-company="${escapeHtml(c.id)}"
+      style="${c.id===selLeadCompany?`background:${escapeHtml(c.color)};color:#fff;border-color:${escapeHtml(c.color)}`:''}">
+      ${escapeHtml(c.emoji)} ${escapeHtml(c.name)}</button>`
+  ).join('');
+  const doProjeto = leads.filter(l => l.empresa_id === selLeadCompany);
+  board.innerHTML = LEAD_STATUS.map(st => {
+    const itens = doProjeto.filter(l => leadStatus(l.status).id === st.id);
+    const cards = itens.map(l => {
+      const tel = String(l.telefone || '').replace(/\D/g, '');
+      const telHref = tel.length === 10 || tel.length === 11 ? `tel:+55${tel}` : (tel ? `tel:+${tel}` : '');
+      return `<article class="lead-card" draggable="true" data-lead-id="${escapeHtml(l.id)}" style="border-left-color:${st.color}">
+        <strong>${escapeHtml(l.nome)}</strong>
+        ${l.email ? `<p><a href="mailto:${escapeHtml(l.email)}">${escapeHtml(l.email)}</a></p>` : ''}
+        ${l.telefone ? `<p>${telHref ? `<a href="${telHref}">${escapeHtml(l.telefone)}</a>` : escapeHtml(l.telefone)}</p>` : ''}
+        ${l.regiao ? `<p>${escapeHtml(l.regiao)}</p>` : ''}
+        ${l.observacao ? `<p class="lead-obs">${escapeHtml(l.observacao)}</p>` : ''}
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button type="button" data-lead-edit="${escapeHtml(l.id)}" style="background:#EEF2FF;color:#1E6FFF;border:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;">Editar</button>
+          <button type="button" data-lead-delete="${escapeHtml(l.id)}" style="background:none;border:none;color:#EF4444;padding:5px 8px;font-size:11px;font-weight:700;">Excluir</button>
+        </div>
+      </article>`;
+    }).join('') || `<p style="margin:12px;color:#9CA3AF;font-size:12px;">Nenhum lead</p>`;
+    return `<section class="leads-col" data-lead-status="${st.id}">
+      <div class="leads-col-head"><span style="color:${st.color}">${escapeHtml(st.label)}</span><span style="color:#6B7280">${itens.length}</span></div>
+      ${cards}
+    </section>`;
+  }).join('');
+}
+
+function lerLeadForm() {
+  const nome = document.getElementById('lead-nome').value.trim();
+  const email = document.getElementById('lead-email').value.trim();
+  const regiao = document.getElementById('lead-regiao').value.trim();
+  const telefone = document.getElementById('lead-telefone').value.trim();
+  const observacao = document.getElementById('lead-observacao').value.trim();
+  const status = document.getElementById('lead-status').value;
+  const msg = document.getElementById('lead-msg');
+  msg.textContent = '';
+  if (!empresasDeLead().some(c => c.id === selLeadCompany)) { msg.textContent = 'Este projeto não está liberado para o seu usuário.'; return null; }
+  if (!nome) { msg.textContent = 'Informe o nome.'; return null; }
+  if (email && !document.getElementById('lead-email').checkValidity()) { msg.textContent = 'Informe um e-mail válido.'; return null; }
+  if (!LEAD_STATUS.some(s => s.id === status)) { msg.textContent = 'Escolha um status.'; return null; }
+  return {
+    empresa_id: selLeadCompany,
+    nome, email: email || null, regiao: regiao || null, telefone: telefone || null,
+    observacao: observacao || null, status, updated_at: new Date().toISOString(),
+  };
+}
+
+function lembrarLead(data) {
+  return Object.assign({}, data, { statusConfirmado: leadStatus(data.status).id });
+}
+
+// A fila é por lead: uma gravação só sai depois da anterior, e um status
+// ultrapassado nem chega ao banco. O epoch descarta o resultado se a sessão mudou.
+function enfileirarEscritaLead(id, tarefa) {
+  const epoch = leadsEpoch;
+  const anterior = leadFila.get(id) || Promise.resolve();
+  const execucao = anterior.then(() => {
+    if (epoch !== leadsEpoch) return;
+    return tarefa();
+  }, () => {
+    if (epoch !== leadsEpoch) return;
+    return tarefa();
+  });
+  leadFila.set(id, execucao);
+  execucao.finally(() => {
+    if (leadFila.get(id) === execucao) leadFila.delete(id);
+  });
+  return execucao;
+}
+
+function sincronizarStatusNoForm(id, status) {
+  if (leadEditId !== id) return;
+  const sel = document.getElementById('lead-status');
+  if (sel && LEAD_STATUS.some(s => s.id === status)) sel.value = status;
+}
+
+async function salvarLead(event) {
+  event.preventDefault();
+  const payload = lerLeadForm();
+  if (!payload) return;
+  const editId = leadEditId;
+  const epoch = leadsEpoch;
+  const btn = event.submitter;
+  leadSalvando = true;
+  if (btn) btn.disabled = true;
+  try {
+    if (editId) {
+      const atual = leads.find(l => l.id === editId);
+      if (atual) payload.empresa_id = atual.empresa_id;
+      await enfileirarEscritaLead(editId, async () => {
+        if (epoch !== leadsEpoch) return;
+        const vivo = leads.find(l => l.id === editId);
+        const sel = document.getElementById('lead-status');
+        const formDeste = leadEditId === editId && sel && LEAD_STATUS.some(s => s.id === sel.value);
+        payload.status = formDeste ? sel.value : (vivo ? leadStatus(vivo.status).id : payload.status);
+        payload.updated_at = new Date().toISOString();
+        if (vivo) vivo.status = payload.status;
+        const { data } = await db(sb.from('leads').update(payload).eq('id', editId).select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').single(), 'salvar lead');
+        if (epoch !== leadsEpoch) return;
+        leads = leads.map(l => l.id === data.id ? lembrarLead(data) : l);
+      });
+    } else {
+      const { data } = await db(sb.from('leads').insert(payload).select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').single(), 'salvar lead');
+      if (epoch !== leadsEpoch) return;
+      leads.unshift(lembrarLead(data));
+    }
+    if (epoch !== leadsEpoch) return;
+    limparLeadForm();
+    renderLeads();
+    toast('Lead salvo.');
+  } catch (_e) {
+    // db() já mostrou o erro
+  } finally {
+    if (epoch !== leadsEpoch) return;
+    leadSalvando = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function gravarStatusLead(id, status, epoch) {
+  if (epoch !== leadsEpoch) return;
+  const lead = leads.find(l => l.id === id);
+  if (!lead || leadStatus(lead.status).id !== status) return;
+  await db(sb.from('leads').update({ status, updated_at: new Date().toISOString() }).eq('id', id), 'mover lead');
+  if (epoch !== leadsEpoch) return;
+  const atual = leads.find(l => l.id === id);
+  if (atual && leadStatus(atual.status).id === status) atual.statusConfirmado = status;
+}
+
+async function mudarStatusLead(id, status) {
+  if (!LEAD_STATUS.some(s => s.id === status)) return;
+  const lead = leads.find(l => l.id === id);
+  if (!lead || leadStatus(lead.status).id === status) return;
+  if (!empresasDeLead().some(c => c.id === lead.empresa_id)) return;
+  const epoch = leadsEpoch;
+  if (!lead.statusConfirmado) lead.statusConfirmado = leadStatus(lead.status).id;
+  lead.status = status;
+  sincronizarStatusNoForm(id, status);
+  renderLeads();
+  try {
+    await enfileirarEscritaLead(id, () => gravarStatusLead(id, status, epoch));
+  } catch (_e) {
+    if (epoch !== leadsEpoch) return;
+    const atual = leads.find(l => l.id === id);
+    if (!atual || leadStatus(atual.status).id !== status) return;
+    atual.status = atual.statusConfirmado;
+    sincronizarStatusNoForm(id, atual.status);
+    renderLeads();
+  }
+}
+
+async function excluirLead(id) {
+  if (!confirm('Excluir este lead?')) return;
+  const epoch = leadsEpoch;
+  try {
+    await enfileirarEscritaLead(id, async () => {
+      if (epoch !== leadsEpoch) return;
+      await db(sb.from('leads').delete().eq('id', id), 'excluir lead');
+      if (epoch !== leadsEpoch) return;
+      leads = leads.filter(l => l.id !== id);
+      if (leadEditId === id) limparLeadForm();
+      renderLeads();
+    });
+  } catch (_e) {}
+}
+
+(function ligarLeads() {
+  const form = document.getElementById('lead-form');
+  const board = document.getElementById('leads-board');
+  const empresas = document.getElementById('leads-companies');
+  if (!form || !board || !empresas) return;
+  form.addEventListener('submit', salvarLead);
+  document.getElementById('lead-cancel').addEventListener('click', limparLeadForm);
+  empresas.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-lead-company]');
+    if (btn) selecionarProjetoLead(btn.dataset.leadCompany);
+  });
+  board.addEventListener('click', (event) => {
+    const edit = event.target.closest('[data-lead-edit]');
+    const del = event.target.closest('[data-lead-delete]');
+    if (edit) {
+      const lead = leads.find(l => l.id === edit.dataset.leadEdit);
+      if (lead) preencherFormLead(lead);
+    } else if (del) {
+      excluirLead(del.dataset.leadDelete);
+    }
+  });
+  board.addEventListener('dragstart', (event) => {
+    const card = event.target.closest('[data-lead-id]');
+    if (!card || event.target.closest('button, a, input, select, textarea')) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.setData('text/plain', card.dataset.leadId);
+    event.dataTransfer.effectAllowed = 'move';
+  });
+  board.addEventListener('dragover', (event) => {
+    if (event.target.closest('[data-lead-status]')) event.preventDefault();
+  });
+  board.addEventListener('drop', (event) => {
+    const col = event.target.closest('[data-lead-status]');
+    if (!col) return;
+    event.preventDefault();
+    const id = event.dataTransfer.getData('text/plain');
+    if (id) mudarStatusLead(id, col.dataset.leadStatus);
+  });
+})();
 
 // ─── DADOS: SUB-ABAS E ACESSOS ───────────────────────────────────────────────
 let acessosEmpresas = [];

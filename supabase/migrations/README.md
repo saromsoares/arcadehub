@@ -6,6 +6,7 @@ Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-10-15.
 | --- | --- |
 | `20260522_000001_enable_rls_baseline.sql` | Baseline RLS aplicado em 2026-05-22, conforme histórico do projeto; nome local legado. |
 | `20261015182925_email_multicaixas.sql` | Aplicado em 2026-10-15, testes transacionais remotos aprovados e versão `20261015182925` registrada no histórico. |
+| `20261110124500_leads.sql` | Aplicado em 2026-11-10 por `db query` isolado e versão `20261110124500` registrada. Tabela `leads` com RLS por empresa. Em 2026-11-11 o `revoke` passou a incluir `authenticated` antes do `grant` de `select, insert, update, delete`; o ajuste foi aplicado com `db query`, sem `db push` e sem versão nova. |
 
 ## Histórico local e remoto
 
