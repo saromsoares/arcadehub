@@ -1351,6 +1351,7 @@ async function resetState() {
   leadFila.clear();
   empresasAcessiveis = null;
   empresasAcessiveisErro = false;
+  paginasBloqueadas = new Set();
   selLeadCompany = 'arcade_hub';
   acessosEmpresas = []; planosEmpresas = [];
   if (typeof senhasReveladas !== 'undefined') senhasReveladas.clear();
@@ -1524,6 +1525,17 @@ let stripeSaldoTs = null;
 let stripeSaldoLoading = false;
 let stripeRealtimeOn = false;
 let stripePollTimer = null;
+let paginasBloqueadas = new Set();
+function paginaLiberada(name) {
+  return !paginasBloqueadas.has(name);
+}
+function aplicarMenu() {
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    const match = (btn.getAttribute('onclick') || '').match(/showTab\('([^']+)'/);
+    if (!match) return;
+    btn.style.display = paginaLiberada(match[1]) ? '' : 'none';
+  });
+}
 // ─── Contatos do site ───
 let contatos = [];
 let contatosRealtimeOn = false;
@@ -2194,7 +2206,7 @@ async function loadAll() {
   if (emailSession !== emailSessionVersion) return ['sessão encerrada'];
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
-  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos','Stripe'];
+  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos','Stripe','permissões'];
   const respostas = await Promise.all([
     sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
     sb.from('planejado').select('*').eq('ano', EXERCICIO),
@@ -2210,8 +2222,16 @@ async function loadAll() {
     sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false }),
     sb.from('usuarios_empresas').select('empresa_id'),
     sb.from('stripe_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
+    sb.from('usuarios_paginas_bloqueadas').select('paginas').maybeSingle(),
   ]);
-  const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
+  const pbData = respostas[13] && !respostas[13].error ? respostas[13].data : null;
+  paginasBloqueadas = new Set((pbData && pbData.paginas) || []);
+  const falhas = respostas.map((r, i) => {
+    if (!(r && r.error)) return null;
+    if (rotulos[i] === 'Mercado Pago' && paginasBloqueadas.has('mercadopago')) return null;
+    if (rotulos[i] === 'Stripe' && paginasBloqueadas.has('stripe')) return null;
+    return rotulos[i];
+  }).filter(Boolean);
   if (falhas.length) console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
   const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
          { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }, { data: ldData },
@@ -2274,6 +2294,7 @@ function renderAll() {
   renderEmails();
   renderAcessos();
   renderNavEmpresas();
+  aplicarMenu();
   setTimeout(makeAllEditable, 50);
 }
 
@@ -2428,6 +2449,7 @@ function renderDashboard(cons, ytd, totals, companiesYTD) {
 
 // ─── LANÇAMENTOS ─────────────────────────────────────────────────────────────
 function renderLancamentos() {
+  if (!paginaLiberada('lancamentos')) return;
   document.getElementById('lanc-months').innerHTML = MONTHS.map(m=>
     `<button class="btn-month${m===selMonth?' active':''}" onclick="selMonth='${m}';renderLancamentos()">${m}</button>`
   ).join('');
@@ -2734,6 +2756,7 @@ function iniciarRealtimeMP(){
 }
 
 function renderMercadoPago(){
+  if (!paginaLiberada('mercadopago')) return;
   iniciarRealtimeMP();
   // dispara a primeira consulta de saldo automaticamente
   if(mpSaldo === null && !mpSaldoLoading){ carregarSaldoMP(); }
@@ -2872,6 +2895,7 @@ function iniciarRealtimeStripe(){
 }
 
 function renderStripe(){
+  if (!paginaLiberada('stripe')) return;
   iniciarRealtimeStripe();
   if(stripeSaldo === null && !stripeSaldoLoading){ carregarSaldoStripe(); }
   const aprovados = stripeRecebimentos.filter(r => r.status === 'approved');
@@ -4303,6 +4327,7 @@ function renderFolha(totalBase) {
 }
 
 function renderEstrutura(totals) {
+  if (!paginaLiberada('estrutura')) return;
   const { caixaAtual, resultadoAcum, totalCusto, totalCustoAcum, totalRealizadoAcum, totalInv, totalAportes, totalAporteMeta } = totals;
   const MONTHS_ALL = MONTHS;
   const MONTHS_OP = MONTHS_OPERACIONAIS;
@@ -4472,6 +4497,7 @@ function renderEstrutura(totals) {
 
 // ─── BALANÇO DOS SÓCIOS ──────────────────────────────────────────────────────
 function renderBalancoSocios() {
+  if (!paginaLiberada('balanco')) return;
   const MONTHS_ALL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const socioColors = SOCIO_COLORS;
 
@@ -4878,11 +4904,11 @@ function buildEmpresaForm(cid, mes) {
     ${ro('Headcount', fmtNum(e.headcount||0))}
     ${ro('Total Custos (R$)', fmt(totalCustos))}
     ${ro('Observações', e.obs ? escapeHtml(e.obs) : '—')}
-    <div style="grid-column:1/-1;margin-top:2px;">
+    ${paginaLiberada('lancamentos') ? `<div style="grid-column:1/-1;margin-top:2px;">
       <button onclick="irParaLancamentos('${escapeHtml(cid)}','${escapeHtml(mes)}')"
         style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
         ✏️ Editar em Lançamentos</button>
-    </div>
+    </div>` : ''}
     <div style="grid-column:1/-1;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;margin-top:8px;border-top:1px solid #E5E7EB;padding-top:8px;">Custos do mês</div>
     ${itensHtml}
   `;
@@ -4953,6 +4979,7 @@ function updateEmpresaLanc(cid, key, val) {
 
 // Vai para a aba Lançamentos já com a empresa (e mês) selecionados.
 function irParaLancamentos(cid, mes) {
+  if (!paginaLiberada('lancamentos')) return;
   selCompany = cid;
   if (mes) selMonth = mes;
   const navBtn = document.querySelector('.nav-item[onclick*="lancamentos"]');
@@ -5623,6 +5650,10 @@ function voltarPagina() {
 }
 
 function showTab(name, btn) {
+  if (!paginaLiberada(name)) {
+    if (name !== 'painel') showTab('painel');
+    return;
+  }
   pushHistory({ type:'tab', name });
   currentView = { type:'tab', name };
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));

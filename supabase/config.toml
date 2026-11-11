@@ -14,5 +14,7 @@ verify_jwt = false
 verify_jwt = false
 [functions.stripe-saldo]
 verify_jwt = false
+[functions.mp-saldo]
+verify_jwt = false
 [functions.stripe-sync]
 verify_jwt = false
