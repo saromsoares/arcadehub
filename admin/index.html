@@ -2797,19 +2797,27 @@ function saldoDisponivelStripe() {
   return disponivel;
 }
 
+function avisoMercadoPagoAusente() {
+  return mpSaldo && mpSaldo.saldo_erro === 'sem_permissao'
+    ? 'Mercado Pago sem permissão de saldo'
+    : 'Mercado Pago sem leitura';
+}
+
 function estadoCaixaSaldos() {
   const mp = saldoDisponivelMercadoPago();
   const st = saldoDisponivelStripe();
-  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st };
   if (mpSaldoLoading || stripeSaldoLoading || mpSaldo === null || stripeSaldo === null) return { estado: 'consultando' };
-  return { estado: 'indisponivel' };
+  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st, sub: 'saldo disponível · Mercado Pago + Stripe' };
+  if (st !== null) return { estado: 'ok', valor: st, sub: 'Stripe · ' + avisoMercadoPagoAusente() };
+  if (mp !== null) return { estado: 'ok', valor: mp, sub: 'Mercado Pago · Stripe sem leitura' };
+  return { estado: 'indisponivel', sub: avisoMercadoPagoAusente() };
 }
 
 function textoCaixaAtual() {
   const caixa = estadoCaixaSaldos();
-  if (caixa.estado === 'ok') return { valor: fmt(caixa.valor), sub: 'saldo disponível · Mercado Pago + Stripe', color: caixa.valor >= 0 ? '#10B981' : '#EF4444' };
+  if (caixa.estado === 'ok') return { valor: fmt(caixa.valor), sub: caixa.sub, color: caixa.valor >= 0 ? '#10B981' : '#EF4444' };
   if (caixa.estado === 'consultando') return { valor: '…', sub: 'consultando Mercado Pago e Stripe', color: '#9CA3AF' };
-  return { valor: '—', sub: 'não foi possível ler os dois saldos', color: '#EF4444' };
+  return { valor: '—', sub: caixa.sub, color: '#EF4444' };
 }
 
 function kpiCaixaAtual(id) {
@@ -2906,6 +2914,8 @@ function renderMercadoPago(){
     if(mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)){
       kpis += kpiCard('Saldo disponível', fmt(s.disp ?? s.total ?? 0), escapeHtml(mpSaldo.conta?.nickname||''), '#10B981');
       if(s.pend !== null) kpis += kpiCard('A liberar', fmt(s.pend), 'liberação futura', '#F59E0B');
+    } else if(mpSaldo.saldo_erro === 'sem_permissao'){
+      kpis += kpiCard('Saldo disponível', '—', 'Mercado Pago recusou a leitura do saldo', '#EF4444');
     } else {
       kpis += kpiCard('Saldo disponível', '—', 'endpoint de saldo indisponível p/ esta conta', '#9CA3AF');
     }
