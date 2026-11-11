@@ -7,6 +7,7 @@ Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-10-15.
 | `20260522_000001_enable_rls_baseline.sql` | Baseline RLS aplicado em 2026-05-22, conforme histórico do projeto; nome local legado. |
 | `20261015182925_email_multicaixas.sql` | Aplicado em 2026-10-15, testes transacionais remotos aprovados e versão `20261015182925` registrada no histórico. |
 | `20261110124500_leads.sql` | Aplicado em 2026-11-10 por `db query` isolado e versão `20261110124500` registrada. Tabela `leads` com RLS por empresa. Em 2026-11-11 o `revoke` passou a incluir `authenticated` antes do `grant` de `select, insert, update, delete`; o ajuste foi aplicado com `db query`, sem `db push` e sem versão nova. |
+| `20261111154500_stripe_recebimentos.sql` | Aplicado em 2026-11-11 por `db query` isolado e versão `20261111154500` registrada. Tabela `stripe_recebimentos`, RLS da holding e Realtime. No mesmo dia o cron `stripe-sync-incremental` foi agendado a cada 2 minutos, depois que `STRIPE_SECRET_KEY` e `stripe_sync_key` existiam. |
 
 ## Histórico local e remoto
 

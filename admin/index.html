@@ -568,6 +568,7 @@
     <button class="nav-item" onclick="showTab('dashboard',this)">📈 Dashboard</button>
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
     <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
+    <button class="nav-item" onclick="showTab('stripe',this)">💠 Stripe</button>
     <button class="nav-item" onclick="showTab('contatos',this)">✉️ Contatos <span id="nav-contatos-badge" style="display:none;background:#EF4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;"></span></button>
     <button class="nav-item" id="nav-leads" onclick="showTab('leads',this)">🎯 Leads</button>
     <button class="nav-item" onclick="showTab('email',this)">📧 E-mail</button>
@@ -790,10 +791,10 @@
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios <strong>+ Receita Realizada</strong> − Custos Consumidos (<span class="op-periodo"></span>). Entra o capital aportado e o que as filhas receberam (inclusive via Mercado Pago); sai o que foi lançado como custo.</div>
+    <div class="info-box">Caixa Atual = Aportes Confirmados dos Sócios <strong>+ Receita Realizada</strong> − Custos Consumidos (<span class="op-periodo"></span>). Entra o capital aportado e o que as filhas receberam (inclusive via Mercado Pago e Stripe); sai o que foi lançado como custo.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
-    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba 💳 Mercado Pago).</p>
+    <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago ou Stripe aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba do meio de pagamento).</p>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:1000px;">
         <thead><tr id="aportes-header"><!-- meses vêm de MONTHS_PRE/MONTHS_OPERACIONAIS --></tr></thead>
@@ -1119,6 +1120,31 @@
     </div>
   </div>
 
+  <!-- STRIPE -->
+  <div id="tab-stripe" class="tab-content">
+    <div class="page-title" id="pt-stripe">Stripe
+      <span id="stripe-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
+    </div>
+    <div class="page-sub" id="ps-stripe">Saldo da conta e cobranças. O saldo é consultado sob demanda (botão / a cada 60s); as cobranças sincronizam sozinhas a cada 2 min via API e a tela atualiza ao vivo.</div>
+
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:12px;">
+      <span id="stripe-saldo-ts" style="font-size:11px;color:#9CA3AF;"></span>
+      <button id="stripe-btn-refresh" onclick="carregarSaldoStripe()" style="background:#635BFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Atualizar saldo</button>
+    </div>
+
+    <div class="kpi-grid" id="stripe-kpis"></div>
+
+    <div class="section-title"><span>Recebimentos</span></div>
+    <div class="table-wrap" style="overflow-x:auto;">
+      <table style="min-width:900px;">
+        <thead><tr>
+          <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+        </tr></thead>
+        <tbody id="stripe-receb-body"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- DADOS DA EMPRESA -->
   <div id="tab-empresa" class="tab-content">
     <div class="page-title" id="pt-empresa">Dados</div>
@@ -1318,6 +1344,7 @@ async function resetState() {
   lancamentos = {}; planejado = {};
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
+  stripeRecebimentos = []; stripeSaldo = null; stripeSaldoTs = null;
   contatos = []; emails = []; leads = []; leadEditId = null;
   leadsEpoch += 1;
   leadSalvando = false;
@@ -1490,6 +1517,13 @@ let mpSaldoTs = null;         // quando o saldo foi consultado
 let mpSaldoLoading = false;
 let mpRealtimeOn = false;     // evita múltiplas subscriptions
 let mpPollTimer = null;
+// ─── Stripe ───
+let stripeRecebimentos = [];
+let stripeSaldo = null;
+let stripeSaldoTs = null;
+let stripeSaldoLoading = false;
+let stripeRealtimeOn = false;
+let stripePollTimer = null;
 // ─── Contatos do site ───
 let contatos = [];
 let contatosRealtimeOn = false;
@@ -1649,6 +1683,20 @@ function getMpReceita(m, cid) {
   }
   return soma;
 }
+function getStripeReceita(m, cid) {
+  const list = (typeof stripeRecebimentos !== 'undefined' && stripeRecebimentos) ? stripeRecebimentos : [];
+  if (!cid || !list.length) return 0;
+  let soma = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || r.empresa_id !== cid) continue;
+    if (r.moeda && String(r.moeda).toUpperCase() !== 'BRL') continue;
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO || MONTHS[d.getMonth()] !== m) continue;
+    soma += mpNum(r.valor) || 0;
+  }
+  return soma;
+}
 // Aporte de sócio realizado via Mercado Pago (recebimento marcado como "aporte:SOCIO").
 // Camada separada: NÃO entra em getAporteSocioMes (grade editável), só nas agregações de aporte/caixa.
 // Taxa retida pelo Mercado Pago no exercício: a diferença entre o que a filha
@@ -1668,6 +1716,22 @@ function getMpTaxa() {
   }
   return taxa;
 }
+function getStripeTaxa() {
+  const list = (typeof stripeRecebimentos !== 'undefined' && stripeRecebimentos) ? stripeRecebimentos : [];
+  let taxa = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || !r.empresa_id || String(r.empresa_id).startsWith('aporte:')) continue;
+    if (r.moeda && String(r.moeda).toUpperCase() !== 'BRL') continue;
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
+    if (!MONTHS_OPERACIONAIS.includes(MONTHS[d.getMonth()])) continue;
+    const bruto = mpNum(r.valor) || 0;
+    const liquido = mpNum(r.valor_liquido);
+    if (liquido != null) taxa += bruto - liquido;
+  }
+  return taxa;
+}
 
 function getMpAporte(socio, mes) {
   const list = (typeof mpRecebimentos !== 'undefined' && mpRecebimentos) ? mpRecebimentos : [];
@@ -1678,6 +1742,22 @@ function getMpAporte(socio, mes) {
     if (r.status !== 'approved' || r.empresa_id !== tag) continue;
     // sem `mes`, isto somava TODO o histórico — em 2027 os aportes de 2026 voltariam
     // a contar no caixa. O exercício filtra sempre; o mês, só quando pedido.
+    const dRaw = r.date_approved || r.date_created;
+    const d = dRaw ? new Date(dRaw) : null;
+    if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
+    if (mes && MONTHS[d.getMonth()] !== mes) continue;
+    soma += mpNum(r.valor) || 0;
+  }
+  return soma;
+}
+function getStripeAporte(socio, mes) {
+  const list = (typeof stripeRecebimentos !== 'undefined' && stripeRecebimentos) ? stripeRecebimentos : [];
+  if (!socio || !list.length) return 0;
+  const tag = 'aporte:' + socio;
+  let soma = 0;
+  for (const r of list) {
+    if (r.status !== 'approved' || r.empresa_id !== tag) continue;
+    if (r.moeda && String(r.moeda).toUpperCase() !== 'BRL') continue;
     const dRaw = r.date_approved || r.date_created;
     const d = dRaw ? new Date(dRaw) : null;
     if (!d || isNaN(d.getTime()) || d.getFullYear() !== EXERCICIO) continue;
@@ -1737,7 +1817,7 @@ function getTotalAportes() {
   } else {
     base = MM.reduce((a,m)=>a+(ap[m]||0),0); // Legado
   }
-  const mp = SOCIOS.reduce((a,s)=>a+getMpAporte(s), 0); // aportes via Mercado Pago
+  const mp = SOCIOS.reduce((a,s)=>a+getMpAporte(s)+getStripeAporte(s), 0);
   return base + mp;
 }
 function getAporteSocioMes(socio, mes) {
@@ -1745,7 +1825,7 @@ function getAporteSocioMes(socio, mes) {
 }
 function getAporteSocioTotal(socio) {
   return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-    .reduce((a, m) => a + getAporteSocioMes(socio, m), 0) + getMpAporte(socio);
+    .reduce((a, m) => a + getAporteSocioMes(socio, m), 0) + getMpAporte(socio) + getStripeAporte(socio);
 }
 // Meta de aporte por sócio (default 30k). Editável; 0 = sócio não aporta.
 function getAporteMetaSocio(socio) {
@@ -1773,7 +1853,7 @@ function setAporteMetaSocio(socio, val) {
   saveEstrutura();
 }
 function getAporteMesTotal(mes) {
-  return SOCIOS.reduce((a, s) => a + getAporteSocioMes(s, mes) + getMpAporte(s, mes), 0);
+  return SOCIOS.reduce((a, s) => a + getAporteSocioMes(s, mes) + getMpAporte(s, mes) + getStripeAporte(s, mes), 0);
 }
 function getStatus(real, plan, invert=false) {
   if (!plan || plan===0) return 'SEM DADOS';
@@ -1799,11 +1879,12 @@ function getEmpresaMes(cid, mes) {
   const e = getLanc(mes, cid);
   const receitaManual = e.receita || 0;
   const receitaMp = getMpReceita(mes, cid);
+  const receitaStripe = getStripeReceita(mes, cid);
   const custosLegado = calcCustos(e);                  // baldes do formulário antigo
   const custosItens = getTotalCustosExtras(mes, cid);  // Custos do Mês (fonte atual)
-  const receita = receitaManual + receitaMp;
+  const receita = receitaManual + receitaMp + receitaStripe;
   const custos = custosLegado + custosItens;
-  return { mes, receita, receitaManual, receitaMp, custos, custosLegado, custosItens,
+  return { mes, receita, receitaManual, receitaMp, receitaStripe, custos, custosLegado, custosItens,
            resultado: receita - custos, headcount: e.headcount || 0 };
 }
 
@@ -1867,7 +1948,7 @@ function getTotals() {
   // que era na prática "saldo dos aportes consumidos", não caixa.
   // Receita entra no caixa pelo LÍQUIDO (a taxa do Mercado Pago nunca chegou na conta);
   // o bruto continua valendo para receita/DRE.
-  const taxaMp = getMpTaxa();
+  const taxaMp = getMpTaxa() + getStripeTaxa();
   const receitaRealizada = ytdCons.receita - taxaMp;
   const caixaAtual = totalAportes + receitaRealizada - totalRealizadoAcum;
   // Burn rate real = consumo médio mensal nos meses que tiveram gasto
@@ -2113,7 +2194,7 @@ async function loadAll() {
   if (emailSession !== emailSessionVersion) return ['sessão encerrada'];
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
-  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos'];
+  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos','Stripe'];
   const respostas = await Promise.all([
     sb.from('lancamentos').select('*').eq('ano', EXERCICIO),
     sb.from('planejado').select('*').eq('ano', EXERCICIO),
@@ -2128,12 +2209,13 @@ async function loadAll() {
     sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true }),
     sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false }),
     sb.from('usuarios_empresas').select('empresa_id'),
+    sb.from('stripe_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }),
   ]);
   const falhas = respostas.map((r, i) => r && r.error ? rotulos[i] : null).filter(Boolean);
   if (falhas.length) console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
   const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
          { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }, { data: ldData },
-         { data: ueData }] = respostas;
+         { data: ueData }, { data: stData }] = respostas;
   if (axData) acessosEmpresas = axData;
   if (plData) planosEmpresas = plData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
@@ -2141,6 +2223,7 @@ async function loadAll() {
   if (ceData) custosExtras = ceData;
   if (acData) acoesCal = acData;
   if (mpData) mpRecebimentos = mpData;
+  if (stData) stripeRecebimentos = stData;
   if (ctData) contatos = ctData;
   if (ldData) leads = ldData.map(l => ({ ...l, statusConfirmado: leadStatus(l.status).id }));
   if (respostas[11] && respostas[11].error) empresasAcessiveisErro = true;
@@ -2185,6 +2268,7 @@ function renderAll() {
   renderBalancoSocios();
   renderCalendario();
   renderMercadoPago();
+  renderStripe();
   renderContatos();
   renderLeads();
   renderEmails();
@@ -2732,6 +2816,132 @@ async function atribuirEmpresaMP(id, empresaId){
   const r = mpRecebimentos.find(x=>String(x.id)===String(id));
   if(r) r.empresa_id = empresaId || null;
   const { error } = await sb.from('mp_recebimentos').update({ empresa_id: empresaId || null }).eq('id', id);
+  if(error){ toast('Erro ao vincular: '+(error.message||error)); return; }
+  toast(empresaId ? 'Recebimento vinculado.' : 'Vínculo removido.');
+  renderAll();
+}
+
+// ─── STRIPE ──────────────────────────────────────────────────────────────────
+async function carregarSaldoStripe(){
+  if(stripeSaldoLoading) return;
+  stripeSaldoLoading = true;
+  const btn = document.getElementById('stripe-btn-refresh');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Consultando...'; }
+  try {
+    const { data, error } = await sb.functions.invoke('stripe-saldo');
+    if(error) throw error;
+    stripeSaldo = data;
+    stripeSaldoTs = new Date();
+  } catch(e){
+    stripeSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
+  } finally {
+    stripeSaldoLoading = false;
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 Atualizar saldo'; }
+    renderStripe();
+  }
+}
+
+function iniciarRealtimeStripe(){
+  if(stripeRealtimeOn) return;
+  stripeRealtimeOn = true;
+  try {
+    sb.channel('stripe-recebimentos-rt')
+      .on('postgres_changes', { event:'*', schema:'public', table:'stripe_recebimentos' }, (payload)=>{
+        const row = payload.new || payload.old;
+        if(!row) return;
+        if(payload.eventType === 'DELETE'){
+          stripeRecebimentos = stripeRecebimentos.filter(r => r.id !== row.id);
+        } else {
+          const i = stripeRecebimentos.findIndex(r => r.id === row.id);
+          if(i >= 0) stripeRecebimentos[i] = row; else stripeRecebimentos.unshift(row);
+        }
+        stripeRecebimentos.sort((a,b)=> new Date(b.date_approved||b.created_at||0) - new Date(a.date_approved||a.created_at||0));
+        renderStripe();
+      })
+      .subscribe((status)=>{
+        const dot = document.getElementById('stripe-live-dot');
+        if(dot) dot.style.display = (status === 'SUBSCRIBED') ? 'inline' : 'none';
+      });
+  } catch(_e){ stripeRealtimeOn = false; }
+  if(!stripePollTimer){
+    stripePollTimer = setInterval(()=>{
+      const tab = document.getElementById('tab-stripe');
+      if(tab && tab.classList.contains('active')) carregarSaldoStripe();
+    }, 60000);
+  }
+}
+
+function renderStripe(){
+  iniciarRealtimeStripe();
+  if(stripeSaldo === null && !stripeSaldoLoading){ carregarSaldoStripe(); }
+  const aprovados = stripeRecebimentos.filter(r => r.status === 'approved');
+  const valLiq = (r)=> mpNum(r.valor_liquido) ?? mpNum(r.valor) ?? 0;
+  const totalReceb = aprovados.reduce((a,r)=> a + valLiq(r), 0);
+  const now = new Date();
+  const mesAtual = aprovados.filter(r=>{ const d = r.date_approved ? new Date(r.date_approved) : null; return d && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
+  const totalMes = mesAtual.reduce((a,r)=> a + valLiq(r), 0);
+  let kpis = '';
+  if(stripeSaldo && stripeSaldo.ok && stripeSaldo.saldo_ok && stripeSaldo.saldo){
+    const s = stripeSaldo.saldo;
+    const moeda = s.moeda || 'BRL';
+    kpis += kpiCard('Saldo disponível', fmt(mpNum(s.disponivel)||0), escapeHtml((stripeSaldo.conta&&stripeSaldo.conta.nome)||moeda), '#635BFF');
+    kpis += kpiCard('A liberar', fmt(mpNum(s.a_liberar)||0), 'liberação futura', '#F59E0B');
+  } else if(stripeSaldo && !stripeSaldo.ok){
+    kpis += kpiCard('Saldo', 'erro', escapeHtml(stripeSaldo.error||'falha na consulta'), '#EF4444');
+  } else {
+    kpis += kpiCard('Saldo disponível', '…', 'consultando', '#9CA3AF');
+  }
+  kpis += kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#1E6FFF');
+  kpis += kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
+  document.getElementById('stripe-kpis').innerHTML = kpis;
+  const tsEl = document.getElementById('stripe-saldo-ts');
+  if(tsEl) tsEl.textContent = stripeSaldoTs ? ('Saldo consultado às '+stripeSaldoTs.toLocaleTimeString('pt-BR')) : '';
+  const body = document.getElementById('stripe-receb-body');
+  if(!stripeRecebimentos.length){
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhuma cobrança ainda. Assim que um pagamento cair no Stripe, ele aparece aqui automaticamente.</td></tr>`;
+    return;
+  }
+  const statusInfo = (st)=>({
+    approved:{l:'Aprovado',c:'#10B981'}, pending:{l:'Pendente',c:'#F59E0B'},
+    rejected:{l:'Recusado',c:'#EF4444'}, refunded:{l:'Estornado',c:'#EF4444'}
+  }[st] || { l: st||'—', c:'#6B7280' });
+  body.innerHTML = stripeRecebimentos.map((r,i)=>{
+    const d = r.date_approved || r.date_created;
+    const dataFmt = d ? new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+    const st = statusInfo(r.status);
+    const liq = mpNum(r.valor_liquido);
+    return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
+      <td style="font-size:11px;white-space:nowrap;">${dataFmt}</td>
+      <td style="font-size:12px;">${escapeHtml(r.descricao||'—')}</td>
+      <td>${stripeEmpresaSelect(r)}</td>
+      <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.payer_nome||r.payer_email||'—')}</td>
+      <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.tipo_pagamento||'—')}</td>
+      <td><span style="background:${st.c}22;color:${st.c};border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;">${escapeHtml(st.l)}</span></td>
+      <td style="font-weight:600;color:#059669;font-size:12px;white-space:nowrap;">${fmt(mpNum(r.valor)||0)}</td>
+      <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${liq!==null?fmt(liq):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function stripeEmpresaSelect(r){
+  const cur = r.empresa_id || '';
+  const conhecida = !cur || cur.startsWith('aporte:') || COMPANIES.some(c => c.id === cur);
+  const legado = conhecida ? '' : `<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)} (fora da lista)</option>`;
+  const empOpts = COMPANIES.map(c => `<option value="${c.id}"${cur===c.id?' selected':''}>${escapeHtml(c.emoji+' '+c.name)}</option>`).join('');
+  const apOpts = SOCIOS.map(s => `<option value="aporte:${s}"${cur==='aporte:'+s?' selected':''}>💰 Aporte — ${escapeHtml(socioLabel(s))}</option>`).join('');
+  const naoAtrib = !cur;
+  return `<select onchange="atribuirEmpresaStripe('${r.id}', this.value)" style="font-size:11px;padding:3px 5px;border:1px solid ${naoAtrib?'#F59E0B':'#E5E7EB'};border-radius:5px;max-width:170px;background:${naoAtrib?'#FFFBEB':'#fff'};">`
+    + `<option value="">— não atribuído —</option>`
+    + legado
+    + `<optgroup label="Receita de empresa">${empOpts}</optgroup>`
+    + `<optgroup label="Aporte de sócio (caixa)">${apOpts}</optgroup>`
+    + `</select>`;
+}
+
+async function atribuirEmpresaStripe(id, empresaId){
+  const r = stripeRecebimentos.find(x=>String(x.id)===String(id));
+  if(r) r.empresa_id = empresaId || null;
+  const { error } = await sb.from('stripe_recebimentos').update({ empresa_id: empresaId || null }).eq('id', id);
   if(error){ toast('Erro ao vincular: '+(error.message||error)); return; }
   toast(empresaId ? 'Recebimento vinculado.' : 'Vínculo removido.');
   renderAll();
@@ -4172,7 +4382,13 @@ function renderEstrutura(totals) {
           MONTHS_ALL.map(mm => { const v = getMpAporte(socio, mm); return `<td style="font-size:11px;color:#7C3AED;text-align:center;">${v>0?fmt(v):''}</td>`; }).join('') +
           `<td style="font-size:11px;font-weight:700;color:#7C3AED;">${fmt(mpTot)}</td><td></td><td></td></tr>`
         : '';
-      return rowSocio + mpRow;
+      const stripeTot = getStripeAporte(socio);
+      const stripeRow = stripeTot > 0
+        ? `<tr style="background:#F5F3FF"><td style="font-size:11px;color:#635BFF;padding-left:16px;" title="Aporte recebido via Stripe — vinculado nos recebimentos">↳ 💠 via Stripe</td>` +
+          MONTHS_ALL.map(mm => { const v = getStripeAporte(socio, mm); return `<td style="font-size:11px;color:#635BFF;text-align:center;">${v>0?fmt(v):''}</td>`; }).join('') +
+          `<td style="font-size:11px;font-weight:700;color:#635BFF;">${fmt(stripeTot)}</td><td></td><td></td></tr>`
+        : '';
+      return rowSocio + mpRow + stripeRow;
     }).join('') +
     // Linha TOTAL
     `<tr class="table-total"><td>TOTAL</td>` +
@@ -4570,7 +4786,7 @@ function renderEmpresaIndividual(cid) {
 
         <!-- KPIs do mês -->
         <div class="kpi-grid">
-          ${kpiCard('Receita '+selEmpresaMonth, fmt(mesReceita), agrMes.receitaMp>0?`inclui ${fmt(agrMes.receitaMp)} via Mercado Pago`:'', comp.color)}
+          ${kpiCard('Receita '+selEmpresaMonth, fmt(mesReceita), [agrMes.receitaMp>0?`Mercado Pago ${fmt(agrMes.receitaMp)}`:'', agrMes.receitaStripe>0?`Stripe ${fmt(agrMes.receitaStripe)}`:''].filter(Boolean).join(' · '), comp.color)}
           ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)+mesExtras), '', '#F59E0B')}
           ${kpiCard('Headcount', fmtNum(e.headcount||0), 'pessoas', '#8B5CF6')}
         </div>

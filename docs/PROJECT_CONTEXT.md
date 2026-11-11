@@ -36,9 +36,9 @@ São **oito empresas no site público e holding + sete filhas no admin**. A [sto
 
 ## Dashboard e dados
 
-O admin reúne indicadores financeiros, comparativo, Mercado Pago, contatos do site, leads por projeto, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. A mudança de 2026-11-10 retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai de `COMPANIES` e incluiu `clickdrop`. Em 2026-11-11 entraram `giromob` e `conferecheck`. Os lançamentos históricos dos IDs retirados permanecem no banco.
+O admin reúne indicadores financeiros, comparativo, Mercado Pago, Stripe, contatos do site, leads por projeto, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. A mudança de 2026-11-10 retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai de `COMPANIES` e incluiu `clickdrop`. Em 2026-11-11 entraram `giromob` e `conferecheck`. Os lançamentos históricos dos IDs retirados permanecem no banco.
 
-Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.supabase.co`. Tabelas relevantes incluem `lancamentos`, `planejado`, `custos_extras`, `estrutura`, `calendario_acoes`, `usuarios_empresas`, `mp_recebimentos`, `contatos`, `leads`, `emails` e `email_mailboxes`. A lista não substitui inventário do banco.
+Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.supabase.co`. Tabelas relevantes incluem `lancamentos`, `planejado`, `custos_extras`, `estrutura`, `calendario_acoes`, `usuarios_empresas`, `mp_recebimentos`, `stripe_recebimentos`, `contatos`, `leads`, `emails` e `email_mailboxes`. A lista não substitui inventário do banco.
 
 O módulo de e-mail exige vínculo à holding via `user_has_empresa_access('arcade_hub')`. Ter apenas vínculo a uma filha não concede acesso às caixas. O frontend usa chave publishable; credenciais SMTP/IMAP e chaves privilegiadas ficam no servidor.
 
