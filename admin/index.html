@@ -233,7 +233,7 @@
     margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
     text-transform: uppercase; color: #6B7280; align-self: center;
   }
-  .emp-row dd { margin: 0; font-size: 14.5px; font-weight: 600; color: #111827; line-height: 1.5; }
+  .emp-row dd { margin: 0; font-size: 14.5px; font-weight: 600; color: #111827; line-height: 1.5; overflow-wrap: anywhere; }
   .emp-row dd a { color: #1E6FFF; text-decoration: none; }
   .emp-row dd a:hover { text-decoration: underline; }
   .emp-row dd .sub { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; color: #9CA3AF; }
@@ -1169,6 +1169,19 @@
         <div class="emp-row"><dt>Telefone / WhatsApp</dt><dd><a href="https://wa.me/5575991902244" target="_blank" rel="noopener noreferrer">+55 75 99190-2244</a></dd></div>
         <div class="emp-row"><dt>Telefone cadastral</dt><dd>(75) 3221-8316<span class="sub">o que consta no cadastro da Receita Federal</span></dd></div>
       </dl>
+
+      <div class="section-title" style="flex-wrap:wrap;">
+        <span>Mercado Pago</span>
+        <button type="button" id="mp-receber-copiar" onclick="copiarDadosMercadoPago()" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
+      </div>
+      <dl class="emp-card" id="mp-receber">
+        <div class="emp-row"><dt>Chave Pix</dt><dd>66.910.447/0001-06<span class="sub">CNPJ</span></dd></div>
+        <div class="emp-row"><dt>CNPJ</dt><dd>66.910.447/0001-06</dd></div>
+        <div class="emp-row"><dt>Banco</dt><dd>Mercado Pago</dd></div>
+        <div class="emp-row"><dt>Agência</dt><dd>0001</dd></div>
+        <div class="emp-row"><dt>Conta</dt><dd>7675787289-7</dd></div>
+      </dl>
+      <div class="info-box">Dados para receber, conferidos no Mercado Pago em 11/11/2026.</div>
 
       <div class="section-title"><span>Endereço</span></div>
       <dl class="emp-card">
@@ -3526,6 +3539,25 @@ async function verificarMestra(){
   if(h === ACESSOS_MASTER_HASH){ acessosMestraOk = true; mestraDigitada = tent; return true; }
   alert('Senha mestra incorreta.');
   return false;
+}
+
+async function copiarDadosMercadoPago() {
+  const btn = document.getElementById('mp-receber-copiar');
+  const linhas = [...document.querySelectorAll('#mp-receber .emp-row')].map(row => {
+    const rotulo = row.querySelector('dt').textContent.trim();
+    const valor = row.querySelector('dd').firstChild.textContent.trim();
+    return rotulo + ': ' + valor;
+  });
+  try {
+    await navigator.clipboard.writeText(linhas.join('\n'));
+    if (btn) {
+      const anterior = btn.textContent;
+      btn.textContent = 'Copiado';
+      setTimeout(() => { btn.textContent = anterior; }, 1600);
+    }
+  } catch (_e) {
+    if (btn) btn.textContent = 'Não foi possível copiar';
+  }
 }
 
 function showDadosSub(qual){
