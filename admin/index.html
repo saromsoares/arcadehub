@@ -507,6 +507,7 @@
 
     <div id="login-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#EF4444;padding:10px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;"></div>
 
+    <div id="login-form">
     <input id="login-email" type="email" placeholder="Email" style="
       width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
       background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
@@ -538,6 +539,26 @@
     </button>
 
     <p style="color:rgba(255,255,255,0.25);font-size:11px;margin-top:24px;">Acesso restrito a administradores</p>
+    </div>
+
+    <div id="definir-senha" style="display:none;">
+      <p style="color:rgba(255,255,255,0.72);font-size:14px;margin:-8px 0 18px;">Escolha a senha desta conta.</p>
+      <input id="nova-senha" type="password" autocomplete="new-password" placeholder="Nova senha" style="
+        width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
+        margin-bottom:12px;outline:none;
+      " />
+      <input id="nova-senha-2" type="password" autocomplete="new-password" placeholder="Repita a senha" style="
+        width:100%;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.05);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;
+        margin-bottom:24px;outline:none;
+      " />
+      <button id="definir-senha-btn" type="button" onclick="definirSenha()" style="
+        width:100%;padding:14px;border-radius:12px;border:none;
+        background:linear-gradient(135deg,#00E5FF,#1E6FFF);color:#fff;
+        font-weight:700;font-size:15px;font-family:'DM Sans',sans-serif;cursor:pointer;
+      ">Salvar senha</button>
+    </div>
   </div>
 </div>
 
@@ -1255,11 +1276,79 @@
 const SUPABASE_URL = 'https://zdwgwpvlwqtsdgervcof.supabase.co';
 // Publishable key (formato moderno sb_publishable_*) — independent rotation, melhor que legacy anon JWT
 const SUPABASE_KEY = 'sb_publishable_8yfc-M-6SZl5RTkLdMKe5w_9colNPe-';
+let definindoSenha = /(?:^|[?#&])type=recovery(?:&|$)/.test(window.location.hash);
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    definindoSenha = true;
+    mostrarDefinirSenha();
+  }
+});
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-async function checkAuth() {
+function mostrarDefinirSenha() {
+  const form = document.getElementById('login-form');
+  const box = document.getElementById('definir-senha');
+  if (form) form.style.display = 'none';
+  if (box) box.style.display = 'block';
+  const screen = document.getElementById('login-screen');
+  if (screen) screen.style.display = 'flex';
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  if (sidebar) sidebar.style.display = 'none';
+  if (main) main.style.display = 'none';
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function definirSenha() {
+  const senha = document.getElementById('nova-senha').value;
+  const repetida = document.getElementById('nova-senha-2').value;
+  const errorEl = document.getElementById('login-error');
+  const btn = document.getElementById('definir-senha-btn');
+  errorEl.style.display = 'none';
+  if (senha.length < 8) {
+    errorEl.textContent = 'Use pelo menos 8 caracteres.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (senha !== repetida) {
+    errorEl.textContent = 'As senhas não coincidem.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
   const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    errorEl.textContent = 'O link expirou ou já foi usado. Peça um link novo.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Salvar senha';
+    return;
+  }
+  const { error } = await sb.auth.updateUser({ password: senha });
+  if (error) {
+    errorEl.textContent = 'Não foi possível salvar a senha. Peça um link novo.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Salvar senha';
+    return;
+  }
+  definindoSenha = false;
+  if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+  const { data: { user } } = await sb.auth.getUser();
+  await showDashboard(user);
+}
+
+async function checkAuth() {
+  if (definindoSenha || /(?:^|[?#&])type=recovery(?:&|$)/.test(window.location.hash)) {
+    definindoSenha = true;
+    mostrarDefinirSenha();
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (definindoSenha) return;
   if (session) {
     showDashboard(session.user);
   }
@@ -1416,6 +1505,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('login-email').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('login-password').focus();
+  });
+  document.getElementById('nova-senha').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('nova-senha-2').focus();
+  });
+  document.getElementById('nova-senha-2').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') definirSenha();
   });
   checkAuth();
 });
