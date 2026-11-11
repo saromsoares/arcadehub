@@ -1,6 +1,6 @@
 # Arcade Hub — contexto atual do projeto
 
-Atualizado em **2026-11-10** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
+Atualizado em **2026-11-11** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
 ## Produto e código
 
@@ -28,13 +28,15 @@ O site não tem gates genéricos npm de build/lint/test. Mudanças de interface 
 | Croqui.ai | — | Retirada do admin em 2026-11-10. Histórico permanece no banco sob `croqui_ai` |
 | Jogadaça.ai | `jogadaca` | Público e admin |
 | Líquida Peças | `liquida_pecas` | Somente admin |
+| GiroMob | `giromob` | Público e admin: https://giromob.app/. Não reutilizar o ID antigo `gironamaxima` |
+| ConfereCheck | `conferecheck` | Público e admin desde 2026-11-11. Site próprio ainda não publicado; o card fala por `contato@conferecheck.com.br`. O mesmo texto é o ID da caixa de e-mail |
 | Xepou | — | Retirada do admin em 2026-11-10. Histórico permanece no banco sob `xepou` |
 
-São **seis empresas no site público e holding + cinco filhas no admin**. A [story 1.5](stories/1.5.story.md) atualizou o portfólio público em 2026-10-30: De Olho.ai apresenta conteúdo sobre tecnologia e IA; ClickDrop apresenta conversão e organização de arquivos, com status Em beta conforme seu site oficial. Em 2026-11-10 o admin retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai da lista e passou a cadastrar ClickDrop (`clickdrop`). Essa retirada não apaga lançamentos antigos nem migra saldos. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. Caixas CBAI/ConfereCheck não implicam inclusão de novas empresas nesses arrays.
+São **oito empresas no site público e holding + sete filhas no admin**. A [story 1.5](stories/1.5.story.md) atualizou o portfólio público em 2026-10-30: De Olho.ai apresenta conteúdo sobre tecnologia e IA; ClickDrop apresenta conversão e organização de arquivos, com status Em beta conforme seu site oficial. Em 2026-11-10 o admin retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai da lista e passou a cadastrar ClickDrop (`clickdrop`). Em 2026-11-11 entraram GiroMob e ConfereCheck, por pedido explícito. Essa retirada não apaga lançamentos antigos nem migra saldos. PeptiBoard e CriativoPronto foram removidas do portfólio; não restaurar a partir de memórias antigas. URLs vêm dos cards públicos e de `COMPANIES[].website`. A caixa da CBAI não implica uma empresa nova.
 
 ## Dashboard e dados
 
-O admin reúne indicadores financeiros, comparativo, Mercado Pago, contatos do site, leads por projeto, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. A mudança de 2026-11-10 só retira Giro na Máxima, Kanbia, Xepou e Croqui.ai de `COMPANIES` e inclui `clickdrop`. Os lançamentos históricos desses IDs permanecem no banco.
+O admin reúne indicadores financeiros, comparativo, Mercado Pago, contatos do site, leads por projeto, e-mails, lançamentos, Orçamento & Caixa, balanço dos sócios, calendário e cadastros. A mudança de 2026-11-10 retirou Giro na Máxima, Kanbia, Xepou e Croqui.ai de `COMPANIES` e incluiu `clickdrop`. Em 2026-11-11 entraram `giromob` e `conferecheck`. Os lançamentos históricos dos IDs retirados permanecem no banco.
 
 Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.supabase.co`. Tabelas relevantes incluem `lancamentos`, `planejado`, `custos_extras`, `estrutura`, `calendario_acoes`, `usuarios_empresas`, `mp_recebimentos`, `contatos`, `leads`, `emails` e `email_mailboxes`. A lista não substitui inventário do banco.
 
