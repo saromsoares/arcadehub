@@ -42,10 +42,31 @@
   #tab-email { min-width: 0; overflow-wrap: anywhere; }
   #tab-email button:disabled, #tab-email select:disabled { opacity: .55; cursor: not-allowed; }
   #tab-email :is(button, select, input, textarea):focus-visible { outline: 3px solid #1E6FFF; outline-offset: 3px; }
-  @media (max-width: 640px) {
-    body:has(#tab-email.active) #sidebar { position: relative; width: 100%; max-height: 200px; }
-    #main:has(#tab-email.active) { margin-left: 0; padding: 20px 14px; }
+  #menu-toggle { display: none; }
+  #menu-toggle[hidden] { display: none !important; }
+  #menu-backdrop { display: none; }
+  @media (max-width: 700px) {
+    #sidebar {
+      width: min(280px, 86vw);
+      transform: translateX(-105%);
+      transition: transform 0.2s ease;
+    }
+    #sidebar.aberto { transform: translateX(0); }
+    #main { margin-left: 0; padding: 64px 14px 28px; }
+    #menu-toggle:not([hidden]) {
+      display: inline-flex; align-items: center; justify-content: center;
+      position: fixed; top: 12px; left: 12px; z-index: 110;
+      width: 44px; height: 44px; border: none; border-radius: 10px;
+      background: #0A1628; color: #fff; font-size: 20px; line-height: 1; cursor: pointer;
+    }
+    #menu-backdrop.aberto {
+      display: block; position: fixed; inset: 0;
+      background: rgba(10, 22, 40, 0.45); z-index: 90;
+    }
     #tab-email button { min-height: 44px; }
+  }
+  @media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+    #sidebar { transition: none; }
   }
 
   /* Nav */
@@ -189,6 +210,7 @@
 
   /* Two col layout */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
 
   /* Caixa block */
   .caixa-block {
@@ -570,6 +592,9 @@
 
 <!-- Toast -->
 <div id="toast"></div>
+
+<button type="button" id="menu-toggle" hidden onclick="abrirMenu()" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">☰</button>
+<div id="menu-backdrop" onclick="fecharMenu()"></div>
 
 <!-- Sidebar -->
 <div id="sidebar" style="display:none;">
@@ -1452,6 +1477,8 @@ async function showDashboard(user) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'block';
+  const menuBtn = document.getElementById('menu-toggle');
+  if (menuBtn) menuBtn.hidden = false;
   const emailEl = document.getElementById('user-email-display');
   if (emailEl && user && user.email) emailEl.textContent = user.email;
   if (painelEpochCarregado === painelEpoch) {
@@ -1542,6 +1569,9 @@ async function doLogout() {
   // A tela vai embora PRIMEIRO. A limpeza dos canais pode esperar o timeout do
   // WebSocket, e até lá os números do grupo (e qualquer senha revelada) ficariam
   // à mostra para quem já clicou em Sair.
+  fecharMenu();
+  const menuBtn = document.getElementById('menu-toggle');
+  if (menuBtn) menuBtn.hidden = true;
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('sidebar').style.display = 'none';
   document.getElementById('main').style.display = 'none';
@@ -1719,9 +1749,25 @@ let acoesCal = [];     // Array de acoes do calendario operacional
 let calExtraDates = []; // Datas vazias adicionadas manualmente (sem acoes)
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
-const fmt = v => isNaN(v)||v==null ? 'R$ 0' : new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(v);
+const fmt = v => isNaN(v)||v==null ? 'R$ 0,00' : new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
 const fmtPct = v => isNaN(v)||v==null ? '0,0%' : `${(v*100).toFixed(1).replace('.',',')}%`;
 const fmtNum = v => isNaN(v)||v==null ? '0' : Number(v).toFixed(1).replace('.',',');
+function fmtEixo(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 'R$ 0,00';
+  const abs = Math.abs(n);
+  const sinal = n < 0 ? '-' : '';
+  if (abs >= 1000000) {
+    const mi = (abs / 1000000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return sinal + 'R$ ' + mi + ' mi';
+  }
+  if (abs >= 10000) {
+    const mil = (abs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+    return sinal + 'R$ ' + mil + ' mil';
+  }
+  if (abs >= 100) return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits: 0 }).format(n);
+  return fmt(n);
+}
 
 // ─── INLINE EDIT SYSTEM ──────────────────────────────────────────────────────
 // editable(value, onSaveCallbackExpr, options) — returns HTML string
@@ -2467,7 +2513,6 @@ function renderAll() {
   renderAcessos();
   renderNavEmpresas();
   aplicarMenu();
-  setTimeout(makeAllEditable, 50);
 }
 
 function kpiCard(label, value, sub, color, id) {
@@ -2511,10 +2556,10 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
       datasets: [
         { label:'Receita Realizada', data:cons.map(c=>c.receita), backgroundColor:'#1E6FFF', borderRadius:4 },
         { label:'Receita Planejada', data:cons.map(c=>c.receitaP), backgroundColor:'#BFDBFE', borderRadius:4 },
-        { label:'Resultado', data:cons.map(c=>c.resultado), backgroundColor:'#10B981', borderRadius:4 },
+        { label:'Resultado', data:cons.map(c=>c.resultado), backgroundColor:cons.map(c=>c.resultado>=0?'#10B981':'#EF4444'), borderRadius:4 },
       ]
     },
-    options: { responsive:true, plugins:{legend:{labels:{font:{size:12}}}}, scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}} }
+    options: { responsive:true, plugins:{legend:{labels:{font:{size:12}}}}, scales:{y:{ticks:{callback:v=>fmtEixo(v)}}} }
   });
 
   document.getElementById('painel-months-header').innerHTML =
@@ -2539,7 +2584,7 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
 
   document.getElementById('painel-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'};cursor:${c.isMae?'default':'pointer'}" onclick="${c.isMae?'':`showEmpresaIndividual('${c.id}')`}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-painel-'+c.id})}</strong>${c.isMae?' <span style="font-size:10px;color:#6B7280">(Hub)</span>':''}</td>
+      <td><span class="dot" style="background:${c.color}"></span><strong>${escapeHtml(c.name)}</strong>${c.isMae?' <span style="font-size:10px;color:#6B7280">(Hub)</span>':''}</td>
       <td>${fmt(c.receita)}</td><td>${fmt(c.custos)}</td>
       <td style="${c.resultado<0?'color:#DC2626;font-weight:600':'color:#059669;font-weight:600'}">${fmt(c.resultado)}</td>
       <td>${c.receita>0?fmtPct(c.resultado/c.receita):'—'}</td>
@@ -2575,17 +2620,14 @@ function renderLancamentos() {
     {key:'obs',label:'Observações',text:true},
   ];
 
-  document.getElementById('lanc-form').innerHTML = fields.map(f=>{
-    const lid = 'ed-lfl-'+f.key;
-    return `
+  document.getElementById('lanc-form').innerHTML = fields.map(f=>`
     <div class="form-field">
-      <label>${editable(f.label, 'onEditText("'+lid+'")', {id:lid, style:'font-size:11px'})}</label>
+      <label style="font-size:11px">${escapeHtml(f.label)}</label>
       <input class="inp" type="${f.text?'text':'number'}" id="lanc-${f.key}"
         value="${e[f.key]||''}"
         oninput="updateLanc('${f.key}',this.value)"
       />
-    </div>`;
-  }).join('');
+    </div>`).join('');
 
   updateLancResult();
   renderCustosExtrasTable();
@@ -2600,7 +2642,7 @@ function renderLancamentos() {
     const pgdrColor = SOCIOS.includes(pgdr) ? '#F59E0B' : (pgdr==='EMPRESA'?'#10B981':'#9CA3AF');
     return `<tr style="background:${isSelected?c.color+'15':i%2===0?'#FAFAFA':'#fff'};cursor:pointer"
       onclick="selCompany='${c.id}';renderLancamentos()">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lanc-'+c.id})}</td>
+      <td><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.name)}</td>
       <td>${fmt(ec.receita||0)}</td>
       <td style="${rcComExtras<0?'color:#DC2626':'color:#059669'}">${fmt(rcComExtras)}</td>
       <td style="color:${pgdrColor};font-weight:600;font-size:11px">${pgdr}</td>
@@ -2644,7 +2686,7 @@ function updateLancResult() {
     const pgdrColor = SOCIOS.includes(pgdr) ? '#F59E0B' : (pgdr==='EMPRESA'?'#10B981':'#9CA3AF');
     return `<tr style="background:${isSelected?c.color+'15':i%2===0?'#FAFAFA':'#fff'};cursor:pointer"
       onclick="selCompany='${c.id}';renderLancamentos()">
-      <td><span class="dot" style="background:${c.color}"></span>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-lancr-'+c.id})}</td>
+      <td><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.name)}</td>
       <td>${fmt(ec.receita||0)}</td>
       <td style="${rcFinal<0?'color:#DC2626':'color:#059669'}">${fmt(rcFinal)}</td>
       <td style="color:${pgdrColor};font-weight:600;font-size:11px">${pgdr}</td>
@@ -4331,7 +4373,7 @@ function renderPlanejado() {
     const custo = getCustoPlanTotal(p);
     const rp = calcResP(p);
     return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.emoji+' '+c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-plan-'+c.id})}</strong></td>
+      <td><span class="dot" style="background:${c.color}"></span><strong>${escapeHtml(c.emoji+' '+c.name)}</strong></td>
       <td style="padding:5px 6px"><input class="inp" type="number" value="${p.receita_p||''}" placeholder="0" style="width:120px"
         oninput="updatePlan('${c.id}','receita_p',this.value)" /></td>
       <td style="padding:5px 6px"><input class="inp" type="number" value="${custo||''}" placeholder="0" style="width:120px"
@@ -4393,7 +4435,7 @@ function renderComparativo(cons, ytd, companiesYTD) {
 
   document.getElementById('comp-empresa-table').innerHTML = companiesYTD.map((c,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-comp-'+c.id})}</strong></td>
+      <td><span class="dot" style="background:${c.color}"></span><strong>${escapeHtml(c.name)}</strong></td>
       <td>${fmt(c.receita)}</td><td style="color:#6B7280">${fmt(c.receitaP)}</td>
       <td style="font-weight:600;color:${c.atR===null?'#9CA3AF':c.atR>=1?'#059669':c.atR>=0.9?'#D97706':'#DC2626'}">${c.atR===null?'—':fmtPct(c.atR)}</td>
       <td style="${c.resultado<0?'color:#DC2626':''}">${fmt(c.resultado)}</td>
@@ -4414,7 +4456,7 @@ function renderComparativo(cons, ytd, companiesYTD) {
         {label:'Resultado Planejado',data:cons.map(c=>c.resultadoP),borderColor:'#10B981',borderDash:[6,3],borderWidth:2,tension:0.3,pointRadius:3},
       ]
     },
-    options:{responsive:true,plugins:{legend:{labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}}
+    options:{responsive:true,plugins:{legend:{labels:{font:{size:12}}}},scales:{y:{ticks:{callback:v=>fmtEixo(v)}}}}
   });
 }
 
@@ -4837,10 +4879,10 @@ function renderEmpresasGeral(companiesYTD) {
     const comp = COMPANIES.find(x => x.id === c.id);
     return `<div class="empresa-card" style="border-left-color:${c.color}; cursor:pointer" onclick="showEmpresaIndividual('${c.id}')">
       <div class="empresa-card-header">
-        <div class="empresa-card-icon" style="background:${c.color}22;color:${c.color}">${editable(c.emoji, 'onEditCompanyEmoji("'+c.id+'")', {id:'ed-card-emoji-'+c.id})}</div>
+        <div class="empresa-card-icon" style="background:${c.color}22;color:${c.color}">${escapeHtml(c.emoji)}</div>
         <div>
-          <div class="empresa-card-name">${editable(c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-card-name-'+c.id})}</div>
-          <div class="empresa-card-seg">${editable(c.segmento, 'onEditCompanySegmento("'+c.id+'")', {id:'ed-card-seg-'+c.id})}</div>
+          <div class="empresa-card-name">${escapeHtml(c.name)}</div>
+          <div class="empresa-card-seg">${escapeHtml(c.segmento)}</div>
         </div>
       </div>
       <div class="empresa-card-metrics">
@@ -4877,7 +4919,7 @@ function renderEmpresasGeral(companiesYTD) {
   const sorted = [...filhasYTD].sort((a,b)=>b.receita-a.receita);
   document.getElementById('empresas-ranking-table').innerHTML = sorted.map((c,i)=>`
     <tr style="background:${i%2===0?'#FAFAFA':'#fff'};cursor:pointer" onclick="showEmpresaIndividual('${c.id}')">
-      <td><span class="dot" style="background:${c.color}"></span><strong>${editable(c.emoji+' '+c.name, 'onEditCompanyName("'+c.id+'")', {id:'ed-rank-name-'+c.id})}</strong><br><span style="color:#6B7280;font-size:11px">${editable(c.segmento, 'onEditCompanySegmento("'+c.id+'")', {id:'ed-rank-seg-'+c.id})}</span></td>
+      <td><span class="dot" style="background:${c.color}"></span><strong>${escapeHtml(c.emoji+' '+c.name)}</strong><br><span style="color:#6B7280;font-size:11px">${escapeHtml(c.segmento)}</span></td>
       <td style="color:#1E6FFF;font-weight:700">${fmt(c.receita)}</td>
       <td>${fmt(c.custos)}</td>
       <td style="${c.resultado<0?'color:#DC2626':'color:#059669'};font-weight:700">${fmt(c.resultado)}</td>
@@ -4891,6 +4933,7 @@ let selEmpresaMonth = 'Jan';
 let empresaCharts = {};
 
 function showEmpresaIndividual(cid, navBtn) {
+  fecharMenu();
   pushHistory({ type:'empresa', cid });
   currentView = { type:'empresa', cid };
   currentEmpresaId = cid;
@@ -4933,21 +4976,20 @@ function renderEmpresaIndividual(cid) {
   const content = `
     <!-- Header da empresa -->
     <div class="empresa-header" style="background:${comp.color}">
-      <div class="empresa-header-icon">${editable(comp.emoji, 'onEditCompanyEmoji("'+cid+'")', {light:true, id:'ed-emoji-'+cid, style:'font-size:22px'})}</div>
+      <div class="empresa-header-icon">${escapeHtml(comp.emoji)}</div>
       <div class="empresa-header-info">
-        <div class="empresa-header-name">${editable(comp.name, 'onEditCompanyName("'+cid+'")', {light:true, id:'ed-name-'+cid})}</div>
-        <div class="empresa-header-sub">${editable(comp.segmento, 'onEditCompanySegmento("'+cid+'")', {light:true, id:'ed-seg-'+cid})} · Empresa Filha da Arcade Hub</div>
-        <div style="margin-top:5px;display:flex;align-items:center;gap:8px;">
-          ${comp.website ? `<a href="${safeUrl(comp.website)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
+        <div class="empresa-header-name">${escapeHtml(comp.name)}</div>
+        <div class="empresa-header-sub">${escapeHtml(comp.segmento)} · Empresa Filha da Arcade Hub</div>
+        ${comp.website ? `<div style="margin-top:5px;display:flex;align-items:center;gap:8px;">
+          <a href="${safeUrl(comp.website)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()"
             style="display:inline-flex;align-items:center;gap:5px;color:rgba(255,255,255,0.9);
             background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;
             padding:3px 10px;font-size:11px;font-weight:600;text-decoration:none;transition:all 0.2s;"
             onmouseover="this.style.background='rgba(255,255,255,0.25)'"
             onmouseout="this.style.background='rgba(255,255,255,0.15)'">
             🌐 ${escapeHtml(String(comp.website).replace(/^https?:\/\//,'').replace(/\/$/,''))}
-          </a>` : ''}
-          ${editable(comp.website||'', 'onEditCompanyWebsite("'+cid+'")', {light:true, type:'url', id:'ed-web-'+cid, inputStyle:'min-width:220px'})}
-        </div>
+          </a>
+        </div>` : ''}
       </div>
       <div class="empresa-header-kpis">
         <div class="empresa-header-kpi">
@@ -4972,7 +5014,7 @@ function renderEmpresaIndividual(cid) {
     ${buildPlanosSection(cid)}
 
     <!-- Seletor de mês -->
-    <div class="section-title"><span>${editable('Resumo do Mês — '+comp.name+' (somente leitura)', 'onEditText("ed-sec-lanc-'+cid+'")', {id:'ed-sec-lanc-'+cid})}</span></div>
+    <div class="section-title"><span>Resumo do Mês — ${escapeHtml(comp.name)} (somente leitura)</span></div>
     <div class="btn-group" id="emp-months-${cid}">
       ${MONTHS.map(m=>`<button class="btn-month${m===selEmpresaMonth?' active':''}"
         onclick="selEmpresaMonth='${m}';renderEmpresaIndividual('${cid}')">${m}</button>`).join('')}
@@ -5009,7 +5051,7 @@ function renderEmpresaIndividual(cid) {
     </div>
 
     <!-- Tabela mensal anual -->
-    <div class="section-title"><span>${editable('Resumo Anual — '+comp.name, 'onEditText("ed-sec-anual-'+cid+'")', {id:'ed-sec-anual-'+cid})}</span></div>
+    <div class="section-title"><span>Resumo Anual — ${escapeHtml(comp.name)}</span></div>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:20px;">
       <table style="min-width:800px;">
         <thead><tr>
@@ -5024,16 +5066,13 @@ function renderEmpresaIndividual(cid) {
     </div>
 
     <!-- Gráfico evolução -->
-    <div class="section-title"><span>${editable('Evolução Mensal — '+comp.name, 'onEditText("ed-sec-evol-'+cid+'")', {id:'ed-sec-evol-'+cid})}</span></div>
+    <div class="section-title"><span>Evolução Mensal — ${escapeHtml(comp.name)}</span></div>
     <div class="chart-wrap">
       <canvas id="chart-emp-${cid}" height="100"></canvas>
     </div>
   `;
 
   document.getElementById('empresa-individual-content').innerHTML = content;
-
-  // Make all elements editable
-  setTimeout(makeAllEditable, 30);
 
   // Renderizar gráfico
   setTimeout(() => {
@@ -5054,7 +5093,7 @@ function renderEmpresaIndividual(cid) {
       options: {
         responsive:true,
         plugins:{legend:{labels:{font:{size:12}}}},
-        scales:{y:{ticks:{callback:v=>`R$${(v/1000).toFixed(0)}k`}}}
+        scales:{y:{ticks:{callback:v=>fmtEixo(v)}}}
       }
     });
   }, 50);
@@ -5838,12 +5877,31 @@ function voltarPagina() {
   updateBackBtn();
 }
 
+function abrirMenu() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('menu-backdrop');
+  const btn = document.getElementById('menu-toggle');
+  if (sb && sb.classList.contains('aberto')) { fecharMenu(); return; }
+  if (sb) sb.classList.add('aberto');
+  if (bd) bd.classList.add('aberto');
+  if (btn) { btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-label', 'Fechar menu'); }
+}
+function fecharMenu() {
+  const sb = document.getElementById('sidebar');
+  const bd = document.getElementById('menu-backdrop');
+  const btn = document.getElementById('menu-toggle');
+  if (sb) sb.classList.remove('aberto');
+  if (bd) bd.classList.remove('aberto');
+  if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Abrir menu'); }
+}
+
 function showTab(name, btn) {
   if (name === 'dashboard') name = 'painel';
   if (!paginaLiberada(name)) {
     if (name !== 'painel') showTab('painel');
     return;
   }
+  fecharMenu();
   pushHistory({ type:'tab', name });
   currentView = { type:'tab', name };
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
