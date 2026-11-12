@@ -810,7 +810,7 @@
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual é o saldo disponível do Mercado Pago somado ao saldo disponível do Stripe. O valor a liberar fica de fora.</div>
+    <div class="info-box">Caixa Atual soma o Stripe ao Mercado Pago. O Mercado Pago entra pelo relatório de liberações quando a consulta direta é recusada. O valor a liberar fica de fora da consulta direta.</div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
     <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago ou Stripe aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba do meio de pagamento).</p>
@@ -1553,6 +1553,7 @@ async function resetState() {
   if (typeof emailsRealtimeOn !== 'undefined') emailsRealtimeOn = false;
   cancelarSavesPendentes();
   if (mpPollTimer) { clearInterval(mpPollTimer); mpPollTimer = null; }
+  pararEsperaRelatorioMP();
   [chartPainel, chartComp].forEach(c => { try { c && c.destroy(); } catch(_e){} });
   chartPainel = chartComp = null;
   if (typeof empresaCharts !== 'undefined' && empresaCharts) {
@@ -1707,6 +1708,12 @@ let mpSaldoTs = null;         // quando o saldo foi consultado
 let mpSaldoLoading = false;
 let mpRealtimeOn = false;     // evita múltiplas subscriptions
 let mpPollTimer = null;
+let mpRelatorioTimer = null;
+let mpRelatorioEsperas = 0;
+function pararEsperaRelatorioMP() {
+  if (mpRelatorioTimer) { clearTimeout(mpRelatorioTimer); mpRelatorioTimer = null; }
+  mpRelatorioEsperas = 0;
+}
 // ─── Stripe ───
 let stripeRecebimentos = [];
 let stripeSaldo = null;
@@ -2866,18 +2873,23 @@ function saldoDisponivelStripe() {
 }
 
 function avisoMercadoPagoAusente() {
+  if (mpSaldo && mpSaldo.saldo_erro === 'preparando') return 'Mercado Pago preparando o relatório';
   return mpSaldo && mpSaldo.saldo_erro === 'sem_permissao'
     ? 'Mercado Pago sem permissão de saldo'
     : 'Mercado Pago sem leitura';
 }
 
+function textoMercadoPagoCaixa() {
+  return mpSaldo && mpSaldo.origem === 'relatorio' ? 'Mercado Pago (relatório)' : 'Mercado Pago';
+}
+
 function estadoCaixaSaldos() {
   const mp = saldoDisponivelMercadoPago();
   const st = saldoDisponivelStripe();
+  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st, sub: 'saldo disponível · ' + textoMercadoPagoCaixa() + ' + Stripe' };
+  if (st !== null && mp === null && mpSaldo !== null && !mpSaldoLoading) return { estado: 'ok', valor: st, sub: 'Stripe · ' + avisoMercadoPagoAusente() };
+  if (mp !== null && st === null && stripeSaldo !== null && !stripeSaldoLoading) return { estado: 'ok', valor: mp, sub: textoMercadoPagoCaixa() + ' · Stripe sem leitura' };
   if (mpSaldoLoading || stripeSaldoLoading || mpSaldo === null || stripeSaldo === null) return { estado: 'consultando' };
-  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st, sub: 'saldo disponível · Mercado Pago + Stripe' };
-  if (st !== null) return { estado: 'ok', valor: st, sub: 'Stripe · ' + avisoMercadoPagoAusente() };
-  if (mp !== null) return { estado: 'ok', valor: mp, sub: 'Mercado Pago · Stripe sem leitura' };
   return { estado: 'indisponivel', sub: avisoMercadoPagoAusente() };
 }
 
@@ -2923,6 +2935,7 @@ async function carregarSaldoMP(){
     if(error) throw error;
     mpSaldo = data;
     mpSaldoTs = new Date();
+    if (data && data.saldo_ok) mpRelatorioEsperas = 0;
   } catch(e){
     mpSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
   } finally {
@@ -2930,6 +2943,10 @@ async function carregarSaldoMP(){
     if(btn){ btn.disabled = false; btn.textContent = '🔄 Atualizar saldo'; }
     renderMercadoPago();
     pintarCaixasAtuais();
+    if (mpSaldo && mpSaldo.saldo_erro === 'preparando' && mpRelatorioEsperas < 15 && !mpRelatorioTimer) {
+      mpRelatorioEsperas++;
+      mpRelatorioTimer = setTimeout(() => { mpRelatorioTimer = null; carregarSaldoMP(); }, 20000);
+    }
   }
 }
 
@@ -2980,8 +2997,11 @@ function renderMercadoPago(){
   if(mpSaldo && mpSaldo.ok){
     const s = mpParseSaldo(mpSaldo.saldo);
     if(mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)){
-      kpis += kpiCard('Saldo disponível', fmt(s.disp ?? s.total ?? 0), escapeHtml(mpSaldo.conta?.nickname||''), '#10B981');
+      const subSaldo = mpSaldo.origem === 'relatorio' ? 'relatório de liberações' : escapeHtml(mpSaldo.conta?.nickname||'');
+      kpis += kpiCard('Saldo disponível', fmt(s.disp ?? s.total ?? 0), subSaldo, '#10B981');
       if(s.pend !== null) kpis += kpiCard('A liberar', fmt(s.pend), 'liberação futura', '#F59E0B');
+    } else if(mpSaldo.saldo_erro === 'preparando'){
+      kpis += kpiCard('Saldo disponível', '…', 'relatório de liberações em preparação', '#9CA3AF');
     } else if(mpSaldo.saldo_erro === 'sem_permissao'){
       kpis += kpiCard('Saldo disponível', '—', 'Mercado Pago recusou a leitura do saldo', '#EF4444');
     } else {
