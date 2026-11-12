@@ -18,3 +18,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.stripe-sync]
 verify_jwt = false
+[functions.nubank-saldo]
+verify_jwt = false

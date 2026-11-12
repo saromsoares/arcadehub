@@ -1210,8 +1210,12 @@
 
       <div class="section-title" style="flex-wrap:wrap;">
         <span>Nubank</span>
-        <button type="button" id="nu-receber-copiar" onclick="copiarDadosReceber('nu-receber','nu-receber-copiar')" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
+        <button type="button" id="nu-btn-refresh" onclick="carregarSaldoNubank()" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Atualizar saldo</button>
+        <button type="button" id="nu-receber-copiar" onclick="copiarDadosReceber('nu-receber','nu-receber-copiar')" style="margin-left:8px;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
       </div>
+      <dl class="emp-card" id="nu-saldo-card">
+        <div class="emp-row"><dt>Saldo</dt><dd><span id="nu-saldo-valor">…</span><span class="sub" id="nu-saldo-sub">consultando ao abrir esta página</span></dd></div>
+      </dl>
       <dl class="emp-card" id="nu-receber">
         <div class="emp-row"><dt>Nome</dt><dd>ARCADE<span class="sub">Nu Empresas</span></dd></div>
         <div class="emp-row"><dt>Agência</dt><dd>0001</dd></div>
@@ -1219,7 +1223,7 @@
         <div class="emp-row"><dt>Banco</dt><dd>0260</dd></div>
         <div class="emp-row"><dt>Instituição</dt><dd>Nu Pagamentos S.A. - Instituição de Pagamento</dd></div>
       </dl>
-      <div class="info-box">Dados da conta Nu Empresas, conferidos no Nubank em 11/11/2026.</div>
+      <div class="info-box">Dados da conta Nu Empresas, conferidos no Nubank em 11/11/2026. O saldo vem do Meu Pluggy e pode ter até 24 horas de atraso. Ele fica fora do Caixa Atual.</div>
 
       <div class="section-title"><span>Endereço</span></div>
       <dl class="emp-card">
@@ -1522,6 +1526,8 @@ async function resetState() {
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
   stripeRecebimentos = []; stripeSaldo = null; stripeSaldoTs = null;
+  nuSaldo = null; nuSaldoTs = null; nuSaldoLoading = false; nuSaldoEpoch += 1;
+  renderSaldoNubank();
   contatos = []; emails = []; leads = []; leadEditId = null;
   leadsEpoch += 1;
   leadSalvando = false;
@@ -1719,6 +1725,10 @@ let stripeRecebimentos = [];
 let stripeSaldo = null;
 let stripeSaldoTs = null;
 let stripeSaldoLoading = false;
+let nuSaldo = null;
+let nuSaldoTs = null;
+let nuSaldoLoading = false;
+let nuSaldoEpoch = 0;
 let stripeRealtimeOn = false;
 let stripePollTimer = null;
 let paginasBloqueadas = new Set();
@@ -2923,6 +2933,56 @@ function pintarCaixasAtuais() {
 function garantirSaldos() {
   if (mpSaldo === null && !mpSaldoLoading) carregarSaldoMP();
   if (stripeSaldo === null && !stripeSaldoLoading) carregarSaldoStripe();
+}
+
+function textoQuandoNubank(iso) {
+  const data = iso ? new Date(iso) : null;
+  if (!data || Number.isNaN(data.getTime())) return '';
+  return data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderSaldoNubank() {
+  const valor = document.getElementById('nu-saldo-valor');
+  const sub = document.getElementById('nu-saldo-sub');
+  if (!valor || !sub) return;
+  if (nuSaldo && nuSaldo.ok && nuSaldo.saldo_ok && nuSaldo.saldo) {
+    valor.textContent = fmt(mpNum(nuSaldo.saldo.disponivel) || 0);
+    const quando = textoQuandoNubank(nuSaldo.atualizado_em || (nuSaldoTs && nuSaldoTs.toISOString()));
+    sub.textContent = 'Meu Pluggy' + (quando ? ' · ' + quando : '') + ' · fora do Caixa Atual';
+    return;
+  }
+  if (nuSaldo && !nuSaldo.ok) {
+    valor.textContent = '—';
+    sub.textContent = nuSaldo.error || 'falha na consulta';
+    return;
+  }
+  valor.textContent = '…';
+  sub.textContent = nuSaldoLoading ? 'consultando' : 'consultando ao abrir esta página';
+}
+
+async function carregarSaldoNubank() {
+  if (nuSaldoLoading) return;
+  const epoch = nuSaldoEpoch;
+  nuSaldoLoading = true;
+  const btn = document.getElementById('nu-btn-refresh');
+  if (btn) btn.disabled = true;
+  renderSaldoNubank();
+  try {
+    const { data, error } = await sb.functions.invoke('nubank-saldo');
+    if (epoch !== nuSaldoEpoch) return;
+    if (error) throw error;
+    nuSaldo = data;
+    nuSaldoTs = new Date();
+  } catch (e) {
+    if (epoch !== nuSaldoEpoch) return;
+    nuSaldo = { ok: false, error: (e && e.message) ? e.message : String(e) };
+  } finally {
+    if (epoch === nuSaldoEpoch) {
+      nuSaldoLoading = false;
+      if (btn) btn.disabled = false;
+      renderSaldoNubank();
+    }
+  }
 }
 
 async function carregarSaldoMP(){
@@ -5935,6 +5995,7 @@ function showTab(name, btn) {
     else if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
   }
   if (name === 'calendario') setTimeout(scrollCalToToday, 80);
+  if (name === 'empresa') carregarSaldoNubank();
   updateBackBtn();
 }
 

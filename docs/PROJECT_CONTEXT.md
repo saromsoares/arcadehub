@@ -44,6 +44,8 @@ Projeto Supabase: **`zdwgwpvlwqtsdgervcof`**, API `https://zdwgwpvlwqtsdgervcof.
 
 Em **2026-11-12** o admin em produção recebeu dois commits. `ff64738` mostra centavos em `fmt`, eixos com `fmtEixo`, resultado negativo do Painel em vermelho, menu lateral fora da tela até 700px e as duas colunas empilhadas nessa largura. Os lápis de nome, site, emoji, cor e títulos, que não eram gravados, saíram. `b34e775` identifica no card quando o Mercado Pago veio do relatório de liberações. A função `mp-saldo` foi publicada no Supabase antes desse frontend; o push do Git não publica Edge Function. A consulta direta de saldo segue recusada para o token de Checkout Pro da holding. Webhooks e a jornada de qualidade do Checkout Pro não liberam essa consulta. A conta vendedora mostrada como CB AI SOLUTIONS no painel de desenvolvedor é a holding. O Access Token de produção permanece só no segredo `MP_ACCESS_TOKEN`.
 
+O saldo da conta Nu Empresas aparece na página Dados e vem da função `nubank-saldo`, que lê o Meu Pluggy. A atualização da Pluggy pode levar até 24 horas. Esse número fica fora do Caixa Atual e do runway. As chaves ficam só nos segredos `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e `PLUGGY_ITEM_ID`. O push do Git não publica essa função.
+
 O módulo de e-mail exige vínculo à holding via `user_has_empresa_access('arcade_hub')`. Ter apenas vínculo a uma filha não concede acesso às caixas. O frontend usa chave publishable; credenciais SMTP/IMAP e chaves privilegiadas ficam no servidor.
 
 ## Sete caixas conectadas
