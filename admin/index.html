@@ -113,17 +113,20 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* Cards KPI */
-  .kpi-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-  .kpi-card {
-    background: #fff; border-radius: 12px; padding: 16px 18px; flex: 1; min-width: 140px;
-    border: 1px solid #E5E7EB; border-top: 3px solid #1E6FFF;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  /* Cards KPI: a base de 220px cabe um valor como -R$ 282.487,90 sem invadir o card ao lado. */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: 12px; margin-bottom: 20px;
   }
-  .kpi-label { color: #6B7280; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; }
-  .kpi-value { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: #111827; }
-  .kpi-sub { color: #6B7280; font-size: 11px; margin-top: 3px; }
-  .fin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .kpi-card {
+    background: #fff; border-radius: 12px; padding: 16px 18px; min-width: 0;
+    border: 1px solid #E5E7EB; border-top: 3px solid #1E6FFF;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow-wrap: anywhere;
+  }
+  .kpi-label { color: #6B7280; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; line-height: 1.35; overflow-wrap: anywhere; }
+  .kpi-value { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: #111827; line-height: 1.2; overflow-wrap: anywhere; }
+  .kpi-sub { color: #6B7280; font-size: 11px; margin-top: 3px; line-height: 1.35; overflow-wrap: anywhere; }
+  .fin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; margin-bottom: 8px; }
   .fin-card {
     background: #fff; border: 1px solid #E5E7EB; border-top: 3px solid #1E6FFF; border-radius: 12px;
     padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); min-width: 0;
@@ -132,14 +135,15 @@
   .fin-card.stripe { border-top-color: #635BFF; }
   .fin-card.nu { border-top-color: #820AD1; }
   .fin-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  .fin-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: #111827; }
+  .fin-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: #111827; min-width: 0; overflow-wrap: anywhere; }
+  .fin-head button { flex-shrink: 0; }
   .fin-head button {
     margin-left: auto; background: #fff; border: 1px solid #E5E7EB; border-radius: 6px;
     padding: 5px 10px; font-size: 11px; font-weight: 700; color: #1E6FFF; cursor: pointer; font-family: inherit;
   }
   .fin-head button:disabled { opacity: 0.55; cursor: default; }
-  .fin-valor { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: #111827; letter-spacing: -0.3px; }
-  .fin-sub, .fin-extra, .fin-ts { color: #6B7280; font-size: 12px; margin-top: 4px; line-height: 1.4; }
+  .fin-valor { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: #111827; letter-spacing: -0.3px; line-height: 1.15; overflow-wrap: anywhere; }
+  .fin-sub, .fin-extra, .fin-ts { color: #6B7280; font-size: 12px; margin-top: 4px; line-height: 1.4; overflow-wrap: anywhere; }
   .fin-nota { color: #6B7280; font-size: 12px; margin: 4px 0 18px; }
   .fin-card[hidden], #fin-mp-detalhe[hidden], #fin-stripe-detalhe[hidden] { display: none !important; }
   @media (max-width: 700px) { .fin-grid { grid-template-columns: 1fr; } }
@@ -150,11 +154,11 @@
   .section-title span { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: #111827; }
 
   /* Page title */
-  .page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: #111827; margin-bottom: 4px; }
-  .page-sub { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
+  .page-title { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: #111827; margin-bottom: 4px; overflow-wrap: anywhere; }
+  .page-sub { color: #6B7280; font-size: 13px; margin-bottom: 20px; overflow-wrap: anywhere; }
 
   /* Tables */
-  .table-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; overflow: hidden; overflow-x: auto; }
+  .table-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; overflow: hidden; overflow-x: auto; max-width: 100%; }
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: #0A1628; }
   thead th { padding: 9px 12px; color: #fff; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
@@ -217,6 +221,7 @@
 
   /* Form grid */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 18px; }
+  .ce-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .form-field label { font-size: 11px; color: #6B7280; font-weight: 600; letter-spacing: 0.3px; display: block; margin-bottom: 4px; text-transform: uppercase; }
 
   /* Result card */
@@ -224,41 +229,47 @@
   .result-positive { background: #ECFDF5; border: 1px solid #6EE7B7; }
   .result-negative { background: #FEF2F2; border: 1px solid #FCA5A5; }
   .result-label { font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; color: #6B7280; }
-  .result-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; }
+  .result-value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; }
   .result-positive .result-value { color: #059669; }
   .result-negative .result-value { color: #DC2626; }
 
   /* Two col layout */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+  .two-col > * { min-width: 0; }
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    #lanc-custo-extra-form .ce-fields { grid-template-columns: 1fr; }
+  }
 
   /* Caixa block */
   .caixa-block {
     background: #0A1628; border-radius: 14px; padding: 20px 24px;
     margin-bottom: 22px; display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;
   }
-  .caixa-input-wrap { flex-shrink: 0; }
+  .caixa-input-wrap { flex-shrink: 0; max-width: 100%; }
   .caixa-label { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px; }
   .caixa-desc { color: rgba(255,255,255,0.35); font-size: 11px; margin-bottom: 10px; max-width: 220px; }
   .caixa-inp {
     background: rgba(255,255,255,0.1); border: 1px solid rgba(30,111,255,0.6);
     border-radius: 8px; padding: 10px 14px; color: #fff;
     font-size: 20px; font-weight: 700; font-family: 'Sora', sans-serif;
-    width: 240px; outline: none; text-align: left;
+    width: 240px; max-width: 100%; outline: none; text-align: left;
   }
   .caixa-inp:focus { border-color: #1E6FFF; background: rgba(255,255,255,0.15); }
-  .caixa-cards { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .caixa-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px; flex: 1; min-width: min(100%, 280px); }
   .caixa-mini {
-    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 11px 14px; min-width: 140px;
+    background: rgba(255,255,255,0.06); border-radius: 10px; padding: 11px 14px; min-width: 0; overflow-wrap: anywhere;
   }
-  .caixa-mini-label { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
-  .caixa-mini-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; }
+  .caixa-mini-label { color: rgba(255,255,255,0.4); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; line-height: 1.35; }
+  .caixa-mini-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  .caixa-mini [data-caixa-sub] { line-height: 1.35; overflow-wrap: anywhere; }
 
   /* Info box */
   .info-box {
     background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px;
     padding: 9px 14px; margin-bottom: 20px; font-size: 12px; color: #1E40AF;
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere;
   }
 
   /* Cartão de dados cadastrais (aba Dados da Empresa) */
@@ -282,7 +293,7 @@
   @media (max-width: 640px) { .emp-row { grid-template-columns: 1fr; gap: 3px; padding: 12px 0; } }
 
   /* Chart container */
-  .chart-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 18px; }
+  .chart-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 18px; min-width: 0; overflow: hidden; }
 
   /* Dot company */
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: middle; }
@@ -343,29 +354,29 @@
     align-items: center; justify-content: center; font-size: 22px;
     background: rgba(255,255,255,0.15); flex-shrink: 0;
   }
-  .empresa-header-info { flex: 1; }
-  .empresa-header-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 20px; color: #fff; }
-  .empresa-header-sub { color: rgba(255,255,255,0.55); font-size: 12px; margin-top: 3px; }
+  .empresa-header-info { flex: 1; min-width: 0; }
+  .empresa-header-name { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 20px; color: #fff; overflow-wrap: anywhere; }
+  .empresa-header-sub { color: rgba(255,255,255,0.55); font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
   .empresa-header-kpis { display: flex; gap: 16px; flex-wrap: wrap; }
-  .empresa-header-kpi { text-align: right; }
+  .empresa-header-kpi { text-align: right; min-width: 0; }
   .empresa-header-kpi-label { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .empresa-header-kpi-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
+  .empresa-header-kpi-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #fff; overflow-wrap: anywhere; }
 
   /* Custo category card */
-  .custo-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .custo-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 12px; margin-bottom: 20px; }
   .custo-cat-card {
     background: #fff; border-radius: 10px; border: 1px solid #E5E7EB;
     padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
   }
   .custo-cat-label { font-size: 11px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
-  .custo-cat-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #111827; }
+  .custo-cat-val { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #111827; overflow-wrap: anywhere; }
   .custo-cat-input { margin-top: 4px; }
 
   /* Resumo anual empresa */
-  .anual-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .anual-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr)); gap: 10px; margin-bottom: 20px; }
 
   /* Painel empresa cards */
-  .empresa-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 22px; }
+  .empresa-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 16px; margin-bottom: 22px; }
   .empresa-card {
     background: #fff; border-radius: 12px; border: 1px solid #E5E7EB;
     padding: 16px 18px; cursor: pointer; transition: all 0.15s;
@@ -373,12 +384,14 @@
   }
   .empresa-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
   .empresa-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .empresa-card-header > div:last-child { min-width: 0; flex: 1; }
   .empresa-card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .empresa-card-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px; color: #111827; }
-  .empresa-card-seg { font-size: 11px; color: #6B7280; }
+  .empresa-card-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 13px; color: #111827; overflow-wrap: anywhere; }
+  .empresa-card-seg { font-size: 11px; color: #6B7280; overflow-wrap: anywhere; }
   .empresa-card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .empresa-card-metric-label { font-size: 10px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-  .empresa-card-metric-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; }
+  .empresa-card-metrics > div { min-width: 0; }
+  .empresa-card-metric-label { font-size: 10px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; overflow-wrap: anywhere; }
+  .empresa-card-metric-val { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
 
   /* ─── CALENDÁRIO (Trello-style) ─── */
   .cal-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
@@ -738,7 +751,7 @@
           </div>
           <div id="lanc-custo-extra-form" style="display:none;padding:14px;border-bottom:1px solid #E5E7EB;background:#F9FAFB;">
             <div id="ce-form-title" style="font-size:12px;font-weight:700;color:#0A1628;margin-bottom:10px;text-transform:uppercase;">Novo Custo</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="ce-fields">
               <div>
                 <label for="ce-categoria" style="font-size:11px;color:#6B7280;font-weight:600;text-transform:uppercase;display:block;margin-bottom:3px;">Categoria</label>
                 <select class="inp" id="ce-categoria" style="text-align:left;"></select>
