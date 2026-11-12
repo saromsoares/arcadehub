@@ -1176,6 +1176,20 @@
     </div>
     <p class="fin-nota" id="fin-nota">O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.</p>
 
+    <div id="fin-nu-detalhe">
+      <div class="section-title" style="flex-wrap:wrap;">
+        <span>Nubank · conta</span>
+        <button type="button" id="nu-receber-fin-copiar" onclick="copiarDadosReceber('nu-receber-fin','nu-receber-fin-copiar')" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
+      </div>
+      <dl class="emp-card" id="nu-receber-fin">
+        <div class="emp-row"><dt>Nome</dt><dd>ARCADE<span class="sub">Nu Empresas</span></dd></div>
+        <div class="emp-row"><dt>Agência</dt><dd>0001</dd></div>
+        <div class="emp-row"><dt>Conta</dt><dd>823491390-4</dd></div>
+        <div class="emp-row"><dt>Banco</dt><dd>0260</dd></div>
+        <div class="emp-row"><dt>Instituição</dt><dd>Nu Pagamentos S.A. - Instituição de Pagamento</dd></div>
+      </dl>
+    </div>
+
     <div id="fin-mp-detalhe">
       <div class="section-title"><span>Mercado Pago · recebimentos</span></div>
       <div class="kpi-grid" id="mp-kpis"></div>
@@ -2602,6 +2616,7 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
     kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
     kpiCard('Runway', `${fmtNum(runway)} meses`, `Meta: ${fmtNum(m.runway)} meses`, runway>=(m.runway||6)?'#10B981':'#EF4444'),
     kpiCaixaAtual('kpi-caixa-painel'),
+    kpiNubankPainel(),
     kpiCard('Custo Mensal Hub', fmt(totalCusto), 'Estrutura central', '#F59E0B'),
     kpiCard('Empresas Ativas', `${FILHAS.length}`, 'Empresas filhas', '#1E6FFF'),
   ].join('');
@@ -2974,6 +2989,17 @@ function pintarCaixasAtuais() {
 function garantirSaldos() {
   if (mpSaldo === null && !mpSaldoLoading) carregarSaldoMP();
   if (stripeSaldo === null && !stripeSaldoLoading) carregarSaldoStripe();
+  if (nuSaldo === null && !nuSaldoLoading) carregarSaldoNubank();
+}
+
+function kpiNubankPainel() {
+  const e = estadoSaldoNubank();
+  const borda = e.cor === '#EF4444' ? '#EF4444' : '#820AD1';
+  return `<div class="kpi-card" id="kpi-nubank-painel" style="border-top-color:${borda}">
+    <div class="kpi-label">Nubank</div>
+    <div class="kpi-value" style="color:${e.cor}">${e.valor}</div>
+    <div class="kpi-sub">${escapeHtml(e.sub)}</div>
+  </div>`;
 }
 
 function textoQuandoNubank(iso) {
@@ -3012,6 +3038,8 @@ function renderSaldoNubank() {
   const finSub = document.getElementById('fin-nu-sub');
   if (finValor) { finValor.textContent = estado.valor; finValor.style.color = estado.cor; }
   if (finSub) finSub.textContent = estado.sub;
+  const painel = document.getElementById('kpi-nubank-painel');
+  if (painel) painel.outerHTML = kpiNubankPainel();
 }
 
 function agendarPollNubank() {
@@ -3019,7 +3047,8 @@ function agendarPollNubank() {
   nuPollTimer = setInterval(() => {
     const fin = document.getElementById('tab-financeiro');
     const dados = document.getElementById('tab-empresa');
-    const aberto = (fin && fin.classList.contains('active')) || (dados && dados.classList.contains('active'));
+    const painel = document.getElementById('tab-painel');
+    const aberto = (fin && fin.classList.contains('active')) || (dados && dados.classList.contains('active')) || (painel && painel.classList.contains('active'));
     if (aberto) carregarSaldoNubank();
   }, 60000);
 }
@@ -6112,7 +6141,7 @@ function showTab(name, btn) {
     else if (typeof event !== 'undefined' && event && event.target) event.target.classList.add('active');
   }
   if (name === 'calendario') setTimeout(scrollCalToToday, 80);
-  if (name === 'empresa') carregarSaldoNubank();
+  if (name === 'painel' || name === 'empresa') carregarSaldoNubank();
   if (name === 'financeiro') {
     carregarSaldoNubank();
     if (paginaLiberada('mercadopago')) carregarSaldoMP();
