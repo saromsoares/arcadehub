@@ -123,6 +123,26 @@
   .kpi-label { color: #6B7280; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; }
   .kpi-value { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: #111827; }
   .kpi-sub { color: #6B7280; font-size: 11px; margin-top: 3px; }
+  .fin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 8px; }
+  .fin-card {
+    background: #fff; border: 1px solid #E5E7EB; border-top: 3px solid #1E6FFF; border-radius: 12px;
+    padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); min-width: 0;
+  }
+  .fin-card.mp { border-top-color: #009EE3; }
+  .fin-card.stripe { border-top-color: #635BFF; }
+  .fin-card.nu { border-top-color: #820AD1; }
+  .fin-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .fin-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: #111827; }
+  .fin-head button {
+    margin-left: auto; background: #fff; border: 1px solid #E5E7EB; border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; font-weight: 700; color: #1E6FFF; cursor: pointer; font-family: inherit;
+  }
+  .fin-head button:disabled { opacity: 0.55; cursor: default; }
+  .fin-valor { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: #111827; letter-spacing: -0.3px; }
+  .fin-sub, .fin-extra, .fin-ts { color: #6B7280; font-size: 12px; margin-top: 4px; line-height: 1.4; }
+  .fin-nota { color: #6B7280; font-size: 12px; margin: 4px 0 18px; }
+  .fin-card[hidden], #fin-mp-detalhe[hidden], #fin-stripe-detalhe[hidden] { display: none !important; }
+  @media (max-width: 700px) { .fin-grid { grid-template-columns: 1fr; } }
 
   /* Section title */
   .section-title { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; }
@@ -612,8 +632,7 @@
     <div class="nav-section">Visão Geral</div>
     <button class="nav-item active" onclick="showTab('painel',this)">📊 Painel</button>
     <button class="nav-item" onclick="showTab('comparativo',this)">⚖️ Comparativo</button>
-    <button class="nav-item" onclick="showTab('mercadopago',this)">💳 Mercado Pago</button>
-    <button class="nav-item" onclick="showTab('stripe',this)">💠 Stripe</button>
+    <button class="nav-item" onclick="showTab('financeiro',this)">💰 Financeiro</button>
     <button class="nav-item" onclick="showTab('contatos',this)">✉️ Contatos <span id="nav-contatos-badge" style="display:none;background:#EF4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px;"></span></button>
     <button class="nav-item" id="nav-leads" onclick="showTab('leads',this)">🎯 Leads</button>
     <button class="nav-item" onclick="showTab('email',this)">📧 E-mail</button>
@@ -1114,53 +1133,73 @@
     <div id="emails-list"></div>
   </div>
 
-  <!-- MERCADO PAGO -->
-  <div id="tab-mercadopago" class="tab-content">
-    <div class="page-title" id="pt-mercadopago">Mercado Pago
-      <span id="mp-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
+  <!-- FINANCEIRO: Mercado Pago, Stripe e Nubank -->
+  <div id="tab-financeiro" class="tab-content">
+    <div class="page-title" id="pt-financeiro">Financeiro</div>
+    <div class="page-sub" id="ps-financeiro">Saldos do Mercado Pago, da Stripe e do Nu Empresas. O Caixa Atual soma só o disponível do Mercado Pago e da Stripe.</div>
+
+    <div class="fin-grid" id="fin-saldos">
+      <article class="fin-card mp" id="fin-card-mp">
+        <div class="fin-head">
+          <span class="fin-name">Mercado Pago</span>
+          <span id="mp-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:700;">● ao vivo</span>
+          <button type="button" id="mp-btn-refresh" onclick="carregarSaldoMP()">Atualizar</button>
+        </div>
+        <div class="kpi-label">Disponível</div>
+        <div class="fin-valor" id="fin-mp-valor">…</div>
+        <div class="fin-sub" id="fin-mp-sub">consultando</div>
+        <div class="fin-extra" id="fin-mp-extra"></div>
+        <div class="fin-ts" id="mp-saldo-ts"></div>
+      </article>
+      <article class="fin-card stripe" id="fin-card-stripe">
+        <div class="fin-head">
+          <span class="fin-name">Stripe</span>
+          <span id="stripe-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:700;">● ao vivo</span>
+          <button type="button" id="stripe-btn-refresh" onclick="carregarSaldoStripe()">Atualizar</button>
+        </div>
+        <div class="kpi-label">Disponível</div>
+        <div class="fin-valor" id="fin-stripe-valor">…</div>
+        <div class="fin-sub" id="fin-stripe-sub">consultando</div>
+        <div class="fin-extra" id="fin-stripe-extra"></div>
+        <div class="fin-ts" id="stripe-saldo-ts"></div>
+      </article>
+      <article class="fin-card nu" id="fin-card-nu">
+        <div class="fin-head">
+          <span class="fin-name">Nubank</span>
+          <button type="button" id="nu-btn-refresh" data-nu-refresh onclick="carregarSaldoNubank()">Atualizar</button>
+        </div>
+        <div class="kpi-label">Disponível</div>
+        <div class="fin-valor" id="fin-nu-valor">…</div>
+        <div class="fin-sub" id="fin-nu-sub">consultando ao abrir esta página</div>
+        <div class="fin-extra" id="fin-nu-extra">Nu Empresas</div>
+      </article>
     </div>
-    <div class="page-sub" id="ps-mercadopago">Saldo da conta e recebimentos. O saldo é consultado sob demanda (botão / a cada 60s); os recebimentos sincronizam sozinhos a cada 2 min via API e a tela atualiza ao vivo.</div>
+    <p class="fin-nota" id="fin-nota">O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.</p>
 
-    <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:12px;">
-      <span id="mp-saldo-ts" style="font-size:11px;color:#9CA3AF;"></span>
-      <button id="mp-btn-refresh" onclick="carregarSaldoMP()" style="background:#1E6FFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Atualizar saldo</button>
+    <div id="fin-mp-detalhe">
+      <div class="section-title"><span>Mercado Pago · recebimentos</span></div>
+      <div class="kpi-grid" id="mp-kpis"></div>
+      <div class="table-wrap" style="overflow-x:auto;">
+        <table style="min-width:900px;">
+          <thead><tr>
+            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+          </tr></thead>
+          <tbody id="mp-receb-body"></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="kpi-grid" id="mp-kpis"></div>
-
-    <div class="section-title"><span>Recebimentos</span></div>
-    <div class="table-wrap" style="overflow-x:auto;">
-      <table style="min-width:900px;">
-        <thead><tr>
-          <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
-        </tr></thead>
-        <tbody id="mp-receb-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- STRIPE -->
-  <div id="tab-stripe" class="tab-content">
-    <div class="page-title" id="pt-stripe">Stripe
-      <span id="stripe-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:600;margin-left:8px;vertical-align:middle;">● ao vivo</span>
-    </div>
-    <div class="page-sub" id="ps-stripe">Saldo da conta e cobranças. O saldo é consultado sob demanda (botão / a cada 60s); as cobranças sincronizam sozinhas a cada 2 min via API e a tela atualiza ao vivo.</div>
-
-    <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:12px;">
-      <span id="stripe-saldo-ts" style="font-size:11px;color:#9CA3AF;"></span>
-      <button id="stripe-btn-refresh" onclick="carregarSaldoStripe()" style="background:#635BFF;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Atualizar saldo</button>
-    </div>
-
-    <div class="kpi-grid" id="stripe-kpis"></div>
-
-    <div class="section-title"><span>Recebimentos</span></div>
-    <div class="table-wrap" style="overflow-x:auto;">
-      <table style="min-width:900px;">
-        <thead><tr>
-          <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
-        </tr></thead>
-        <tbody id="stripe-receb-body"></tbody>
-      </table>
+    <div id="fin-stripe-detalhe">
+      <div class="section-title"><span>Stripe · recebimentos</span></div>
+      <div class="kpi-grid" id="stripe-kpis"></div>
+      <div class="table-wrap" style="overflow-x:auto;">
+        <table style="min-width:900px;">
+          <thead><tr>
+            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+          </tr></thead>
+          <tbody id="stripe-receb-body"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -1210,7 +1249,7 @@
 
       <div class="section-title" style="flex-wrap:wrap;">
         <span>Nubank</span>
-        <button type="button" id="nu-btn-refresh" onclick="carregarSaldoNubank()" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Atualizar saldo</button>
+        <button type="button" id="nu-btn-refresh-dados" data-nu-refresh onclick="carregarSaldoNubank()" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Atualizar saldo</button>
         <button type="button" id="nu-receber-copiar" onclick="copiarDadosReceber('nu-receber','nu-receber-copiar')" style="margin-left:8px;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
       </div>
       <dl class="emp-card" id="nu-saldo-card">
@@ -1223,7 +1262,7 @@
         <div class="emp-row"><dt>Banco</dt><dd>0260</dd></div>
         <div class="emp-row"><dt>Instituição</dt><dd>Nu Pagamentos S.A. - Instituição de Pagamento</dd></div>
       </dl>
-      <div class="info-box">Dados da conta Nu Empresas, conferidos no Nubank em 11/11/2026. O saldo vem do Meu Pluggy e pode ter até 24 horas de atraso. Ele fica fora do Caixa Atual.</div>
+      <div class="info-box">Dados da conta Nu Empresas, conferidos no Nubank em 11/11/2026. O saldo também aparece em Financeiro. Ele vem do Meu Pluggy, pode ter até 24 horas de atraso e fica fora do Caixa Atual.</div>
 
       <div class="section-title"><span>Endereço</span></div>
       <dl class="emp-card">
@@ -1729,6 +1768,7 @@ let nuSaldo = null;
 let nuSaldoTs = null;
 let nuSaldoLoading = false;
 let nuSaldoEpoch = 0;
+let nuPollTimer = null;
 let stripeRealtimeOn = false;
 let stripePollTimer = null;
 let paginasBloqueadas = new Set();
@@ -2524,6 +2564,7 @@ function renderAll() {
   renderCalendario();
   renderMercadoPago();
   renderStripe();
+  renderCartoesFinanceiro();
   renderContatos();
   renderLeads();
   renderEmails();
@@ -2941,31 +2982,54 @@ function textoQuandoNubank(iso) {
   return data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-function renderSaldoNubank() {
-  const valor = document.getElementById('nu-saldo-valor');
-  const sub = document.getElementById('nu-saldo-sub');
-  if (!valor || !sub) return;
+function textoQuandoNubankCurto(iso) {
+  const quando = textoQuandoNubank(iso);
+  return quando ? ('Meu Pluggy · ' + quando) : 'Meu Pluggy';
+}
+
+function estadoSaldoNubank() {
   if (nuSaldo && nuSaldo.ok && nuSaldo.saldo_ok && nuSaldo.saldo) {
-    valor.textContent = fmt(mpNum(nuSaldo.saldo.disponivel) || 0);
-    const quando = textoQuandoNubank(nuSaldo.atualizado_em || (nuSaldoTs && nuSaldoTs.toISOString()));
-    sub.textContent = 'Meu Pluggy' + (quando ? ' · ' + quando : '') + ' · fora do Caixa Atual';
-    return;
+    const valor = mpNum(nuSaldo.saldo.disponivel) || 0;
+    return {
+      valor: fmt(valor),
+      sub: textoQuandoNubankCurto(nuSaldo.atualizado_em || (nuSaldoTs && nuSaldoTs.toISOString())) + ' · fora do Caixa Atual',
+      cor: valor >= 0 ? '#111827' : '#EF4444'
+    };
   }
   if (nuSaldo && !nuSaldo.ok) {
-    valor.textContent = '—';
-    sub.textContent = nuSaldo.error || 'falha na consulta';
-    return;
+    return { valor: '—', sub: nuSaldo.error || 'falha na consulta', cor: '#EF4444' };
   }
-  valor.textContent = '…';
-  sub.textContent = nuSaldoLoading ? 'consultando' : 'consultando ao abrir esta página';
+  return { valor: '…', sub: nuSaldoLoading ? 'consultando' : 'consultando ao abrir esta página', cor: '#9CA3AF' };
+}
+
+function renderSaldoNubank() {
+  const estado = estadoSaldoNubank();
+  const valor = document.getElementById('nu-saldo-valor');
+  const sub = document.getElementById('nu-saldo-sub');
+  if (valor) valor.textContent = estado.valor;
+  if (sub) sub.textContent = estado.sub;
+  const finValor = document.getElementById('fin-nu-valor');
+  const finSub = document.getElementById('fin-nu-sub');
+  if (finValor) { finValor.textContent = estado.valor; finValor.style.color = estado.cor; }
+  if (finSub) finSub.textContent = estado.sub;
+}
+
+function agendarPollNubank() {
+  if (nuPollTimer) return;
+  nuPollTimer = setInterval(() => {
+    const fin = document.getElementById('tab-financeiro');
+    const dados = document.getElementById('tab-empresa');
+    const aberto = (fin && fin.classList.contains('active')) || (dados && dados.classList.contains('active'));
+    if (aberto) carregarSaldoNubank();
+  }, 60000);
 }
 
 async function carregarSaldoNubank() {
   if (nuSaldoLoading) return;
+  agendarPollNubank();
   const epoch = nuSaldoEpoch;
   nuSaldoLoading = true;
-  const btn = document.getElementById('nu-btn-refresh');
-  if (btn) btn.disabled = true;
+  document.querySelectorAll('[data-nu-refresh]').forEach(btn => { btn.disabled = true; });
   renderSaldoNubank();
   try {
     const { data, error } = await sb.functions.invoke('nubank-saldo');
@@ -2979,9 +3043,82 @@ async function carregarSaldoNubank() {
   } finally {
     if (epoch === nuSaldoEpoch) {
       nuSaldoLoading = false;
-      if (btn) btn.disabled = false;
+      document.querySelectorAll('[data-nu-refresh]').forEach(btn => { btn.disabled = false; });
       renderSaldoNubank();
     }
+  }
+}
+
+function mostrarBlocoFinanceiro(id, visivel) {
+  const el = document.getElementById(id);
+  if (el) el.hidden = !visivel;
+}
+
+function pintarCartaoSaldo(prefixo, estado) {
+  const valor = document.getElementById('fin-' + prefixo + '-valor');
+  const sub = document.getElementById('fin-' + prefixo + '-sub');
+  const extra = document.getElementById('fin-' + prefixo + '-extra');
+  if (valor) { valor.textContent = estado.valor; valor.style.color = estado.cor || '#111827'; }
+  if (sub) sub.textContent = estado.sub || '';
+  if (extra) extra.textContent = estado.extra || '';
+}
+
+function estadoCartaoMercadoPago() {
+  if (mpSaldo && mpSaldo.ok) {
+    const s = mpParseSaldo(mpSaldo.saldo);
+    if (mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)) {
+      const valor = s.disp ?? s.total ?? 0;
+      const origem = mpSaldo.origem === 'relatorio' ? 'relatório de liberações' : ((mpSaldo.conta && mpSaldo.conta.nickname) || 'conta');
+      return {
+        valor: fmt(valor),
+        sub: origem,
+        extra: s.pend !== null ? ('A liberar ' + fmt(s.pend) + ' · fora do Caixa Atual') : '',
+        cor: valor >= 0 ? '#111827' : '#EF4444'
+      };
+    }
+    if (mpSaldo.saldo_erro === 'preparando') return { valor: '…', sub: 'relatório em preparação', extra: '', cor: '#9CA3AF' };
+    if (mpSaldo.saldo_erro === 'sem_permissao') return { valor: '—', sub: 'Mercado Pago recusou a leitura do saldo', extra: '', cor: '#EF4444' };
+    return { valor: '—', sub: 'saldo indisponível nesta conta', extra: '', cor: '#9CA3AF' };
+  }
+  if (mpSaldo && !mpSaldo.ok) return { valor: '—', sub: mpSaldo.error || 'falha na consulta', extra: '', cor: '#EF4444' };
+  return { valor: '…', sub: mpSaldoLoading ? 'consultando' : 'consultando', extra: '', cor: '#9CA3AF' };
+}
+
+function estadoCartaoStripe() {
+  if (stripeSaldo && stripeSaldo.ok && stripeSaldo.saldo_ok && stripeSaldo.saldo) {
+    const s = stripeSaldo.saldo;
+    const valor = mpNum(s.disponivel) || 0;
+    const nome = (stripeSaldo.conta && stripeSaldo.conta.nome) || s.moeda || 'Stripe';
+    return {
+      valor: fmt(valor),
+      sub: nome,
+      extra: 'A liberar ' + fmt(mpNum(s.a_liberar) || 0) + ' · fora do Caixa Atual',
+      cor: valor >= 0 ? '#111827' : '#EF4444'
+    };
+  }
+  if (stripeSaldo && !stripeSaldo.ok) return { valor: '—', sub: stripeSaldo.error || 'falha na consulta', extra: '', cor: '#EF4444' };
+  return { valor: '…', sub: stripeSaldoLoading ? 'consultando' : 'consultando', extra: '', cor: '#9CA3AF' };
+}
+
+function renderCartoesFinanceiro() {
+  const mpOk = paginaLiberada('mercadopago');
+  const stOk = paginaLiberada('stripe');
+  mostrarBlocoFinanceiro('fin-card-mp', mpOk);
+  mostrarBlocoFinanceiro('fin-mp-detalhe', mpOk);
+  mostrarBlocoFinanceiro('fin-card-stripe', stOk);
+  mostrarBlocoFinanceiro('fin-stripe-detalhe', stOk);
+  if (mpOk) pintarCartaoSaldo('mp', estadoCartaoMercadoPago());
+  if (stOk) pintarCartaoSaldo('stripe', estadoCartaoStripe());
+  renderSaldoNubank();
+  const tsMp = document.getElementById('mp-saldo-ts');
+  if (tsMp) tsMp.textContent = mpSaldoTs ? ('Consultado às ' + mpSaldoTs.toLocaleTimeString('pt-BR')) : '';
+  const tsSt = document.getElementById('stripe-saldo-ts');
+  if (tsSt) tsSt.textContent = stripeSaldoTs ? ('Consultado às ' + stripeSaldoTs.toLocaleTimeString('pt-BR')) : '';
+  const nota = document.getElementById('fin-nota');
+  if (nota) {
+    nota.textContent = (mpOk || stOk)
+      ? 'O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.'
+      : 'O Nu Empresas pode atrasar até 24 horas no Meu Pluggy e fica fora do Caixa Atual.';
   }
 }
 
@@ -2989,7 +3126,7 @@ async function carregarSaldoMP(){
   if(mpSaldoLoading) return;
   mpSaldoLoading = true;
   const btn = document.getElementById('mp-btn-refresh');
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Consultando...'; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Consultando...'; }
   try {
     const { data, error } = await sb.functions.invoke('mp-saldo');
     if(error) throw error;
@@ -3000,8 +3137,9 @@ async function carregarSaldoMP(){
     mpSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
   } finally {
     mpSaldoLoading = false;
-    if(btn){ btn.disabled = false; btn.textContent = '🔄 Atualizar saldo'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Atualizar'; }
     renderMercadoPago();
+    renderCartoesFinanceiro();
     pintarCaixasAtuais();
     if (mpSaldo && mpSaldo.saldo_erro === 'preparando' && mpRelatorioEsperas < 15 && !mpRelatorioTimer) {
       mpRelatorioEsperas++;
@@ -3034,16 +3172,21 @@ function iniciarRealtimeMP(){
   } catch(_e){ mpRealtimeOn = false; }
   if(!mpPollTimer){
     mpPollTimer = setInterval(()=>{
-      const tab = document.getElementById('tab-mercadopago');
-      if(tab && tab.classList.contains('active')) carregarSaldoMP();
+      const tab = document.getElementById('tab-financeiro');
+      if(tab && tab.classList.contains('active') && paginaLiberada('mercadopago')) carregarSaldoMP();
     }, 60000);
   }
 }
 
 function renderMercadoPago(){
-  if (!paginaLiberada('mercadopago')) return;
+  const kpisEl = document.getElementById('mp-kpis');
+  const body = document.getElementById('mp-receb-body');
+  if (!paginaLiberada('mercadopago')) {
+    if (kpisEl) kpisEl.innerHTML = '';
+    if (body) body.innerHTML = '';
+    return;
+  }
   iniciarRealtimeMP();
-  // dispara a primeira consulta de saldo automaticamente
   if(mpSaldo === null && !mpSaldoLoading){ carregarSaldoMP(); }
 
   const aprovados = mpRecebimentos.filter(r => r.status === 'approved');
@@ -3053,33 +3196,11 @@ function renderMercadoPago(){
   const mesAtual = aprovados.filter(r=>{ const d = r.date_approved ? new Date(r.date_approved) : null; return d && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
   const totalMes = mesAtual.reduce((a,r)=> a + valLiq(r), 0);
 
-  let kpis = '';
-  if(mpSaldo && mpSaldo.ok){
-    const s = mpParseSaldo(mpSaldo.saldo);
-    if(mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)){
-      const subSaldo = mpSaldo.origem === 'relatorio' ? 'relatório de liberações' : escapeHtml(mpSaldo.conta?.nickname||'');
-      kpis += kpiCard('Saldo disponível', fmt(s.disp ?? s.total ?? 0), subSaldo, '#10B981');
-      if(s.pend !== null) kpis += kpiCard('A liberar', fmt(s.pend), 'liberação futura', '#F59E0B');
-    } else if(mpSaldo.saldo_erro === 'preparando'){
-      kpis += kpiCard('Saldo disponível', '…', 'relatório de liberações em preparação', '#9CA3AF');
-    } else if(mpSaldo.saldo_erro === 'sem_permissao'){
-      kpis += kpiCard('Saldo disponível', '—', 'Mercado Pago recusou a leitura do saldo', '#EF4444');
-    } else {
-      kpis += kpiCard('Saldo disponível', '—', 'endpoint de saldo indisponível p/ esta conta', '#9CA3AF');
-    }
-  } else if(mpSaldo && !mpSaldo.ok){
-    kpis += kpiCard('Saldo', 'erro', escapeHtml(mpSaldo.error||'falha na consulta'), '#EF4444');
-  } else {
-    kpis += kpiCard('Saldo disponível', '…', 'consultando', '#9CA3AF');
+  if (kpisEl) {
+    kpisEl.innerHTML = kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#009EE3')
+      + kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
   }
-  kpis += kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#1E6FFF');
-  kpis += kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
-  document.getElementById('mp-kpis').innerHTML = kpis;
-
-  const tsEl = document.getElementById('mp-saldo-ts');
-  if(tsEl) tsEl.textContent = mpSaldoTs ? ('Saldo consultado às '+mpSaldoTs.toLocaleTimeString('pt-BR')) : '';
-
-  const body = document.getElementById('mp-receb-body');
+  if (!body) return;
   if(!mpRecebimentos.length){
     body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhum recebimento ainda. Assim que um pagamento cair no Mercado Pago, ele aparece aqui automaticamente.</td></tr>`;
     return;
@@ -3139,7 +3260,7 @@ async function carregarSaldoStripe(){
   if(stripeSaldoLoading) return;
   stripeSaldoLoading = true;
   const btn = document.getElementById('stripe-btn-refresh');
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Consultando...'; }
+  if(btn){ btn.disabled = true; btn.textContent = 'Consultando...'; }
   try {
     const { data, error } = await sb.functions.invoke('stripe-saldo');
     if(error) throw error;
@@ -3149,8 +3270,9 @@ async function carregarSaldoStripe(){
     stripeSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
   } finally {
     stripeSaldoLoading = false;
-    if(btn){ btn.disabled = false; btn.textContent = '🔄 Atualizar saldo'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Atualizar'; }
     renderStripe();
+    renderCartoesFinanceiro();
     pintarCaixasAtuais();
   }
 }
@@ -3179,14 +3301,20 @@ function iniciarRealtimeStripe(){
   } catch(_e){ stripeRealtimeOn = false; }
   if(!stripePollTimer){
     stripePollTimer = setInterval(()=>{
-      const tab = document.getElementById('tab-stripe');
-      if(tab && tab.classList.contains('active')) carregarSaldoStripe();
+      const tab = document.getElementById('tab-financeiro');
+      if(tab && tab.classList.contains('active') && paginaLiberada('stripe')) carregarSaldoStripe();
     }, 60000);
   }
 }
 
 function renderStripe(){
-  if (!paginaLiberada('stripe')) return;
+  const kpisEl = document.getElementById('stripe-kpis');
+  const body = document.getElementById('stripe-receb-body');
+  if (!paginaLiberada('stripe')) {
+    if (kpisEl) kpisEl.innerHTML = '';
+    if (body) body.innerHTML = '';
+    return;
+  }
   iniciarRealtimeStripe();
   if(stripeSaldo === null && !stripeSaldoLoading){ carregarSaldoStripe(); }
   const aprovados = stripeRecebimentos.filter(r => r.status === 'approved');
@@ -3195,23 +3323,11 @@ function renderStripe(){
   const now = new Date();
   const mesAtual = aprovados.filter(r=>{ const d = r.date_approved ? new Date(r.date_approved) : null; return d && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
   const totalMes = mesAtual.reduce((a,r)=> a + valLiq(r), 0);
-  let kpis = '';
-  if(stripeSaldo && stripeSaldo.ok && stripeSaldo.saldo_ok && stripeSaldo.saldo){
-    const s = stripeSaldo.saldo;
-    const moeda = s.moeda || 'BRL';
-    kpis += kpiCard('Saldo disponível', fmt(mpNum(s.disponivel)||0), escapeHtml((stripeSaldo.conta&&stripeSaldo.conta.nome)||moeda), '#635BFF');
-    kpis += kpiCard('A liberar', fmt(mpNum(s.a_liberar)||0), 'liberação futura', '#F59E0B');
-  } else if(stripeSaldo && !stripeSaldo.ok){
-    kpis += kpiCard('Saldo', 'erro', escapeHtml(stripeSaldo.error||'falha na consulta'), '#EF4444');
-  } else {
-    kpis += kpiCard('Saldo disponível', '…', 'consultando', '#9CA3AF');
+  if (kpisEl) {
+    kpisEl.innerHTML = kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#635BFF')
+      + kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
   }
-  kpis += kpiCard('Recebido no mês', fmt(totalMes), mesAtual.length+' recebimento(s)', '#1E6FFF');
-  kpis += kpiCard('Recebido total', fmt(totalReceb), aprovados.length+' aprovado(s)', '#6D28D9');
-  document.getElementById('stripe-kpis').innerHTML = kpis;
-  const tsEl = document.getElementById('stripe-saldo-ts');
-  if(tsEl) tsEl.textContent = stripeSaldoTs ? ('Saldo consultado às '+stripeSaldoTs.toLocaleTimeString('pt-BR')) : '';
-  const body = document.getElementById('stripe-receb-body');
+  if (!body) return;
   if(!stripeRecebimentos.length){
     body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhuma cobrança ainda. Assim que um pagamento cair no Stripe, ele aparece aqui automaticamente.</td></tr>`;
     return;
@@ -5977,6 +6093,7 @@ function fecharMenu() {
 
 function showTab(name, btn) {
   if (name === 'dashboard') name = 'painel';
+  if (name === 'mercadopago' || name === 'stripe') name = 'financeiro';
   if (!paginaLiberada(name)) {
     if (name !== 'painel') showTab('painel');
     return;
@@ -5996,6 +6113,11 @@ function showTab(name, btn) {
   }
   if (name === 'calendario') setTimeout(scrollCalToToday, 80);
   if (name === 'empresa') carregarSaldoNubank();
+  if (name === 'financeiro') {
+    carregarSaldoNubank();
+    if (paginaLiberada('mercadopago')) carregarSaldoMP();
+    if (paginaLiberada('stripe')) carregarSaldoStripe();
+  }
   updateBackBtn();
 }
 
