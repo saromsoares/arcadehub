@@ -3,7 +3,8 @@
 param(
     [ValidatePattern('^acct_[a-zA-Z0-9]+$')]
     [string]$AccountId = 'acct_1Ub1arEtZs5VZmDQ',
-    [string]$ProfilePath = (Join-Path (Split-Path -Parent $PSScriptRoot) '.aiox/supabase-arcadehub-profile.yaml')
+    [string]$ProfilePath = (Join-Path (Split-Path -Parent $PSScriptRoot) '.aiox/supabase-arcadehub-profile.yaml'),
+    [Security.SecureString]$ApiKey
 )
 $ErrorActionPreference = 'Stop'
 $projectRef = 'zdwgwpvlwqtsdgervcof'
@@ -24,7 +25,7 @@ Write-Host 'Permissoes: conta, saldo, cobrancas e transacoes de saldo (para taxa
 Write-Host 'A chave sera validada na API e salva apenas como STRIPE_CLICKDROP_SECRET_KEY no Supabase.'
 Write-Host 'Nao cole a chave no chat. A entrada abaixo e oculta.'
 try {
-    $secure = Read-Host 'Cole a chave rk_live_ do ClickDrop e pressione Enter' -AsSecureString
+    $secure = if ($null -ne $ApiKey) { $ApiKey.Copy() } else { Read-Host 'Cole a chave rk_live_ do ClickDrop e pressione Enter' -AsSecureString }
     $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     $plain = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
     if ($plain -notmatch '^rk_live_[a-zA-Z0-9]+$') { throw 'Informe uma chave restrita de producao (rk_live_). Nenhuma alteracao foi enviada.' }
