@@ -35,12 +35,14 @@ export const handler = endpoint(async req => {
   const messageId = `<${crypto.randomUUID()}@${config.from.split("@")[1].toLowerCase()}>`;
   const headers: Record<string, string> = { "Message-ID": messageId };
   let replyWithoutThread = false;
+  let replyToId: number | null = null;
   if (input.reply_to_id !== undefined) {
     if (!/^[1-9]\d*$/.test(String(input.reply_to_id))) throw new HttpError(400, "Mensagem original inválida.");
     const original = await userClient.from("emails").select("id,message_id").eq("id", input.reply_to_id)
       .eq("mailbox_id", mailbox.id).eq("direcao", "in").maybeSingle();
     if (original.error) throw original.error;
     if (!original.data) throw new HttpError(404, "A mensagem original não está disponível nesta caixa.");
+    replyToId = original.data.id;
     const parentId = String(original.data.message_id ?? "").trim();
     if (parentId.length <= 900 && /^[\x21-\x7E]+$/.test(parentId) && /^<[^<>\s@]+@[^<>\s@]+>$/.test(parentId)) {
       // denomailer 1.6.0's inReplyTo option emits a misspelled header; use explicit names.
@@ -52,7 +54,7 @@ export const handler = endpoint(async req => {
   const attempt = await admin.from("emails").insert({
     mailbox_id: mailbox.id, direcao: "out", de: config.from, para: to.join(", "),
     cc: cc.join(", ") || null, cco: bcc.join(", ") || null, assunto: subject,
-    corpo_texto: plainContent || null, corpo_html: htmlContent, status: "pendente", enviado_por: user.id, message_id: messageId,
+    corpo_texto: plainContent || null, corpo_html: htmlContent, status: "pendente", enviado_por: user.id, message_id: messageId, reply_to_id: replyToId,
   }).select("id").single();
   if (attempt.error) throw attempt.error;
   const client = new SMTPClient({ connection: { hostname: config.smtp.host, port: config.smtp.port, tls: true,

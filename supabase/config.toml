@@ -20,3 +20,9 @@ verify_jwt = false
 verify_jwt = false
 [functions.nubank-saldo]
 verify_jwt = false
+[functions.acesso-senha]
+verify_jwt = false
+[functions.acessos-manage]
+verify_jwt = false
+[functions.dashboard-ops]
+verify_jwt = false

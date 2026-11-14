@@ -8,6 +8,8 @@ Em `https://arcadehub.tech/admin/`, entrar com a conta autorizada da holding, ab
 
 Cada operação usa a identidade da caixa selecionada. `mailbox_id` não é necessariamente o ID da empresa financeira: `coben` difere de `coben_life_os`, e `privabr` difere de `priva_br`. A lista é obtida por `email-accounts`, não pelo array `COMPANIES`.
 
+Na evolução de 14/11/2026, busca e paginação cobrem até 300 mensagens carregadas da caixa; a interface informa o limite, sem prometer histórico IMAP completo. Rascunhos podem ser recuperados explicitamente na mesma aba, usuário e caixa via sessionStorage; logout os remove e tentativa SMTP incerta nunca é reenviada automaticamente. `emails.reply_to_id` guarda o original autorizado na mesma caixa, validado no backend. “Sem resposta registrada” usa esse vínculo a partir da implantação e não reconstrói atendimento anterior. Ver [runbook integrado](dashboard-evolucao.md).
+
 ## Assinaturas publicadas
 
 As sete caixas têm assinatura visual automática e prévia no compositor. Arcade e CBAI compartilham a mesma arte por decisão do usuário; Coben usa coben.png desde a atualização incremental de 2026-10-15. Seis PNG públicos ficam em `assets/email-signatures/`; o mapa autorizado fica em `supabase/functions/_shared/email-signatures.ts`. A imagem não é adicionada ao textarea: o servidor monta texto novo, identificação textual/imagem e histórico separado (`quoted_text`), preservando `reply_to_id` e os cabeçalhos da conversa.

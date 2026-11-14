@@ -446,6 +446,7 @@ Deno.test("Authorized reply emits single correctly spelled thread headers and a 
   assert.deepEqual(headerValues(wire, "InReplyTo"), []);
   assert.deepEqual(headerValues(wire, "Message-ID"), [data.message_id]);
   assert.equal(dbCalls("POST")[0].payload?.message_id, data.message_id);
+  assert.equal(dbCalls("POST")[0].payload?.reply_to_id, 1, "authorized reply keeps its original ID for reply tracking");
   assert.notEqual(data.message_id, message.message_id);
   assert.ok(!wire.includes("forged@example.test"));
 });

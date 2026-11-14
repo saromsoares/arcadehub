@@ -20,6 +20,7 @@
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 <title>Arcade Hub | Dashboard</title>
 <link rel="icon" type="image/png" href="../favicon.png" />
+<link rel="stylesheet" href="dashboard-evolution.css?v=20261114" />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous" />
 <!-- Versões pinadas para reduzir superfície de supply-chain; ver docs/runbooks/cdn-pinning.md para rotação -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
@@ -715,6 +716,7 @@
     <div class="page-title" id="pt-painel">Painel</div>
     <div class="page-sub" id="ps-painel">Consolidado do grupo: indicadores, evolução do ano e resultado por empresa.</div>
     <div class="kpi-grid" id="painel-kpis"></div>
+    <div id="painel-insights" aria-live="polite"></div>
     <div class="section-title"><span>Receita e resultado no ano</span></div>
     <div class="chart-wrap"><canvas id="chart-painel" height="100"></canvas></div>
     <div class="section-title"><span>Consolidado mensal</span></div>
@@ -814,6 +816,7 @@
   <div id="tab-comparativo" class="tab-content">
     <div class="page-title" id="pt-comparativo">Comparativo Realizado vs Planejado</div>
     <div class="page-sub" id="ps-comparativo">Comparativo mensal consolidado e YTD por empresa.</div>
+    <p class="insight-note" id="comparativo-explicacao"></p>
     <div class="section-title"><span>Comparativo Mensal Consolidado</span></div>
     <div class="table-wrap" style="overflow-x:auto;margin-bottom:22px;">
       <table style="min-width:900px;"><thead><tr id="comp-header"></tr></thead><tbody id="comp-table"></tbody></table>
@@ -822,7 +825,7 @@
     <div class="table-wrap">
       <table><thead><tr>
         <th>Empresa</th><th>Receita Real.</th><th>Receita Plan.</th><th>At. Receita</th>
-        <th>Resultado Real.</th><th>Resultado Plan.</th><th>At. Resultado</th><th>Status</th>
+        <th>Resultado Real.</th><th>Resultado Plan.</th><th>Variação do resultado</th><th>Status</th>
       </tr></thead><tbody id="comp-empresa-table"></tbody></table>
     </div>
     <div class="section-title"><span>Receita: Realizado vs Planejado</span></div>
@@ -836,13 +839,14 @@
 
     <div class="caixa-block">
       <div class="caixa-input-wrap">
-        <div class="caixa-label">Início da Operação</div>
+        <div class="caixa-label">Início do período</div>
         <div class="caixa-desc">Data de abertura do período</div>
         <div style="color:#fff;font-family:sans-serif;font-size:20px;font-weight:700;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(30,111,255,0.4);" class="op-inicio"></div>
       </div>
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
-    <div class="info-box">Caixa Atual soma o Stripe ao Mercado Pago. O Mercado Pago entra pelo relatório de liberações quando a consulta direta é recusada. O valor a liberar fica de fora da consulta direta.</div>
+    <div class="info-box">Caixa Atual soma apenas o disponível do Stripe e Mercado Pago. Relatório de liberações pode ter referência anterior à consulta. Valores a liberar e Nu Empresas ficam fora deste saldo.</div>
+    <div id="estrutura-projecao"></div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
     <p style="color:#6B7280;font-size:12px;margin:-8px 0 10px;">Entradas de capital por sócio. Meses <span class="op-pre"></span> = pré-operação (bloqueados). Aportes recebidos via Mercado Pago ou Stripe aparecem em <span style="color:#7C3AED;font-weight:600;">↳ roxo</span> (somam no Confirmado; não editáveis aqui — ajuste o vínculo na aba do meio de pagamento).</p>
@@ -1188,6 +1192,7 @@
       </article>
     </div>
     <p class="fin-nota" id="fin-nota">O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.</p>
+    <div id="financeiro-inteligencia"></div>
 
     <div id="fin-nu-detalhe">
       <div class="section-title" style="flex-wrap:wrap;">
@@ -1689,9 +1694,11 @@ const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov
 // as somas do Mercado Pago — precisa ser filtrado por este ano, senão Mar/2026 e
 // Mar/2027 viram a mesma coisa na virada do ano.
 const EXERCICIO = new Date().getFullYear();
-const DATA_INICIO = { mes: 'Mar', idx: 2, label: `01/03/${EXERCICIO}` };
-const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Mar..Dez
-const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Jan, Fev
+const INICIO_OPERACAO_ANO = 2026;
+const INICIO_PERIODO_IDX = EXERCICIO === INICIO_OPERACAO_ANO ? 2 : 0;
+const DATA_INICIO = { mes: MONTHS[INICIO_PERIODO_IDX], idx: INICIO_PERIODO_IDX, label: `01/${String(INICIO_PERIODO_IDX+1).padStart(2,'0')}/${EXERCICIO}` };
+const MONTHS_OPERACIONAIS = MONTHS.slice(DATA_INICIO.idx); // Março em 2026; janeiro nos exercícios seguintes.
+const MONTHS_PRE = MONTHS.slice(0, DATA_INICIO.idx);       // Pré-operação somente no primeiro exercício.
 const PERIODO_LABEL = `${DATA_INICIO.mes}–${MONTHS[MONTHS.length-1]}`;
 function isMesOperacional(m) { return MONTHS.indexOf(m) >= DATA_INICIO.idx; }
 
@@ -2517,7 +2524,7 @@ async function loadAll(epoch) {
     leitura(sb.from('contatos').select('*').order('created_at', { ascending: false })),
     leitura(consultarEmailsDaCaixa()),
     // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
-    leitura(sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true })),
+    leitura(sb.from('acessos_empresas').select('id, empresa_id, empresa_nome, rotulo, url, usuario, obs, ordem, created_at, updated_at, reviewed_at, review_due_at, credential_updated_at').order('ordem', { ascending: true }).order('empresa_nome', { ascending: true })),
     leitura(sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true })),
     leitura(sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false })),
     leitura(sb.from('usuarios_empresas').select('empresa_id')),
@@ -2702,7 +2709,7 @@ function renderLancamentos() {
   // Form principal enxuto: receita + headcount + obs. Os custos são itens (Custos do Mês),
   // cada um com sua própria categoria/pagador/meio. Os baldes antigos foram aposentados.
   const fields = [
-    {key:'receita',label:'Receita Bruta (R$)'},
+    {key:'receita',label:'Receita manual (R$) · sem repetir gateways'},
     {key:'headcount',label:'Headcount'},
     {key:'obs',label:'Observações',text:true},
   ];
@@ -3842,22 +3849,10 @@ let acessosEmpresas = [];
 let acessosVisiveis = new Set(); // ids com senha revelada
 let acessosMestraOk = false;     // sessão já validou a senha mestra
 let mestraDigitada = null;       // guardada só em memória: a Edge Function reconfere no servidor
-// Hash SHA-256 da senha mestra (a senha em si NÃO fica no código — repo é público).
-const ACESSOS_MASTER_HASH = '9d2146957f62038c77c8802e17cf734e332b8740b676d1691633b5302a5d2f25';
-
-async function sha256hex(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-// Pede a senha mestra (uma vez por sessão) antes de revelar/copiar senhas.
+// O módulo de segurança valida a senha mestra exclusivamente no servidor.
+// Falha fechada se o módulo externo não puder ser carregado.
 async function verificarMestra(){
-  if(acessosMestraOk) return true;
-  const tent = prompt('Senha mestra para exibir as senhas:');
-  if(tent === null || tent === '') return false;
-  let h = '';
-  try { h = await sha256hex(tent); } catch(_e){ alert('Não foi possível validar (use HTTPS).'); return false; }
-  if(h === ACESSOS_MASTER_HASH){ acessosMestraOk = true; mestraDigitada = tent; return true; }
-  alert('Senha mestra incorreta.');
+  toast('A validação segura está indisponível. Recarregue a página.', 'erro');
   return false;
 }
 
@@ -5221,6 +5216,7 @@ function showEmpresaIndividual(cid, navBtn) {
 function renderEmpresaIndividual(cid) {
   const comp = COMPANIES.find(c=>c.id===cid);
   if (!comp) return;
+  const epochEmpresa = painelEpoch;
 
   const ytd = getEmpresaYTD(cid);
   const margem = ytd.receita > 0 ? ytd.resultado / ytd.receita : 0;
@@ -5228,14 +5224,14 @@ function renderEmpresaIndividual(cid) {
   const e = getLanc(selEmpresaMonth, cid);
   const agrMes = getEmpresaMes(cid, selEmpresaMonth);
   const mesReceita = agrMes.receita;   // inclui Mercado Pago, como o resultado ao lado
-  const mesExtras = agrMes.custosItens;
   const mesRes = agrMes.resultado;
   const mesMargem = agrMes.receita > 0 ? mesRes / agrMes.receita : 0;
 
   // Dados mensais para o gráfico — mesmo agregador do cabeçalho e da tabela anual
   const dadosMensais = MONTHS.map(m => {
     const a = getEmpresaMes(cid, m);
-    return { mes: m, receita: a.receita, custos: a.custos, resultado: a.resultado };
+    const decorrido = MONTHS_OPERACIONAIS.includes(m) && MONTHS.indexOf(m) <= new Date().getMonth();
+    return { mes: m, receita: decorrido ? a.receita : null, custos: decorrido ? a.custos : null, resultado: decorrido ? a.resultado : null };
   });
 
   const content = `
@@ -5301,7 +5297,7 @@ function renderEmpresaIndividual(cid) {
       <div>
         <!-- Resultado do mês -->
         <div class="result-card ${mesRes>=0?'result-positive':'result-negative'}" id="emp-result-card-${cid}">
-          <div class="result-label">Resultado Operacional — ${selEmpresaMonth}</div>
+          <div class="result-label">Resultado Operacional — ${selEmpresaMonth}${agrMes.resultadoProvisorio ? ' · parcial' : ''}</div>
           <div class="result-value">${fmt(mesRes)}</div>
           <div style="color:#6B7280;font-size:12px;margin-top:4px;">Margem: ${fmtPct(mesMargem)}</div>
         </div>
@@ -5309,7 +5305,7 @@ function renderEmpresaIndividual(cid) {
         <!-- KPIs do mês -->
         <div class="kpi-grid">
           ${kpiCard('Receita '+selEmpresaMonth, fmt(mesReceita), [agrMes.receitaMp>0?`Mercado Pago ${fmt(agrMes.receitaMp)}`:'', agrMes.receitaStripe>0?`Stripe ${fmt(agrMes.receitaStripe)}`:''].filter(Boolean).join(' · '), comp.color)}
-          ${kpiCard('Custos '+selEmpresaMonth, fmt(calcCustos(e)+mesExtras), '', '#F59E0B')}
+          ${kpiCard('Custos '+selEmpresaMonth, fmt(agrMes.custos), 'Inclui taxas conhecidas dos gateways', '#F59E0B')}
           ${kpiCard('Headcount', fmtNum(e.headcount||0), 'pessoas', '#8B5CF6')}
         </div>
       </div>
@@ -5341,6 +5337,7 @@ function renderEmpresaIndividual(cid) {
 
   // Renderizar gráfico
   setTimeout(() => {
+    if (epochEmpresa !== painelEpoch) return;
     const ctx = document.getElementById(`chart-emp-${cid}`);
     if (!ctx) return;
     if (empresaCharts[cid]) empresaCharts[cid].destroy();
@@ -6307,5 +6304,8 @@ async function initDashboard(epoch) {
   return falhas || [];
 }
 </script>
+<script src="dashboard-security.js?v=20261114"></script>
+<script src="dashboard-finance.js?v=20261114"></script>
+<script src="dashboard-operations.js?v=20261114"></script>
 </body>
 </html>

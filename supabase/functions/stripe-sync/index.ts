@@ -49,15 +49,22 @@ export const handler = async (req: Request) => {
   let full = false;
   try {
     const body = await req.json();
-    full = !!body?.full;
+    full = body?.full === true || body?.historical === true;
   } catch { /* cron calls may send an empty body */ }
   const accounts = stripeAccounts();
   const results = [];
   for (const account of accounts) {
     try {
       await verifyStripeAccount(account);
-      const synced = await syncAccount(account, full ? 1000 : 100);
-      results.push({ id: account.id, ok: true, synced });
+      const recent = full ? 0 : (await syncAccount(account, 100)).synced;
+      const historical = await syncHistory(account, full);
+      results.push({
+        id: account.id,
+        ok: true,
+        synced: recent + historical.reviewed,
+        recent_synced: recent,
+        historico: historical,
+      });
     } catch (error) {
       results.push({
         id: account.id,
@@ -77,12 +84,61 @@ export const handler = async (req: Request) => {
   }, ok ? 200 : 502);
 };
 
-async function syncAccount(account: StripeAccount, maxRecords: number) {
+async function syncHistory(account: StripeAccount, start: boolean) {
+  const claim = await supabase.rpc("stripe_history_claim", {
+    p_account_key: account.id,
+    p_account_id: account.expectedId,
+    p_start: start,
+  });
+  if (claim.error) {
+    throw new Error(
+      "Não foi possível consultar o estado da revisão histórica.",
+    );
+  }
+  if (!claim.data) return { reviewed: 0, claimed: false, complete: null };
+  const state = claim.data;
+  try {
+    const batch = await syncAccount(account, 1000, state.cursor_full || "");
+    const saved = await supabase.rpc("stripe_history_checkpoint", {
+      p_account_key: account.id,
+      p_lease_token: state.lease_token,
+      p_cursor: batch.cursor || null,
+      p_completed: batch.complete,
+      p_reviewed: batch.synced,
+      p_error: null,
+    });
+    if (saved.error || saved.data !== true) {
+      throw new Error("Não foi possível registrar a revisão histórica.");
+    }
+    return {
+      reviewed: batch.synced,
+      claimed: true,
+      complete: batch.complete,
+      next_cursor: batch.complete ? null : batch.cursor,
+    };
+  } catch (error) {
+    await supabase.rpc("stripe_history_checkpoint", {
+      p_account_key: account.id,
+      p_lease_token: state.lease_token,
+      p_cursor: state.cursor_full || null,
+      p_completed: false,
+      p_reviewed: 0,
+      p_error: stripeError(error),
+    });
+    throw error;
+  }
+}
+
+async function syncAccount(
+  account: StripeAccount,
+  maxRecords: number,
+  startingAfter = "",
+) {
   let synced = 0;
-  let startingAfter = "";
+  let complete = false;
   while (synced < maxRecords) {
     const url = new URL("https://api.stripe.com/v1/charges");
-    url.searchParams.set("limit", "100");
+    url.searchParams.set("limit", String(Math.min(100, maxRecords - synced)));
     url.searchParams.append("expand[]", "data.balance_transaction");
     if (startingAfter) url.searchParams.set("starting_after", startingAfter);
     const response = await fetch(url, {
@@ -139,12 +195,21 @@ async function syncAccount(account: StripeAccount, maxRecords: number) {
       if (error) throw new Error("Não foi possível gravar os recebimentos.");
     }
     synced += charges.length;
-    if (!payload.has_more || !charges.length) break;
+    if (!payload.has_more) {
+      complete = true;
+      break;
+    }
+    if (!charges.length) {
+      throw new Error("O Stripe retornou uma paginação inválida.");
+    }
     const last = charges[charges.length - 1];
-    if (!last || typeof last.id !== "string") break;
+    if (
+      !last || typeof last.id !== "string" || !last.id ||
+      last.id === startingAfter
+    ) throw new Error("O Stripe retornou uma paginação inválida.");
     startingAfter = last.id;
   }
-  return synced;
+  return { synced, complete, cursor: startingAfter };
 }
 
 if (import.meta.main) Deno.serve(handler);

@@ -21,6 +21,14 @@ Os segredos ficam disponíveis às Edge Functions pelo ambiente do servidor. [Re
 - `stripe-saldo` agrega somente BRL, devolve `contas` e mantém `saldo.disponivel`, `saldo.a_liberar`, `saldo.total`. Disponível integra Caixa Atual; pendente fica de fora. Falha de uma conta não impede a outra: a soma conhecida vem com `parcial=true`, identificada no Financeiro e no Caixa. Falha de ambas retorna erro, não saldo zero fictício.
 - Acesso continua exigindo holding. Bloqueio de página `stripe` esconde detalhes e mantém RLS nos recebimentos; o saldo agregado permitido no Caixa continua disponível ao usuário da holding. Não alterar permissões do suporte.
 
+## Reconciliação histórica e movimentos — evolução 1.8
+
+Aplicar somente a migration `20261114184422_stripe_history_coverage.sql` antes do novo `stripe-sync`. A tabela `stripe_sync_state` guarda cursor, lease e checkpoints separados para `arcade_hub` e `clickdrop`. O modo histórico percorre até 1.000 cobranças por lote; o incremental a cada dois minutos continua uma rodada incompleta. A operação `supabase/operations/stripe-history-cron.sql` agenda novas rodadas a cada seis horas usando o token já existente no Vault. Rodada só é concluída quando não existe próxima página. Conferir resposta HTTP e estado, além do disparo do cron.
+
+`stripe-saldo` informa cobertura histórica, disponibilizações conhecidas de cobranças e até 100 movimentos recentes por conta autorizada. Movimentos têm valores com sinal, moeda, tipo, status e data; não trazem cliente, descrição ou referência sensível de origem. O limite é explícito e não reconcilia sozinho todo o extrato. Falha de leitura dos movimentos não invalida um saldo confirmado. Um usuário da holding com a página Stripe bloqueada recebe somente o agregado permitido, sem os detalhes das contas/histórico/movimentos.
+
+Taxa/líquido ausentes continuam `null`; não presumir taxa zero. Liquidação em moeda diferente conserva a moeda original no detalhe, sem chamar a taxa de BRL. Estornos mantêm a taxa original conhecida e sinalizam conciliação financeira pendente, sem presumir devolução proporcional da tarifa. `available_on` é disponibilidade da cobrança, não promessa de repasse bancário. Frontend mantém moedas separadas e distingue venda, custo de taxa e saldo. Ver [runbook integrado](dashboard-evolucao.md).
+
 ## Evidência em 2026-11-14
 
 Antes da extensão, a API da holding e o endpoint publicado concordaram: disponível **−R$ 0,28**, a liberar **R$ 18,86**, total **R$ 18,58**. O screenshot do Financeiro do usuário mostrou os mesmos valores. O extrato completo da conta reconciliou o disponível; duas tarifas `Billing - Usage Fee` de R$ 0,14 (25/10 e 10/11) explicam os R$ 0,28 negativos. Não corrigir esse valor real para zero nem somar pendentes ao disponível.

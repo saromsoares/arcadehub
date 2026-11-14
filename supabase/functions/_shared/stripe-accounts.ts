@@ -94,6 +94,9 @@ export function stripeError(error: unknown) {
     "Recebimento já registrado em outra conta Stripe.",
     "A conta retornou uma cobrança de teste.",
     "A conta retornou um saldo de teste.",
+    "Não foi possível consultar o estado da revisão histórica.",
+    "Não foi possível registrar a revisão histórica.",
+    "O Stripe retornou uma paginação inválida.",
   ];
   return error instanceof Error && allowed.includes(error.message)
     ? error.message
