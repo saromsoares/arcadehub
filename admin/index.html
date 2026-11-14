@@ -20,7 +20,7 @@
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 <title>Arcade Hub | Dashboard</title>
 <link rel="icon" type="image/png" href="../favicon.png" />
-<link rel="stylesheet" href="dashboard-evolution.css?v=20261114" />
+<link rel="stylesheet" href="dashboard-evolution.css?v=20261114-stripe-contas" />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous" />
 <!-- Versões pinadas para reduzir superfície de supply-chain; ver docs/runbooks/cdn-pinning.md para rotação -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
@@ -1174,9 +1174,10 @@
           <span id="stripe-live-dot" style="display:none;font-size:11px;color:#10B981;font-weight:700;">● ao vivo</span>
           <button type="button" id="stripe-btn-refresh" onclick="carregarSaldoStripe()">Atualizar</button>
         </div>
-        <div class="kpi-label">Disponível</div>
+        <div class="kpi-label">Saldo total · Geral + ClickDrop</div>
         <div class="fin-valor" id="fin-stripe-valor">…</div>
         <div class="fin-sub" id="fin-stripe-sub">consultando</div>
+        <dl class="stripe-accounts" id="fin-stripe-contas" hidden></dl>
         <div class="fin-extra" id="fin-stripe-extra"></div>
         <div class="fin-ts" id="stripe-saldo-ts"></div>
       </article>
@@ -3141,16 +3142,12 @@ function estadoCartaoMercadoPago() {
 function estadoCartaoStripe() {
   if (stripeSaldo && stripeSaldo.ok && stripeSaldo.saldo_ok && stripeSaldo.saldo) {
     const s = stripeSaldo.saldo;
-    const valor = mpNum(s.disponivel) || 0;
-    const nome = (stripeSaldo.conta && stripeSaldo.conta.nome) || s.moeda || 'Stripe';
+    const disponivel = mpNum(s.disponivel), pendente = mpNum(s.a_liberar);
+    const valor = mpNum(s.total) ?? (disponivel !== null && pendente !== null ? Math.round((disponivel + pendente) * 100) / 100 : null);
     return {
-      valor: fmt(valor),
-      sub: stripeSaldo.parcial ? 'Leitura parcial · ' + nome : nome,
-      extra: 'A liberar ' + fmt(mpNum(s.a_liberar) || 0) + ' · fora do Caixa Atual'
-        + (Array.isArray(stripeSaldo.contas) && stripeSaldo.contas.length > 1
-          ? ' · ' + stripeSaldo.contas.map(c => c.ok && c.saldo
-            ? c.nome + ': disponível ' + fmt(mpNum(c.saldo.disponivel) || 0) + ', a liberar ' + fmt(mpNum(c.saldo.a_liberar) || 0)
-            : c.nome + ': sem leitura').join(' · ') : ''),
+      valor: valor === null ? '—' : fmt(valor),
+      sub: stripeSaldo.parcial ? 'Soma parcial · há conta sem leitura' : 'Soma das duas contas · disponível + a liberar',
+      extra: 'Disponível ' + (disponivel === null ? 'sem leitura' : fmt(disponivel)) + ' · a liberar ' + (pendente === null ? 'sem leitura' : fmt(pendente)) + '. Apenas o disponível entra no Caixa Atual.',
       cor: stripeSaldo.parcial ? '#D97706' : (valor >= 0 ? '#111827' : '#EF4444')
     };
   }
@@ -6305,7 +6302,7 @@ async function initDashboard(epoch) {
 }
 </script>
 <script src="dashboard-security.js?v=20261114"></script>
-<script src="dashboard-finance.js?v=20261114"></script>
+<script src="dashboard-finance.js?v=20261114-stripe-contas"></script>
 <script src="dashboard-operations.js?v=20261114"></script>
 </body>
 </html>

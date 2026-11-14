@@ -423,8 +423,27 @@
     return state;
   };
   const originalCards = renderCartoesFinanceiro;
+  function renderStripeAccounts() {
+    const box = byId('fin-stripe-contas');
+    if (!box) return;
+    const accounts = paginaLiberada('stripe') && Array.isArray(stripeSaldo?.contas) ? stripeSaldo.contas : [];
+    box.hidden = !accounts.length;
+    box.innerHTML = accounts.map(account => {
+      const label = account.id === 'arcade_hub' || account.nome === 'ARCADE HUB TECH' ? 'Stripe Geral'
+        : account.id === 'clickdrop' || account.nome === 'ClickDrop' ? 'Stripe ClickDrop' : 'Stripe ' + (account.nome || 'Conta');
+      if (!account.ok || !account.saldo) return '<div class="stripe-account"><dt>' + html(label) + '</dt><dd><strong>Sem leitura</strong></dd></div>';
+      const balance = account.saldo;
+      const available = known(balance.disponivel) ? num(balance.disponivel) : null;
+      const pending = known(balance.a_liberar) ? num(balance.a_liberar) : null;
+      const total = known(balance.total) ? num(balance.total) : available !== null && pending !== null ? money(available + pending) : null;
+      const display = amount => amount === null ? 'Sem leitura' : formatMoney(amount, balance.moeda || 'BRL');
+      return '<div class="stripe-account"><dt>' + html(label) + '</dt><dd><strong' + (total < 0 ? ' class="negative"' : '') + '>' + display(total)
+        + '</strong><small>Disponível ' + display(available) + '<br>A liberar ' + display(pending) + '</small></dd></div>';
+    }).join('');
+  }
   renderCartoesFinanceiro = function () {
     originalCards();
+    renderStripeAccounts();
     for (const [key, page, data] of [['mp', 'mercadopago', mpSaldo], ['stripe', 'stripe', stripeSaldo]]) {
       if (!paginaLiberada(page) || !data?.ok) continue;
       const extra = byId('fin-' + key + '-extra');
