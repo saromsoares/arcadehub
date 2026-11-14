@@ -1,6 +1,6 @@
 # Arquitetura da Arcade Hub
 
-Ponto de entrada: [contexto atual](../PROJECT_CONTEXT.md), atualizado em 2026-10-15. Documentos mantidos a partir da implementação e das decisões de @architect.
+Ponto de entrada: [contexto atual](../PROJECT_CONTEXT.md), atualizado em 2026-11-14. Documentos mantidos a partir da implementação e das decisões de @architect.
 
 ## Documentação existente
 
@@ -8,10 +8,12 @@ Ponto de entrada: [contexto atual](../PROJECT_CONTEXT.md), atualizado em 2026-10
 - [Banco de e-mails](email-multicaixas-database.md): migração aplicada, RLS, identidade IMAP, testes e limites de rollback.
 - [Operação de e-mail](../runbooks/email-operacao.md): acesso CLI, uso, credenciais, deploy e diagnóstico.
 - [Histórico de migrações](../../supabase/migrations/README.md).
+- [Evolução do dashboard](dashboard-evolution.md): credenciais privadas, histórico, reembolsos, interpretação financeira e ordem de publicação.
+- [Operação do dashboard](../runbooks/dashboard-evolucao.md) e [contas Stripe](../runbooks/stripe-contas.md).
 
 ## Convenções da Arcade Hub
 
-Home ARCADE CORE em HTML/SVG/CSS vanilla; admin single-file com Supabase JS SDK e Chart.js. Backend Supabase Postgres/Auth/RLS/Realtime e Edge Functions Deno no projeto `zdwgwpvlwqtsdgervcof`. Build estático dispensado; testes direcionados ao escopo.
+Home ARCADE CORE em HTML/SVG/CSS vanilla; admin estático com Supabase JS SDK e Chart.js, JS inline estendido por `dashboard-security.js`, `dashboard-finance.js` e `dashboard-operations.js` nessa ordem. Backend Supabase Postgres/Auth/RLS/Realtime e Edge Functions Deno no projeto `zdwgwpvlwqtsdgervcof`. Build estático dispensado; testes direcionados ao escopo.
 
 Empresas públicas vêm dos cards semânticos que alimentam `PORTFOLIO`; empresas financeiras de `COMPANIES`; caixas autorizadas de `email-accounts`. Esses inventários têm finalidades distintas.
 

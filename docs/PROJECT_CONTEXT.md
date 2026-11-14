@@ -2,6 +2,8 @@
 
 Atualizado em **2026-11-14** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
+**Última entrega de produto confirmada:** `12304ab7bd5cdae4e590709f996f24aec2478140`, card Stripe consolidado e contas separadas. Vercel produção **READY**, deployment `dpl_BdBhgS6My5PYakQx1LE2dbRb4smK`, confirmado em 14/11/2026 às 20:52 UTC. Admin, três módulos JS e CSS responderam HTTP 200 com bytes idênticos ao Git; publicação automática de `main`. Evidência local `.aiox/stripe-card-publication.json`. O usuário confirmou “tudo atualizado” e pediu esta consolidação da memória. Isso não substitui a validação visual autenticada desktop/mobile/console, que permanece pendente.
+
 ## Produto e código
 
 Holding de tecnologia brasileira com site institucional e dashboard financeiro/operacional autenticado. Produção: [site](https://arcadehub.tech/) e [admin](https://arcadehub.tech/admin/). Repositório público `saromsoares/arcadehub`, branch `main`.
@@ -60,7 +62,7 @@ O saldo geral que o usuário apontou como incorreto foi conferido: holding **−
 
 ### Evolução integrada — stories 1.7–1.9
 
-Adendo de apresentação em 14/11/2026: a pedido do usuário, os três cards continuam Mercado Pago, Stripe e Nubank. Stripe destaca o total das contas Geral + ClickDrop (disponível + a liberar), com linhas separadas abaixo para o total de cada conta e respectivos disponíveis/pendentes. O rótulo explicita a composição; o Caixa Atual continua somando apenas disponível MP + Stripe. O layout não cria contas, não move recursos e não altera recebimentos.
+Adendo de apresentação em 14/11/2026, publicado em `12304ab7bd5cdae4e590709f996f24aec2478140`: a pedido do usuário, os três cards continuam Mercado Pago, Stripe e Nubank. Stripe destaca o total das contas Geral + ClickDrop (disponível + a liberar), com linhas separadas abaixo para o total de cada conta e respectivos disponíveis/pendentes. O rótulo explicita a composição; o Caixa Atual continua somando apenas disponível MP + Stripe. O layout não cria contas, não move recursos e não altera recebimentos. Revisão do código, 23 regressões financeiras e smoke integrado aprovados, incluindo leitura parcial, desconhecidos, XSS e bloqueio de página; QA sem impedimento para publicar. Cache dos arquivos alterados usa `v=20261114-stripe-contas`. Não desfazer esta hierarquia de apresentação numa retomada.
 
 Implementação autorizada em 14/11/2026 após auditoria. [Runbook](runbooks/dashboard-evolucao.md), [arquitetura](architecture/dashboard-evolution.md) e [parecer QA](qa/reviews/1.7-1.9-dashboard-evolution.md). Implementação publicada por @devops no SHA `0c3dbb127c81cabd9ce89f697e926d2165303ad9`, Vercel READY, admin e três módulos JS/CSS com HTTP 200 e bytes idênticos ao Git. Backend publicado antes do frontend. Evidência local: .aiox/dashboard-evolution-publication.json. A publicação complementar de documentação não altera os arquivos do produto. Não confundir esta etapa com a publicação anterior da story 1.6.
 
@@ -106,6 +108,8 @@ Cinco funções publicadas: `email-accounts`, `email-check`, `email-sync`, `emai
 | [Story 1.2 — multicaixas](stories/1.2.story.md) | Done; migração `20261015182925` aplicada e registrada; sete caixas verificadas e sincronizadas. |
 | [Story 1.3 — envio e resposta](stories/1.3.story.md) | Done; código `1358930`, fechamento `d5ca892`, produção Vercel READY e admin HTTP 200. |
 | [Story 1.5 — portfólio público](stories/1.5.story.md) | Código `3a01a4c` publicado em produção Vercel READY; conteúdo público HTTP 200 confirmado. In Progress pela validação visual interativa pendente. |
+| [Story 1.6 — Stripe ClickDrop](stories/1.6.story.md) | Conta ClickDrop conectada sem substituir a holding; venda importada e dados reais conferidos. Validação visual permanece pendente. |
+| [Stories 1.7–1.9 — evolução integrada](stories/1.8.story.md) | Implementação `0c3dbb1`, registro `be9ec39` e ajuste do card Stripe `12304ab` publicados READY. Backend, regressões e dados reais aprovados; Ready for Review pela validação visual autenticada pendente. |
 
 Story 1.3: **30 testes backend, 27 verificações Chrome e 14 verificações remotas negativas aprovados**. Nenhum e-mail externo foi enviado nos testes. SMTP autenticado não comprova entrega a destinatário; agrupamento em clientes externos não foi testado. [Parecer QA](qa/reviews/1.3-email-envio.md).
 
