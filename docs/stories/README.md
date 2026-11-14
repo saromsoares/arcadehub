@@ -2,7 +2,7 @@
 
 Stories de desenvolvimento da Arcade Hub criadas via `@sm *draft` ou `@sm *create-story`.
 
-## Inventário em 2026-10-30
+## Inventário em 2026-11-14
 
 | Story | Entrega | Status do documento |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ Stories de desenvolvimento da Arcade Hub criadas via `@sm *draft` ou `@sm *creat
 | [1.3](1.3.story.md) | Novo e-mail e resposta pela caixa selecionada | Done |
 | [1.4](1.4.story.md) | Assinatura visual das sete caixas, incluindo Coben | Publicada; backend/MIME QA PASS; In Progress pela validação visual interativa pendente |
 | [1.5](1.5.story.md) | Portfólio público: De Olho.ai e ClickDrop | Publicada em `3a01a4c`, Vercel READY e conteúdo HTTP 200 confirmado; In Progress pela validação visual interativa pendente |
+| [1.6](1.6.story.md) | Conta Stripe ClickDrop junto da holding | In Progress; implementação local e Deno 27/27; conexão real, publicação e validação visual pendentes |
 
 Estado consolidado e limites de validação: [contexto do projeto](../PROJECT_CONTEXT.md). Atualização de memória/documentação não reabre stories nem altera pareceres históricos.
 

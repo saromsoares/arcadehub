@@ -30,7 +30,7 @@ export type StripeReceipt = {
   payer_nome: string;
   date_approved: string | null;
   date_created: string | null;
-  raw: { id: string; status: string; amount: number; amount_refunded: number; currency: string };
+  raw: { id: string; status: string; amount: number; amount_refunded: number; currency: string; account_id?: string; account_source?: string };
   updated_at: string;
 };
 

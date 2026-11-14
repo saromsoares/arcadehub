@@ -1,6 +1,6 @@
 # Arcade Hub — contexto atual do projeto
 
-Atualizado em **2026-11-12** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
+Atualizado em **2026-11-14** a partir do código, das stories e das verificações registradas. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
 ## Produto e código
 
@@ -47,6 +47,12 @@ Em **2026-11-12** o admin em produção recebeu dois commits. `ff64738` mostra c
 O saldo da conta Nu Empresas aparece no Painel, num card próprio que não entra no Caixa Atual, na página Financeiro, no mesmo lugar do Mercado Pago e da Stripe, e continua na página Dados. Em Financeiro também ficam agência, conta e banco do Nu Empresas. A função é `nubank-saldo`, que lê o Meu Pluggy. A atualização da Pluggy pode levar até 24 horas. Esse número fica fora do Caixa Atual e do runway. Os ids `mercadopago` e `stripe` não têm mais botão próprio: dentro de Financeiro eles escondem o card e os recebimentos de quem tem a página bloqueada. As chaves ficam só nos segredos `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e `PLUGGY_ITEM_ID`. O push do Git não publica essa função.
 
 O módulo de e-mail exige vínculo à holding via `user_has_empresa_access('arcade_hub')`. Ter apenas vínculo a uma filha não concede acesso às caixas. O frontend usa chave publishable; credenciais SMTP/IMAP e chaves privilegiadas ficam no servidor.
+
+### Stripe ClickDrop — extensão em 2026-11-14
+
+A [story 1.6](stories/1.6.story.md) adiciona a conta própria do ClickDrop sem substituir a ARCADE HUB TECH. A holding mantém `STRIPE_SECRET_KEY`; a nova conta usa `STRIPE_CLICKDROP_SECRET_KEY` e `STRIPE_CLICKDROP_ACCOUNT_ID`, só no servidor. Atribuição inicial automática para `clickdrop`, origem em `raw`, reexecução preservando vínculos manuais, saldo BRL por conta e aviso de leitura parcial. A receita usa os agregadores atuais; não duplicar em `lancamentos`. O Realtime atualiza Painel/Comparativo e empresa aberta; Atualizar relê recebimentos. [Runbook](runbooks/stripe-contas.md).
+
+Implementação local e testes concluídos; conexão da conta ClickDrop e publicação ainda pendentes neste registro. Deno 27/27, lógica do dashboard com DOM/SDK simulados, check e diff aprovados. Verificação remota anterior ao deploy: 23 checks, incluindo semântica real de upsert preservando vínculos, autorização e RLS. O saldo geral que o usuário apontou como incorreto foi conferido: holding **−R$ 0,28 disponível / R$ 18,86 a liberar / R$ 18,58 total**, idêntico ao endpoint e screenshot. O extrato reconcilia o negativo com duas tarifas Billing de R$ 0,14. O screenshot ClickDrop informa R$ 99,90 bruto / R$ 95,52 de saldo; não declarar venda importada antes de validar a API. Acesso Computer Use encerrado por URL não verificável; desktop/mobile/console autenticados continuam pendentes.
 
 ## Sete caixas conectadas
 

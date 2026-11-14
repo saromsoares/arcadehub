@@ -1222,7 +1222,7 @@
       <div class="table-wrap" style="overflow-x:auto;">
         <table style="min-width:900px;">
           <thead><tr>
-            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Taxa</th><th>Líquido</th>
           </tr></thead>
           <tbody id="stripe-receb-body"></tbody>
         </table>
@@ -1591,7 +1591,7 @@ async function resetState() {
   lancamentos = {}; planejado = {};
   custosExtras = []; acoesCal = []; calExtraDates = [];
   mpRecebimentos = []; mpSaldo = null; mpSaldoTs = null;
-  stripeRecebimentos = []; stripeSaldo = null; stripeSaldoTs = null;
+  stripeRecebimentos = []; stripeSaldo = null; stripeSaldoTs = null; stripeSaldoLoading = false;
   nuSaldo = null; nuSaldoTs = null; nuSaldoLoading = false; nuSaldoEpoch += 1;
   renderSaldoNubank();
   contatos = []; emails = []; leads = []; leadEditId = null;
@@ -2597,6 +2597,7 @@ function renderAll() {
   renderEmails();
   renderAcessos();
   renderNavEmpresas();
+  if (currentEmpresaId) renderEmpresaIndividual(currentEmpresaId);
   aplicarMenu();
 }
 
@@ -2962,11 +2963,15 @@ function textoMercadoPagoCaixa() {
   return mpSaldo && mpSaldo.origem === 'relatorio' ? 'Mercado Pago (relatório)' : 'Mercado Pago';
 }
 
+function textoStripeCaixa() {
+  return stripeSaldo && stripeSaldo.parcial ? 'Stripe parcial · há conta sem leitura' : 'Stripe';
+}
+
 function estadoCaixaSaldos() {
   const mp = saldoDisponivelMercadoPago();
   const st = saldoDisponivelStripe();
-  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st, sub: 'saldo disponível · ' + textoMercadoPagoCaixa() + ' + Stripe' };
-  if (st !== null && mp === null && mpSaldo !== null && !mpSaldoLoading) return { estado: 'ok', valor: st, sub: 'Stripe · ' + avisoMercadoPagoAusente() };
+  if (mp !== null && st !== null) return { estado: 'ok', valor: mp + st, sub: 'saldo disponível · ' + textoMercadoPagoCaixa() + ' + ' + textoStripeCaixa() };
+  if (st !== null && mp === null && mpSaldo !== null && !mpSaldoLoading) return { estado: 'ok', valor: st, sub: textoStripeCaixa() + ' · ' + avisoMercadoPagoAusente() };
   if (mp !== null && st === null && stripeSaldo !== null && !stripeSaldoLoading) return { estado: 'ok', valor: mp, sub: textoMercadoPagoCaixa() + ' · Stripe sem leitura' };
   if (mpSaldoLoading || stripeSaldoLoading || mpSaldo === null || stripeSaldo === null) return { estado: 'consultando' };
   return { estado: 'indisponivel', sub: avisoMercadoPagoAusente() };
@@ -3133,9 +3138,13 @@ function estadoCartaoStripe() {
     const nome = (stripeSaldo.conta && stripeSaldo.conta.nome) || s.moeda || 'Stripe';
     return {
       valor: fmt(valor),
-      sub: nome,
-      extra: 'A liberar ' + fmt(mpNum(s.a_liberar) || 0) + ' · fora do Caixa Atual',
-      cor: valor >= 0 ? '#111827' : '#EF4444'
+      sub: stripeSaldo.parcial ? 'Leitura parcial · ' + nome : nome,
+      extra: 'A liberar ' + fmt(mpNum(s.a_liberar) || 0) + ' · fora do Caixa Atual'
+        + (Array.isArray(stripeSaldo.contas) && stripeSaldo.contas.length > 1
+          ? ' · ' + stripeSaldo.contas.map(c => c.ok && c.saldo
+            ? c.nome + ': disponível ' + fmt(mpNum(c.saldo.disponivel) || 0) + ', a liberar ' + fmt(mpNum(c.saldo.a_liberar) || 0)
+            : c.nome + ': sem leitura').join(' · ') : ''),
+      cor: stripeSaldo.parcial ? '#D97706' : (valor >= 0 ? '#111827' : '#EF4444')
     };
   }
   if (stripeSaldo && !stripeSaldo.ok) return { valor: '—', sub: stripeSaldo.error || 'falha na consulta', extra: '', cor: '#EF4444' };
@@ -3300,17 +3309,22 @@ async function atribuirEmpresaMP(id, empresaId){
 // ─── STRIPE ──────────────────────────────────────────────────────────────────
 async function carregarSaldoStripe(){
   if(stripeSaldoLoading) return;
+  const epoch = painelEpoch;
   stripeSaldoLoading = true;
   const btn = document.getElementById('stripe-btn-refresh');
   if(btn){ btn.disabled = true; btn.textContent = 'Consultando...'; }
   try {
     const { data, error } = await sb.functions.invoke('stripe-saldo');
+    if (epoch !== painelEpoch) return;
     if(error) throw error;
     stripeSaldo = data;
     stripeSaldoTs = new Date();
+    if (paginaLiberada('stripe')) await carregarRecebimentosStripe();
   } catch(e){
+    if (epoch !== painelEpoch) return;
     stripeSaldo = { ok:false, error:(e && e.message) ? e.message : String(e) };
   } finally {
+    if (epoch !== painelEpoch) return;
     stripeSaldoLoading = false;
     if(btn){ btn.disabled = false; btn.textContent = 'Atualizar'; }
     renderStripe();
@@ -3319,12 +3333,24 @@ async function carregarSaldoStripe(){
   }
 }
 
+async function carregarRecebimentosStripe(){
+  if (!paginaLiberada('stripe')) return;
+  const epoch = painelEpoch;
+  const { data, error } = await sb.from('stripe_recebimentos').select('*')
+    .order('date_approved', { ascending: false, nullsFirst: false });
+  if (epoch !== painelEpoch || !paginaLiberada('stripe')) return;
+  if (error) { toast('Não foi possível atualizar os recebimentos Stripe.'); return; }
+  stripeRecebimentos = data || [];
+  renderAll();
+}
+
 function iniciarRealtimeStripe(){
   if(stripeRealtimeOn) return;
   stripeRealtimeOn = true;
   try {
     sb.channel('stripe-recebimentos-rt')
       .on('postgres_changes', { event:'*', schema:'public', table:'stripe_recebimentos' }, (payload)=>{
+        if (!paginaLiberada('stripe')) return;
         const row = payload.new || payload.old;
         if(!row) return;
         if(payload.eventType === 'DELETE'){
@@ -3334,7 +3360,7 @@ function iniciarRealtimeStripe(){
           if(i >= 0) stripeRecebimentos[i] = row; else stripeRecebimentos.unshift(row);
         }
         stripeRecebimentos.sort((a,b)=> new Date(b.date_approved||b.created_at||0) - new Date(a.date_approved||a.created_at||0));
-        renderStripe();
+        renderAll();
       })
       .subscribe((status)=>{
         const dot = document.getElementById('stripe-live-dot');
@@ -3371,7 +3397,7 @@ function renderStripe(){
   }
   if (!body) return;
   if(!stripeRecebimentos.length){
-    body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhuma cobrança ainda. Assim que um pagamento cair no Stripe, ele aparece aqui automaticamente.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#9CA3AF;padding:18px;font-size:12px;">Nenhuma cobrança ainda. Assim que um pagamento cair no Stripe, ele aparece aqui automaticamente.</td></tr>`;
     return;
   }
   const statusInfo = (st)=>({
@@ -3385,12 +3411,13 @@ function renderStripe(){
     const liq = mpNum(r.valor_liquido);
     return `<tr style="background:${i%2===0?'#FAFAFA':'#fff'}">
       <td style="font-size:11px;white-space:nowrap;">${dataFmt}</td>
-      <td style="font-size:12px;">${escapeHtml(r.descricao||'—')}</td>
+      <td style="font-size:12px;">${escapeHtml(r.descricao||'—')}${r.raw && r.raw.account_source ? '<div style="font-size:10px;color:#6B7280;">Conta ' + (r.raw.account_source === 'clickdrop' ? 'ClickDrop' : 'ARCADE HUB TECH') + '</div>' : ''}</td>
       <td>${stripeEmpresaSelect(r)}</td>
       <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.payer_nome||r.payer_email||'—')}</td>
       <td style="font-size:11px;color:#6B7280;">${escapeHtml(r.tipo_pagamento||'—')}</td>
       <td><span style="background:${st.c}22;color:${st.c};border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap;">${escapeHtml(st.l)}</span></td>
       <td style="font-weight:600;color:#059669;font-size:12px;white-space:nowrap;">${fmt(mpNum(r.valor)||0)}</td>
+      <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${mpNum(r.taxa)!==null?fmt(mpNum(r.taxa)):'—'}</td>
       <td style="font-size:12px;color:#6B7280;white-space:nowrap;">${liq!==null?fmt(liq):'—'}</td>
     </tr>`;
   }).join('');
