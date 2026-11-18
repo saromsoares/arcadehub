@@ -15,6 +15,7 @@
   const providerNames = { mp: 'Mercado Pago', stripe: 'Stripe' };
   const statuses = { approved: 'Aprovado', refunded: 'Estornado', rejected: 'Recusado', pending: 'Pendente',
     in_process: 'Em análise', cancelled: 'Cancelado', charged_back: 'Contestado' };
+  const receiptColumns = ['Data', 'Origem e pagamento', 'Pagador', 'Situação', 'Bruto', 'Taxa', 'Líquido', 'Vínculo'];
   const receiptPageSize = 25;
   const defaultFilters = () => ({ search: '', period: String(EXERCICIO), provider: 'all', status: 'all', destination: 'all', page: 1 });
   let receiptFilters = defaultFilters();
@@ -511,6 +512,21 @@
     }
     return { approved, groups: [...groups.values()].sort((a, b) => a.currency.localeCompare(b.currency) || b.gross - a.gross || a.name.localeCompare(b.name)) };
   }
+  function reconciliationRow(r) {
+    const issue = needsReview(r) ? 'Estorno ou contestação em revisão'
+      : differences(r) ? 'Bruto, taxa e líquido divergem' : financialIssue(r) ? 'Valores incompletos' : '';
+    const suggestion = !r.company && r.provider === 'stripe' && r.row.raw?.account_source === 'clickdrop';
+    const values = [
+      receiptDate(r),
+      '<strong>' + providerNames[r.provider] + '</strong><br>' + receiptContext(r),
+      html(r.row.payer_nome || r.row.payer_email || '—'),
+      html(statuses[r.row.status] || r.row.status || '—') + (issue ? '<small class="receipt-source">' + issue + '</small>' : ''),
+      amount(r.gross, r.currency), amount(r.fee, r.currency), amount(r.net, r.currency),
+      receiptSelect(r) + (suggestion ? '<small class="receipt-source">Sugestão: ClickDrop, pela conta de origem</small>' : ''),
+    ];
+    return '<tr role="row">' + values.map((value, index) => '<td role="cell"><span class="receipt-cell-label" aria-hidden="true">'
+      + receiptColumns[index] + '</span>' + value + '</td>').join('') + '</tr>';
+  }
   function renderReconciliationRows() {
     const list = filteredReceipts();
     const { approved, groups } = summaries(list);
@@ -533,15 +549,9 @@
     const pages = Math.max(1, Math.ceil(list.length / receiptPageSize));
     receiptFilters.page = Math.min(pages, receiptFilters.page);
     const start = (receiptFilters.page - 1) * receiptPageSize;
-    byId('fin-receipt-list').innerHTML = list.length ? '<div class="table-wrap"><table class="receipt-table"><thead><tr>'
-      + '<th>Data</th><th>Origem e pagamento</th><th>Pagador</th><th>Situação</th><th>Bruto</th><th>Taxa</th><th>Líquido</th><th>Vínculo</th></tr></thead><tbody>'
-      + list.slice(start, start + receiptPageSize).map(r => '<tr><td>' + receiptDate(r) + '</td><td><strong>' + providerNames[r.provider] + '</strong><br>'
-        + receiptContext(r) + '</td><td>' + html(r.row.payer_nome || r.row.payer_email || '—') + '</td><td>' + html(statuses[r.row.status] || r.row.status || '—')
-        + (needsReview(r) ? '<small class="receipt-source">Estorno ou contestação em revisão</small>' : differences(r) ? '<small class="receipt-source">Bruto, taxa e líquido divergem</small>'
-          : financialIssue(r) ? '<small class="receipt-source">Valores incompletos</small>' : '')
-        + '</td><td>' + amount(r.gross, r.currency) + '</td><td>' + amount(r.fee, r.currency) + '</td><td>' + amount(r.net, r.currency)
-        + '</td><td>' + receiptSelect(r) + (!r.company && r.provider === 'stripe' && r.row.raw?.account_source === 'clickdrop'
-          ? '<small class="receipt-source">Sugestão: ClickDrop, pela conta de origem</small>' : '') + '</td></tr>').join('')
+    byId('fin-receipt-list').innerHTML = list.length ? '<div class="table-wrap"><table class="receipt-table" role="table"><thead role="rowgroup"><tr role="row">'
+      + receiptColumns.map(label => '<th role="columnheader" scope="col">' + label + '</th>').join('') + '</tr></thead><tbody role="rowgroup">'
+      + list.slice(start, start + receiptPageSize).map(reconciliationRow).join('')
       + '</tbody></table></div><div class="receipt-pagination"><span tabindex="-1" id="fin-receipt-count" aria-live="polite">' + (start + 1) + '–'
       + Math.min(start + receiptPageSize, list.length) + ' de ' + list.length + '</span>'
       + '<button class="finance-action" type="button" data-finance-step="-1"' + (receiptFilters.page === 1 ? ' disabled' : '') + '>Anterior</button>'

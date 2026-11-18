@@ -11,6 +11,7 @@
 .receipt-filters input,.receipt-filters select,.receipt-destination{width:100%;min-width:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;padding:7px;color:#111827;font:inherit}
 .receipt-filters input,.receipt-filters select{min-height:38px}
 .receipt-destination{min-width:150px;font-size:12px}
+.receipt-cell-label{display:none}
 .receipt-table td{vertical-align:top}
 .receipt-table td:nth-child(n+5):nth-child(-n+7){white-space:nowrap}
 .receipt-breakdown{margin:0 0 14px}
@@ -22,7 +23,21 @@
 @media(max-width:950px){.receipt-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.receipt-filters label:first-child{grid-column:1/-1}}
 .stripe-accounts{margin:14px 0 10px}.stripe-accounts[hidden]{display:none}.stripe-account{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:8px;padding:12px 0;border-top:1px solid #ede9fe;align-items:start}.stripe-account dt{font-size:12px;font-weight:700;color:#4c1d95;overflow-wrap:anywhere}.stripe-account dd{margin:0;text-align:right;overflow-wrap:anywhere}.stripe-account strong{font-size:16px;color:#111827}.stripe-account strong.negative{color:#dc2626}.stripe-account small{display:block;font-size:11px;line-height:1.7;color:#6b7280;margin-top:4px}
 #financeiro-inteligencia table,#estrutura-projecao table{width:100%;min-width:620px;font-size:12px}
-#financeiro-inteligencia select{max-width:220px;width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;background:#fff}
 #financeiro-inteligencia .table-wrap,#estrutura-projecao .table-wrap{overflow-x:auto}
 button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
-@media(max-width:700px){.insights-grid,.finance-summary{grid-template-columns:1fr}.insight-card{padding:13px}#financeiro-inteligencia select{min-width:180px}}
+@media(max-width:700px){
+  .insights-grid,.finance-summary{grid-template-columns:1fr}
+  .insight-card{padding:13px}
+  #financeiro-inteligencia .receipt-table{display:block;min-width:0}
+  .receipt-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .receipt-table tbody{display:block}
+  .receipt-table tbody tr{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 8px;padding:12px;border-bottom:1px solid #e5e7eb}
+  .receipt-table tbody tr:last-child{border-bottom:0}
+  .receipt-table tbody td:nth-child(n){display:block;grid-column:span 3;min-width:0;padding:0;text-align:left;white-space:normal;overflow-wrap:anywhere}
+  .receipt-table tbody td:nth-child(2),.receipt-table tbody td:nth-child(3),.receipt-table tbody td:last-child{grid-column:1/-1}
+  .receipt-table tbody td:nth-child(2){grid-row:1}
+  .receipt-table tbody td:nth-child(4){grid-column:4/-1;grid-row:2}
+  .receipt-table tbody td:nth-child(n+5):nth-child(-n+7){grid-column:span 2}
+  .receipt-table .receipt-cell-label{display:block;margin-bottom:4px;color:#475569;font-weight:700}
+  .receipt-table .receipt-destination{min-height:38px}
+}
