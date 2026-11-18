@@ -293,6 +293,25 @@
   .emp-row dd .sub { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; color: #9CA3AF; }
   @media (max-width: 640px) { .emp-row { grid-template-columns: 1fr; gap: 3px; padding: 12px 0; } }
 
+  /* Aba Fiscal (Dados): documentos e orientação para NFS-e */
+  .fisc-doc-btn {
+    background: #1E6FFF; color: #fff; border: none; padding: 7px 14px; border-radius: 7px;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 8px;
+  }
+  .fisc-doc-btn:disabled { opacity: .6; cursor: wait; }
+  .fisc-q { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .fisc-q > summary { cursor: pointer; padding: 13px 18px; font-size: 13.5px; font-weight: 700; color: #111827; line-height: 1.45; overflow-wrap: anywhere; }
+  .fisc-q[open] > summary { border-bottom: 1px solid #F1F3F5; }
+  .fisc-q .fisc-body { padding: 12px 18px 16px; font-size: 13px; color: #374151; line-height: 1.6; overflow-wrap: anywhere; }
+  .fisc-q .fisc-body p { margin: 0 0 10px; }
+  .fisc-q .fisc-body p:last-child { margin-bottom: 0; }
+  .fisc-q .fisc-body ul { margin: 0 0 10px; padding-left: 20px; }
+  .fisc-pend { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; border-radius: 10px; padding: 9px 14px; margin: 0 0 10px; font-size: 12.5px; line-height: 1.55; overflow-wrap: anywhere; }
+  .fisc-tag { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-right: 6px; background: #FEF3C7; color: #92400E; }
+  .fisc-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 4px; }
+  .fisc-table th, .fisc-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #F1F3F5; }
+  .fisc-table td:last-child, .fisc-table th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+
   /* Chart container */
   .chart-wrap { background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; padding: 18px; min-width: 0; overflow: hidden; }
 
@@ -1244,6 +1263,7 @@
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
       <button id="dsub-empresa-btn" onclick="showDadosSub('empresa')" style="background:#1E6FFF;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">🏛️ Empresa</button>
       <button id="dsub-acessos-btn" onclick="showDadosSub('acessos')" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">🔑 Acessos</button>
+      <button id="dsub-fiscal-btn" onclick="showDadosSub('fiscal')" style="background:#EEF2FF;color:#1E6FFF;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">🧾 Fiscal</button>
     </div>
 
     <!-- SUB-ABA: dados cadastrais da holding -->
@@ -1319,6 +1339,104 @@
         <div class="emp-row"><dt>Luiz Bernardo Souza e Souza</dt><dd>Sócio<span class="sub">entrada em 20/07/2026</span></dd></div>
       </dl>
       <div class="info-box" style="margin-top:12px;">Fonte: cadastro CNPJ da Receita Federal, consultado em 01/09/2026. Os percentuais de participação societária são geridos na aba <strong>🤝 Balanço dos Sócios</strong> — a Receita não os publica.</div>
+    </div>
+
+    <!-- SUB-ABA: fiscal (documentos societários + orientação para emissão de NFS-e) -->
+    <div id="dsub-fiscal" style="display:none;">
+      <div class="info-box">🔒 Os PDFs ficam num bucket privado do Supabase (acesso restrito à holding) e abrem por link assinado de 60 segundos. Contêm CPF, RG e endereço dos sócios, por isso não vão para o repositório público nem para o HTML do site.</div>
+
+      <div class="section-title"><span>Documentos societários</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Ficha Cadastral Simplificada</dt><dd>JUCESP — NIRE 35250090880<span class="sub">emitida em 20/07/2026 · situação atual da empresa, sócios, capital e últimos arquivamentos</span><button type="button" class="fisc-doc-btn" onclick="abrirDocFiscal('societario/ficha-cadastral-jucesp-2026-07-20.pdf', this)">Abrir PDF</button></dd></div>
+        <div class="emp-row"><dt>Ato de Alteração nº 1</dt><dd>Deferido — JUCESP, arquivamento 1.375.065/26-9<span class="sub">20/07/2026 · consolidação da matriz, alteração de capital e QSA, alteração de nome empresarial para ARCADE HUB TECNOLOGIA E SOLUCOES LTDA (antes CB AI SOLUTIONS LTDA)</span><button type="button" class="fisc-doc-btn" onclick="abrirDocFiscal('societario/ato-alteracao-n1-jucesp-2026-07-20.pdf', this)">Abrir PDF</button></dd></div>
+      </dl>
+      <div id="fiscal-doc-feedback" role="status" style="font-size:12px;font-weight:600;color:#B91C1C;margin:-8px 0 14px;"></div>
+
+      <div class="section-title"><span>Orientação fiscal para emissão de NFS-e</span></div>
+      <div class="info-box">Questionário de 18/11/2026 para validação da contabilidade e configuração do sistema. Vale para fatos geradores até 31/12/2026; para 2027 é preciso validar um perfil próprio, inclusive para assinaturas anuais iniciadas em 2026. Os itens em amarelo estão pendentes de confirmação.</div>
+
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Prestador</dt><dd>Arcade Hub Tecnologia e Soluções Ltda.<span class="sub">CNPJ 66.910.447/0001-06 · São Paulo/SP</span></dd></div>
+        <div class="emp-row"><dt>Regime tributário</dt><dd>Lucro Presumido<span class="sub">confirmado pelo sócio-administrador</span></dd></div>
+        <div class="emp-row"><dt>Serviço</dt><dd>Assinatura mensal ou anual de acesso online a catálogo de peças automotivas<span class="sub">o cliente pesquisa informações, textos e imagens; cada plano inclui uma quantidade de buscas por mês. O preço remunera o acesso durante o período contratado. Não inclui venda de peças, comissão por negócios nem consultoria individualizada.</span></dd></div>
+        <div class="emp-row"><dt>Código municipal (SP)</dt><dd>02964<span class="sub">subitem 1.09 da lista de serviços</span></dd></div>
+        <div class="emp-row"><dt>ISS</dt><dd>2%, devido em São Paulo<span class="sub">sem retenção no cenário descrito · tributação municipal: T</span></dd></div>
+        <div class="emp-row"><dt>NBS</dt><dd>117039900</dd></div>
+        <div class="emp-row"><dt style="text-transform:none;">cIndOp</dt><dd>100301<span class="sub">indicador da operação</span></dd></div>
+        <div class="emp-row"><dt style="text-transform:none;">cClassTrib</dt><dd>000001<span class="sub">classificação tributária</span></dd></div>
+        <div class="emp-row"><dt>Vigência do perfil</dt><dd>Fatos geradores até 31/12/2026</dd></div>
+      </dl>
+
+      <div class="fisc-pend"><span class="fisc-tag">Pendente</span><strong>Contabilidade:</strong> informar se PIS/Cofins são apurados por caixa ou competência (item 18), validar a emissão mensal do plano anual e o tratamento da virada 2026→2027, e conferir a razão social no cadastro municipal: a NFS-e nº 2 saiu como CB AI Solutions Ltda., embora a denominação registrada já fosse Arcade Hub Tecnologia e Soluções Ltda.</div>
+      <div class="fisc-pend"><span class="fisc-tag">Pendente</span><strong>Desenvolvimento:</strong> usar o código 02964 para a assinatura descrita; corrigir a limitação que aceita somente PIS/Cofins zerados; validar o município do tomador, os casos de matriz e filial, o arredondamento e o envio de ValorCSLL quando RetencaoPisCofins = 0; confirmar com a Prefeitura de São Paulo o cLocPrestacao para cIndOp = 100301 com adquirente em outro município (item 14). Com as confirmações, consolidar a versão final para aceite da contabilidade.</div>
+
+      <div class="section-title"><span>Crédito de IBS/CBS para o cliente</span></div>
+      <div class="fisc-q" style="padding:14px 18px;font-size:13px;color:#374151;line-height:1.6;">
+        <p style="margin:0 0 10px;"><strong>Em 2026</strong>, cumpridas as obrigações acessórias aplicáveis, o destaque de IBS/CBS é informativo. O valor indicado na nota não gera crédito aproveitável pelo cliente. A Arcade Hub continua apurando os tributos próprios aplicáveis em 2026, inclusive ISS, PIS e Cofins.</p>
+        <p style="margin:0;"><strong>A partir de 01/01/2027</strong>, a assinatura pode gerar crédito de IBS/CBS para o cliente sujeito ao regime regular, conforme o uso empresarial do serviço e as condições legais de aproveitamento. O sistema não deve atribuir crédito automaticamente a todo cliente que informar um CNPJ.</p>
+      </div>
+
+      <div class="section-title"><span>Perguntas e respostas</span></div>
+
+      <details class="fisc-q"><summary>A. Regime tributário e vigência</summary><div class="fisc-body">
+        <p><strong>1. Qual é o regime tributário federal da Arcade Hub?</strong><br>Lucro Presumido em 2026, confirmado pelo sócio-administrador.</p>
+        <p><strong>2. Por quanto tempo vale esta orientação?</strong><br>Propomos aplicar este perfil aos fatos geradores até 31/12/2026. Para 2027, validar um perfil próprio, inclusive para assinaturas anuais iniciadas em 2026.</p>
+      </div></details>
+
+      <details class="fisc-q"><summary>B. Natureza do serviço e retenção de IR</summary><div class="fisc-body">
+        <p><strong>3. Há retenção de IR na assinatura paga por uma empresa privada?</strong><br>Não, para a assinatura descrita. A Arcade Hub recebe pelo acesso ao catálogo. O preço independe de o cliente comprar ou vender uma peça. Assim, a assinatura não remunera mediação de negócios prevista no art. 718 do Regulamento do Imposto de Renda. A pesquisa feita pelo próprio cliente também não caracteriza serviço profissional individualizado do art. 714, § 1º.</p>
+        <p><strong>4. Aplica-se a dispensa de retenção de IR de até R$ 10,00?</strong><br>Não se aplica. A conclusão da resposta 3 decorre da natureza da assinatura e vale também para os planos anuais de maior valor.</p>
+      </div></details>
+
+      <details class="fisc-q"><summary>C. Clientes abrangidos e demais retenções</summary><div class="fisc-body">
+        <p><strong>5. Esta orientação vale somente para clientes privados?</strong><br>Sim. Para esta primeira versão, considerar apenas empresas privadas fora do setor público. Excluir órgãos, autarquias, fundações públicas, empresas públicas e sociedades de economia mista de todas as esferas. O cadastro deve verificar a natureza jurídica, além do CNAE.</p>
+        <p><strong>6. O cliente privado deve reter PIS, Cofins e CSLL?</strong><br>Não, para a assinatura simples de acesso ao catálogo. O serviço descrito não se enquadra nas hipóteses de retenção do art. 30 da Lei 10.833/2003. Há precedente da Receita Federal sobre fornecimento de informações em banco de dados, a Solução de Consulta 136/2007. Os valores próprios de PIS e Cofins da Arcade Hub constam no item 19.</p>
+        <p><strong>7. Há retenção de INSS?</strong><br>Não. O cliente recebe acesso remoto à plataforma. A Arcade Hub não coloca trabalhadores à disposição do assinante.</p>
+        <p><strong>8. Há IPI a informar?</strong><br>Não. A nota cobre exclusivamente a assinatura do serviço digital.</p>
+      </div></details>
+
+      <details class="fisc-q"><summary>D. Tomador, destinatário e finalidade de uso</summary><div class="fisc-body">
+        <p><strong>9. Basta o CNPJ contratar e pagar para usar indDest = 0?</strong><br>Não. Usar indDest = 0 quando o estabelecimento identificado como tomador também for o destinatário do acesso. Registrar o CNPJ completo do estabelecimento que recebe o serviço.</p>
+        <p><strong>10. Como tratar a contratação centralizada pela matriz?</strong><br>Solicitar ao cliente que identifique quem contrata e qual estabelecimento recebe o acesso. Se a matriz contrata e recebe o serviço, usar indDest = 0. Se a matriz contrata para uma filial identificada, informar a matriz como tomadora e a filial como destinatária, com indDest = 1.</p>
+        <p>Para o local do IBS/CBS, aplica-se o domicílio da matriz quando forem atendidas as condições do art. 11, § 4º, da LC 214/2025: contratação centralizada, mais de um estabelecimento, adquirente no regime regular e aquisição sem vedação a crédito. Enquanto o sistema guardar apenas um CNPJ, encaminhar os casos com estabelecimentos distintos para análise.</p>
+        <p><strong>11. E se uma empresa pagar para outra empresa usar?</strong><br>Se a empresa A contrata em nome próprio para a empresa B usar, A é tomadora e B é destinatária. Usar indDest = 1 e identificar B.</p>
+        <p>Se B contrata e usa o catálogo, e A apenas faz o pagamento por conta de B, a nota deve identificar B como tomadora e destinatária. Nesse caso, usar indDest = 0.</p>
+        <p><strong>12. Qual valor usar em indFinal?</strong><br>Usar indFinal = 0 quando o catálogo for adquirido para a atividade empresarial do assinante, por exemplo, uma oficina que pesquisa a aplicação de uma peça. Registrar essa finalidade no cadastro.</p>
+      </div></details>
+
+      <details class="fisc-q"><summary>E. Município do ISS e preenchimento do arquivo eletrônico</summary><div class="fisc-body">
+        <p><strong>13. Onde o ISS é devido?</strong><br>Em São Paulo/SP, considerando que o serviço do subitem 1.09 é prestado pelo estabelecimento da Arcade Hub situado nesse município. Essa regra também se aplica quando o cliente está em outra cidade brasileira.</p>
+        <div class="fisc-pend"><span class="fisc-tag">Pendente</span><strong>14. Qual município informar em cLocPrestacao quando cIndOp = 100301 e o adquirente está em outro município?</strong><br>Pendente de confirmação técnica com a Prefeitura de São Paulo. A NFS-e nº 2, emitida para cliente de Porto Velho/RO, mostra um traço nesse campo na versão impressa. Conferir o XML autorizado, o leiaute usado e o código IBGE do tomador antes de automatizar esse cenário. A resposta sobre onde recolher o ISS, por si só, não define esse campo.</div>
+      </div></details>
+
+      <details class="fisc-q"><summary>F. Assinatura anual e reconhecimento da receita</summary><div class="fisc-body">
+        <p><strong>15. Como emitir a nota do plano anual pago de uma vez?</strong><br>Proposta para validação do contador: manter a cobrança anual única e emitir NFS-e mensalmente, pelo período em que o catálogo ficar disponível. Distribuir o preço anual efetivamente cobrado, já com o desconto, e ajustar os centavos para que a soma corresponda ao contrato.</p>
+        <p>A Solução de Consulta SF/DEJUG 29/2025 orientou emissão mensal em outro serviço contínuo pago anualmente. Confirmar sua aplicação aos termos da Arcade Hub e o tratamento do adiantamento para IBS/CBS.</p>
+        <p><strong>16. Quando a receita do plano anual é auferida para PIS e Cofins?</strong><br>Se a apuração for por competência e o contrato estabelecer prestação contínua, reconhecer a receita proporcionalmente ao período de acesso. Se a empresa adotar caixa, aplicar a regra fiscal dos adiantamentos, considerando faturamento, entrega do direito e execução do serviço. A definição depende da resposta 18 e dos termos da assinatura.</p>
+        <p><strong>17. Se o cliente pagar em 10/12/2026 por acesso até 09/12/2027, sobre qual parcela incidem PIS e Cofins em 2026?</strong><br>Se a receita for auferida proporcionalmente e o restante do pagamento for adiantamento de serviços futuros, considerar a parcela de 10 a 31/12/2026. As prestações seguintes seguem a regra de 2027.</p>
+        <p>Se o contrato e o faturamento caracterizarem receita integralmente auferida em 2026, a análise alcança o valor total. A contabilidade deve definir esse tratamento conforme o art. 408 da LC 214/2025, evitando tributar duas vezes a mesma operação na transição.</p>
+        <div class="fisc-pend"><span class="fisc-tag">Pendente</span><strong>18. A Arcade Hub apura PIS e Cofins por caixa ou competência?</strong><br>Pendente de confirmação pela contabilidade. O Lucro Presumido está confirmado. Falta identificar o critério efetivamente adotado para reconhecimento das receitas em 2026. Se a EFD-Contribuições já tiver sido transmitida, conferir o registro 0110, campo IND_REG_CUM.</div>
+      </div></details>
+
+      <details class="fisc-q"><summary>G. PIS e Cofins próprios na nota</summary><div class="fisc-body">
+        <p><strong>19. O que informar em ValorPIS e ValorCOFINS em 2026?</strong><br>Para a receita tributável da assinatura no regime cumulativo comum do Lucro Presumido, informar os débitos próprios da Arcade Hub: PIS de 0,65% e Cofins de 3%. A ausência de retenção pelo cliente e a ausência de crédito de IBS/CBS em 2026 não zeram esses valores.</p>
+        <p><strong>20. Qual é a base de cálculo de PIS e Cofins?</strong><br>O valor da receita da operação menos o ISS correspondente, conforme o julgamento do Tema 118 pelo STF em 21/10/2026. A contabilidade deve registrar o marco de aplicação adotado e acompanhar eventual modulação dos efeitos da decisão.</p>
+        <p><strong>Exemplo para testar o plano mensal:</strong></p>
+        <table class="fisc-table"><tbody>
+          <tr><td>Valor da assinatura</td><td>R$ 39,90</td></tr>
+          <tr><td>ISS de 2%</td><td>R$ 0,80</td></tr>
+          <tr><td>Base proposta de PIS/Cofins</td><td>R$ 39,10</td></tr>
+          <tr><td>PIS próprio (0,65%)</td><td>R$ 0,25</td></tr>
+          <tr><td>Cofins própria (3%)</td><td>R$ 1,17</td></tr>
+        </tbody></table>
+        <p><strong>21. Qual regra de arredondamento usar?</strong><br>Para desenvolvimento e testes, usar duas casas decimais e, em caso de empate exato, arredondar para o centavo par, conforme a Nota Técnica nacional 007. Confirmar a aceitação dessa regra no Web Service da Prefeitura de São Paulo.</p>
+        <p><strong>22. A partir de 01/01/2027, ValorPIS e ValorCOFINS ficam zerados?</strong><br>Para serviço novo, integralmente prestado em 2027, não há novo débito ordinário de PIS/Cofins. Informar zero se esse for o preenchimento exigido pelo leiaute vigente. Para anuidades em transição, substituições e ajustes, verificar o fato gerador de origem e aplicar o art. 408 da LC 214/2025.</p>
+      </div></details>
+
+      <div class="section-title"><span>Referências</span></div>
+      <dl class="emp-card">
+        <div class="emp-row"><dt>Receita Federal no GitHub</dt><dd><a href="https://github.com/ReceitaFederal" target="_blank" rel="noopener noreferrer">github.com/ReceitaFederal</a><span class="sub">repositórios oficiais da Receita Federal; consultar para leiautes e documentação técnica antes de automatizar a emissão</span></dd></div>
+      </dl>
     </div>
 
     <!-- SUB-ABA: acessos aos painéis das empresas -->
@@ -3874,14 +3992,40 @@ async function copiarDadosReceber(cardId, btnId) {
 }
 
 function showDadosSub(qual){
-  const sub1 = document.getElementById('dsub-empresa');
-  const sub2 = document.getElementById('dsub-acessos');
-  const b1 = document.getElementById('dsub-empresa-btn');
-  const b2 = document.getElementById('dsub-acessos-btn');
-  const on = b => { b.style.background='#1E6FFF'; b.style.color='#fff'; };
-  const off = b => { b.style.background='#EEF2FF'; b.style.color='#1E6FFF'; };
-  if(qual==='acessos'){ sub1.style.display='none'; sub2.style.display='block'; on(b2); off(b1); }
-  else { sub1.style.display='block'; sub2.style.display='none'; on(b1); off(b2); }
+  const subs = ['empresa', 'acessos', 'fiscal'];
+  if (!subs.includes(qual)) qual = 'empresa';
+  subs.forEach(nome => {
+    const sub = document.getElementById('dsub-' + nome);
+    const btn = document.getElementById('dsub-' + nome + '-btn');
+    const ativo = nome === qual;
+    if (sub) sub.style.display = ativo ? 'block' : 'none';
+    if (btn) { btn.style.background = ativo ? '#1E6FFF' : '#EEF2FF'; btn.style.color = ativo ? '#fff' : '#1E6FFF'; }
+  });
+}
+
+// Documentos fiscais/societários ficam em bucket privado (fiscal-docs); abre por link assinado de 60 s.
+async function abrirDocFiscal(caminho, btn) {
+  const fb = document.getElementById('fiscal-doc-feedback');
+  const rotulo = btn ? btn.textContent : '';
+  if (fb) fb.textContent = '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Gerando link…'; }
+  // Abre a janela antes do await para o navegador não bloquear o pop-up.
+  const janela = window.open('about:blank', '_blank');
+  try {
+    const { data, error } = await sb.storage.from('fiscal-docs').createSignedUrl(caminho, 60);
+    if (error || !data || !data.signedUrl) throw (error || new Error('link não gerado'));
+    if (janela) { janela.opener = null; janela.location.replace(data.signedUrl); }
+    else if (fb) {
+      fb.style.color = '#374151';
+      fb.textContent = 'O navegador bloqueou a nova aba. Permita pop-ups para este site e tente de novo.';
+    }
+  } catch (e) {
+    if (janela) janela.close();
+    console.error('Erro ao abrir documento fiscal:', e);
+    if (fb) { fb.style.color = '#B91C1C'; fb.textContent = 'Não foi possível abrir o documento. Confirme que você tem acesso à holding e tente novamente.'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = rotulo; }
+  }
 }
 
 function renderAcessos(){
