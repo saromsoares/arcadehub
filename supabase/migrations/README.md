@@ -1,6 +1,6 @@
 # Migrações Supabase
 
-Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-11-14.
+Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-11-18.
 
 | Arquivo | Estado conhecido |
 | --- | --- |
@@ -12,6 +12,8 @@ Projeto `zdwgwpvlwqtsdgervcof`. Estado consolidado em 2026-11-14.
 | `20261114184422_stripe_history_coverage.sql` | Aplicado individualmente em 2026-11-14 e versão exata registrada. Estado/lease/cursor histórico por conta; RPCs só servidor e leitura operacional respeitando holding/bloqueio Stripe. |
 | `20261114184425_dashboard_secure_operations.sql` | Aplicado individualmente em 2026-11-14 e versão exata registrada. Credenciais privadas com cópia verificada no banco, metadados sem SELECT de senha pelo navegador, auditoria, leads/conversão, reembolsos, recorrências, vínculo de taxa, projeto opcional no calendário e resposta de e-mail. Fixture transacional remota com rollback validou o novo contrato; nenhum segredo real foi retornado. |
 | `20261114191002_dashboard_legacy_function_grants.sql` | Aplicado individualmente em 2026-11-14 e versão exata registrada. Revoga EXECUTE de navegador/anônimo na rotina mensal legada de custos fixos, preservando owner postgres/cron e service role; fixa search_path dos helpers MP sem alterar classificação/trigger. |
+| `20261118160305_fiscal_docs_bucket_privado.sql` | Aplicado em 2026-11-18. Bucket privado para documentos fiscais e leitura por usuários vinculados à holding. |
+| `20261118233308_restringir_edicao_de_recebimentos.sql` | Aplicado individualmente e registrado em 2026-11-18. O perfil autenticado pode consultar conforme a RLS e atualizar somente `empresa_id`. Rotinas de integração preservam seus privilégios. Validado com `supabase/tests/recebimentos_privilegios.sql` em Postgres descartável e no projeto remoto. |
 
 ## Histórico local e remoto
 

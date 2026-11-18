@@ -383,11 +383,11 @@
     }
     field.replaceChildren();
     const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Sem vínculo — custo independente'; field.appendChild(empty);
-    const rows = recibosFinanceiros().filter(item => item.company === selCompany && item.row?.status === 'approved' && item.currency === 'BRL' && Number(item.fee) > 0 &&
-      item.date && new Date(item.date).getFullYear() === EXERCICIO && MONTHS[new Date(item.date).getMonth()] === selMonth);
+    const rows = recibosFinanceiros().filter(item => item.company === selCompany && item.row?.status === 'approved' && item.currency === 'BRL'
+      && Number(item.fee) > 0 && item.period.startsWith(EXERCICIO + '-') && item.month === selMonth);
     for (const receipt of rows) {
       const option = document.createElement('option'); option.value = receipt.ref;
-      option.textContent = receipt.provider + ' · ' + new Date(receipt.date).toLocaleDateString('pt-BR') + ' · taxa ' + fmt(receipt.fee);
+      option.textContent = receipt.provider + ' · ' + DashboardFinance.receiptDate(receipt) + ' · taxa ' + fmt(receipt.fee);
       field.appendChild(option);
     }
     field.value = custosExtras.find(item => String(item.id) === String(id))?.gateway_receipt_ref || '';
@@ -467,7 +467,8 @@
     if (!base.descricao || !Number.isFinite(base.valor) || base.valor <= 0) { alert('Preencha a descrição e um valor maior que zero.'); return; }
     if (base.gateway_receipt_ref) {
       const receipt = typeof recibosFinanceiros === 'function' ? recibosFinanceiros().find(item => item.ref === base.gateway_receipt_ref && item.company === company) : null;
-      if (!receipt || Math.round(Number(receipt.fee) * 100) !== Math.round(base.valor * 100)) {
+      if (!receipt || receipt.currency !== 'BRL' || !receipt.period.startsWith(EXERCICIO + '-') || receipt.month !== month
+        || Math.round(Number(receipt.fee) * 100) !== Math.round(base.valor * 100)) {
         statusFor('lanc-custo-extra-form', 'error', 'A taxa vinculada precisa corresponder ao valor confirmado do recebimento. Para outro custo, remova o vínculo.'); return;
       }
       base.categoria = 'Taxas de pagamento';
@@ -737,14 +738,14 @@
     const html = originalPlansSection(cid).replace('<th style="text-align:right;">Líquido</th>', '<th style="text-align:right;">Resultado estimado</th>')
       .replace('<th style="text-align:right;">Margem</th>', '<th style="text-align:right;">Margem estimada</th>');
     const months = typeof DashboardFinance !== 'undefined' ? DashboardFinance.monthsToDate() : MONTHS_OPERACIONAIS.filter(month => MONTHS.indexOf(month) <= new Date().getMonth());
-    const rows = typeof recibosFinanceiros === 'function' ? recibosFinanceiros().filter(item => item.company === cid && item.currency === 'BRL' && item.row?.status === 'approved' &&
-      item.date && new Date(item.date).getFullYear() === EXERCICIO && months.includes(MONTHS[new Date(item.date).getMonth()])) : [];
+    const rows = typeof recibosFinanceiros === 'function' ? recibosFinanceiros().filter(item => item.company === cid && item.currency === 'BRL'
+      && item.row?.status === 'approved' && item.period.startsWith(EXERCICIO + '-') && months.includes(item.month)) : [];
     const known = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
     const sum = name => rows.reduce((total, item) => total + (known(item[name]) ? Number(item[name]) : 0), 0);
     const confirmed = name => rows.every(item => known(item[name])) ? fmt(sum(name)) : 'não confirmado (' + rows.filter(item => !known(item[name])).length + ' recebimento(s) sem informação)';
     const period = months.length ? months[0] + '–' + months.at(-1) + '/' + EXERCICIO : String(EXERCICIO) + ' (sem meses operacionais decorridos)';
     return html + '<p style="font-size:12px;color:#64748B;margin:-10px 0 20px;">Estimativa comercial = venda menos custo cadastrado. Taxas e impostos só estão incluídos se fizerem parte desse custo. '
-      + (rows.length ? 'Recebimentos aprovados da empresa em ' + period + ': bruto ' + fmt(sum('gross')) + ', taxas ' + confirmed('fee') + ', líquido ' + confirmed('net') + '. Esses recebimentos não foram atribuídos a planos individuais.' : 'Não há recebimentos aprovados vinculados em ' + period + ' para comparar com a estimativa.') + '</p>';
+      + (rows.length ? 'Recebimentos aprovados da empresa em ' + period + ': bruto ' + confirmed('gross') + ', taxas ' + confirmed('fee') + ', líquido ' + confirmed('net') + '. Os valores se referem ao projeto inteiro.' : 'Nenhum recebimento aprovado vinculado em ' + period + '.') + '</p>';
   };
 
   const draftPrefix = 'arcadehub-email-draft:v1:';

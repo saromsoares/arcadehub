@@ -11,7 +11,6 @@
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' https://arcadehub.tech data: blob:;
   connect-src 'self' https://*.supabase.co wss://*.supabase.co;
-  frame-ancestors 'none';
   base-uri 'self';
   form-action 'self';
   object-src 'none';
@@ -20,7 +19,7 @@
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 <title>Arcade Hub | Dashboard</title>
 <link rel="icon" type="image/png" href="../favicon.png" />
-<link rel="stylesheet" href="dashboard-evolution.css?v=20261114-stripe-contas" />
+<link rel="stylesheet" href="dashboard-evolution.css?v=20261118-financeiro" />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous" />
 <!-- Versões pinadas para reduzir superfície de supply-chain; ver docs/runbooks/cdn-pinning.md para rotação -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
@@ -865,6 +864,7 @@
       <div class="caixa-cards" id="caixa-cards"></div>
     </div>
     <div class="info-box">Caixa Atual soma apenas o disponível do Stripe e Mercado Pago. Relatório de liberações pode ter referência anterior à consulta. Valores a liberar e Nu Empresas ficam fora deste saldo.</div>
+    <p id="estrutura-custos-historicos" class="insight-note"></p>
     <div id="estrutura-projecao"></div>
 
     <div class="section-title"><span>Aportes de Capital por Sócio / Mês</span></div>
@@ -1212,7 +1212,22 @@
       </article>
     </div>
     <p class="fin-nota" id="fin-nota">O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.</p>
-    <div id="financeiro-inteligencia"></div>
+    <section id="financeiro-inteligencia" aria-labelledby="fin-receipts-title" hidden>
+      <h2 class="section-title" id="fin-receipts-title" tabindex="-1">Pagamentos por projeto</h2>
+      <div class="receipt-filters">
+        <label>Busca<input type="search" id="fin-receipt-search" placeholder="Descrição, pagador ou ID" autocomplete="off"></label>
+        <label>Período<select id="fin-receipt-period"></select></label>
+        <label>Provedor<select id="fin-receipt-provider"></select></label>
+        <label>Situação<select id="fin-receipt-status">
+          <option value="all">Todas</option><option value="approved">Aprovados</option>
+          <option value="review">Para conciliar</option><option value="other">Demais situações</option>
+        </select></label>
+        <label>Destino<select id="fin-receipt-destination"></select></label>
+      </div>
+      <div id="fin-receipt-summary"></div>
+      <div id="fin-receipt-list"></div>
+      <div id="fin-receipt-history"></div>
+    </section>
 
     <div id="fin-nu-detalhe">
       <div class="section-title" style="flex-wrap:wrap;">
@@ -1229,12 +1244,12 @@
     </div>
 
     <div id="fin-mp-detalhe">
-      <div class="section-title"><span>Mercado Pago · recebimentos</span></div>
+      <div class="section-title"><span>Mercado Pago · recebimentos recentes</span></div>
       <div class="kpi-grid" id="mp-kpis"></div>
       <div class="table-wrap" style="overflow-x:auto;">
         <table style="min-width:900px;">
           <thead><tr>
-            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Líquido</th>
+            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Taxa</th><th>Líquido</th>
           </tr></thead>
           <tbody id="mp-receb-body"></tbody>
         </table>
@@ -1242,7 +1257,7 @@
     </div>
 
     <div id="fin-stripe-detalhe">
-      <div class="section-title"><span>Stripe · recebimentos</span></div>
+      <div class="section-title"><span>Stripe · recebimentos recentes</span></div>
       <div class="kpi-grid" id="stripe-kpis"></div>
       <div class="table-wrap" style="overflow-x:auto;">
         <table style="min-width:900px;">
@@ -1812,7 +1827,7 @@ const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov
 // Exercício corrente. 'mes' é texto sem ano ('Mar'), então tudo — leitura, escrita e
 // as somas do Mercado Pago — precisa ser filtrado por este ano, senão Mar/2026 e
 // Mar/2027 viram a mesma coisa na virada do ano.
-const EXERCICIO = new Date().getFullYear();
+const EXERCICIO = Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Sao_Paulo', year: 'numeric' }).format(new Date()));
 const INICIO_OPERACAO_ANO = 2026;
 const INICIO_PERIODO_IDX = EXERCICIO === INICIO_OPERACAO_ANO ? 2 : 0;
 const DATA_INICIO = { mes: MONTHS[INICIO_PERIODO_IDX], idx: INICIO_PERIODO_IDX, label: `01/${String(INICIO_PERIODO_IDX+1).padStart(2,'0')}/${EXERCICIO}` };
@@ -2200,23 +2215,24 @@ function calcResP(p) {
   return (p.receita_p||0)-(p.custos_diretos_p||0)-(p.folha_p||0)-(p.impostos_p||0)-(p.despesas_adm_p||0)-(p.outras_despesas_p||0);
 }
 function calcCustos(e) {
-  return (e.custos_diretos||0)+(e.folha||0)+(e.impostos||0)+(e.despesas_adm||0)+(e.outras_despesas||0);
+  return ['custos_diretos','folha','impostos','despesas_adm','outras_despesas'].reduce((total, key) => total + (Number(e[key]) || 0), 0);
 }
 function getCustoMes(mes, cat) {
   const override = estrutura.custos_por_mes?.[mes]?.[cat];
   if (override !== undefined && override !== null && override !== '') return parseFloat(override)||0;
-  return estrutura.custos_mensais[cat]||0;
+  return Number(estrutura.custos_mensais[cat])||0;
 }
 function getTotalCustoMes(mes) {
   return CUSTO_CATS.reduce((a,k)=>a+getCustoMes(mes,k),0);
 }
 // Realizado: soma os custos extras lançados (TODAS as empresas) no mês, por categoria.
-// Categoria vazia/nula é tratada como "Outros Custos" para não perder lançamentos legados.
+function categoriaCusto(item) {
+  return CUSTO_CATS.includes(item.categoria) ? item.categoria : 'Outros Custos';
+}
 function getRealizadoCustoMes(mes, cat) {
   return custosExtras.reduce((a, c) => {
     if (c.mes !== mes) return a;
-    const cc = (c.categoria && c.categoria !== '') ? c.categoria : 'Outros Custos';
-    return cc === cat ? a + (c.valor || 0) : a;
+    return categoriaCusto(c) === cat ? a + (Number(c.valor) || 0) : a;
   }, 0);
 }
 function getTotalRealizadoMes(mes) {
@@ -2226,13 +2242,12 @@ function getTotalRealizadoMes(mes) {
 function getCustoEmpresaCatMes(mes, cid, cat) {
   return custosExtras.reduce((a, c) => {
     if (c.mes !== mes || c.empresa_id !== cid) return a;
-    const cc = (c.categoria && c.categoria !== '') ? c.categoria : 'Outros Custos';
-    return cc === cat ? a + (c.valor || 0) : a;
+    return categoriaCusto(c) === cat ? a + (Number(c.valor) || 0) : a;
   }, 0);
 }
 // Categorias que têm algum custo lançado no ano para a empresa (para resumos enxutos).
 function getCategoriasComCusto(cid) {
-  return CUSTO_CATS.filter(cat => MONTHS.some(m => getCustoEmpresaCatMes(m, cid, cat) > 0));
+  return CUSTO_CATS.filter(cat => MONTHS.some(m => getCustoEmpresaCatMes(m, cid, cat) !== 0));
 }
 function getTotalAportes() {
   // Suporta formato novo {SOCIO: {Mes: val}} e legado {Mes: val}
@@ -2317,13 +2332,18 @@ function getEmpresaMes(cid, mes) {
 
 function getConsolidado() {
   return MONTHS.map(m => {
-    let receita=0,custos=0,resultado=0,headcount=0,receitaP=0,resultadoP=0;
+    let receita=0,custos=0,resultado=0,headcount=0,receitaP=0,custosP=0,resultadoP=0;
+    let receitaComparavel=0, custosComparaveis=0, resultadoComparavel=0, planos=0;
     COMPANIES.forEach(c => {
       const a = getEmpresaMes(c.id, m), p = getPlan(m, c.id);
       receita += a.receita; custos += a.custos; resultado += a.resultado; headcount += a.headcount;
-      receitaP += p.receita_p||0; resultadoP += calcResP(p);
+      if (Object.hasOwn(planejado, m + ':' + c.id)) {
+        receitaP += Number(p.receita_p)||0; custosP += getCustoPlanTotal(p); resultadoP += calcResP(p);
+        receitaComparavel += a.receita; custosComparaveis += a.custos; resultadoComparavel += a.resultado; planos++;
+      }
     });
-    return {mes:m, receita, custos, resultado, headcount, receitaP, resultadoP};
+    return { mes:m, receita, custos, resultado, headcount, receitaP, custosP, resultadoP,
+      receitaComparavel, custosComparaveis, resultadoComparavel, planos };
   });
 }
 // YTD agrega só os meses do período operacional — Jan/Fev não fazem parte do exercício.
@@ -2627,19 +2647,16 @@ async function loadAll(epoch) {
   if (emailSession !== emailSessionVersion || epoch !== painelEpoch) return ['sessão encerrada'];
   if (perm && !perm.error) paginasBloqueadas = new Set((perm.data && perm.data.paginas) || []);
   const leitura = (pedido) => comTempoLimite(pedido, 12000);
-  const vazio = Promise.resolve({ data: [], error: null });
+  if (perm.error) paginasBloqueadas = new Set(['mercadopago', 'stripe', 'lancamentos', 'estrutura', 'balanco']);
   // Uma tabela que falha (RLS, rede, schema) não pode virar "zero" com cara de dado
   // real: coletamos os erros e avisamos em vez de renderizar um dashboard vazio.
-  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','Mercado Pago','contatos','e-mails','acessos','planos','leads','vínculos','Stripe','permissões'];
+  const rotulos = ['lançamentos','plano','estrutura','custos','calendário','contatos','e-mails','acessos','planos','leads','vínculos','permissões'];
   const respostas = await Promise.all([
     leitura(sb.from('lancamentos').select('*').eq('ano', EXERCICIO)),
     leitura(sb.from('planejado').select('*').eq('ano', EXERCICIO)),
     leitura(sb.from('estrutura').select('*').eq('ano', EXERCICIO).limit(1).maybeSingle()),
     leitura(sb.from('custos_extras').select('*').eq('ano', EXERCICIO).order('created_at', { ascending: true })),
     leitura(sb.from('calendario_acoes').select('*').order('data', { ascending: true }).order('ordem', { ascending: true })),
-    paginaLiberada('mercadopago')
-      ? leitura(sb.from('mp_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }))
-      : vazio,
     leitura(sb.from('contatos').select('*').order('created_at', { ascending: false })),
     leitura(consultarEmailsDaCaixa()),
     // sem 'senha': ela sai do navegador e passa a ser buscada sob demanda na Edge Function
@@ -2647,41 +2664,28 @@ async function loadAll(epoch) {
     leitura(sb.from('planos_empresas').select('*').order('ordem', { ascending: true }).order('preco_venda', { ascending: true })),
     leitura(sb.from('leads').select('id, empresa_id, nome, email, regiao, telefone, observacao, status, created_at, updated_at').order('created_at', { ascending: false })),
     leitura(sb.from('usuarios_empresas').select('empresa_id')),
-    paginaLiberada('stripe')
-      ? leitura(sb.from('stripe_recebimentos').select('*').order('date_approved', { ascending: false, nullsFirst: false }))
-      : vazio,
     Promise.resolve(perm),
   ]);
   if (emailSession !== emailSessionVersion || epoch !== painelEpoch) return ['sessão encerrada'];
-  const pbData = respostas[13] && !respostas[13].error ? respostas[13].data : null;
-  paginasBloqueadas = new Set((pbData && pbData.paginas) || []);
-  const falhas = respostas.map((r, i) => {
-    if (!(r && r.error)) return null;
-    if (rotulos[i] === 'Mercado Pago' && paginasBloqueadas.has('mercadopago')) return null;
-    if (rotulos[i] === 'Stripe' && paginasBloqueadas.has('stripe')) return null;
-    return rotulos[i];
-  }).filter(Boolean);
+  const falhas = respostas.flatMap((r, i) => r?.error ? [rotulos[i]] : []);
   if (falhas.length) console.error('[loadAll] falhas:', respostas.filter(r => r && r.error).map(r => r.error));
   const [{ data: lData }, { data: pData }, { data: eData }, { data: ceData }, { data: acData },
-         { data: mpData }, { data: ctData }, { data: emData }, { data: axData }, { data: plData }, { data: ldData },
-         { data: ueData }, { data: stData }] = respostas;
+         { data: ctData }, { data: emData }, { data: axData }, { data: plData }, { data: ldData }, { data: ueData }] = respostas;
   if (axData) acessosEmpresas = axData;
   if (plData) planosEmpresas = plData;
   if (lData) lData.forEach(r => { lancamentos[`${r.mes}:${r.empresa_id}`] = r; });
   if (pData) pData.forEach(r => { planejado[`${r.mes}:${r.empresa_id}`] = r; });
   if (ceData) custosExtras = ceData;
   if (acData) acoesCal = acData;
-  if (mpData) mpRecebimentos = mpData;
-  if (stData) stripeRecebimentos = stData;
   if (ctData) contatos = ctData;
   if (ldData) leads = ldData.map(l => ({ ...l, statusConfirmado: leadStatus(l.status).id }));
-  if (respostas[11] && respostas[11].error) empresasAcessiveisErro = true;
+  if (respostas[10]?.error) empresasAcessiveisErro = true;
   else {
     empresasAcessiveisErro = false;
     empresasAcessiveis = new Set((ueData || []).map(r => r.empresa_id));
   }
   if (emailSession === emailSessionVersion) {
-    emailListError = respostas[7]?.error ? 'Não foi possível carregar as mensagens. Tente sincronizar novamente.' : '';
+    emailListError = respostas[6]?.error ? 'Não foi possível carregar as mensagens. Tente sincronizar novamente.' : '';
     if (emData) emails = emData.filter(emailDaCaixa);
   }
   if (eData) {
@@ -2704,7 +2708,7 @@ async function loadAll(epoch) {
 function renderAll() {
   const cons = getConsolidado();
   const ytd = getYTD(cons);
-  const totals = getTotals();
+  const totals = getTotals(cons, ytd);
   const companiesYTD = getCompaniesYTD();
 
   renderPainel(cons, ytd, totals, companiesYTD);
@@ -2749,8 +2753,8 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
   const m = estrutura.metas;
 
   document.getElementById('painel-kpis').innerHTML = [
-    kpiCard('Receita Total YTD', fmt(ytd.receita), `Meta: ${fmt(ytd.receitaP)}`, '#1E6FFF'),
-    kpiCard('Resultado YTD', fmt(ytd.resultado), `Meta: ${fmt(ytd.resultadoP)}`, ytd.resultado>=0?'#10B981':'#EF4444'),
+    kpiCard('Receita Total YTD', fmt(ytd.receita), ytd.planos ? `Meta dos projetos e meses com plano: ${fmt(ytd.receitaP)}` : 'Sem planejamento no período', '#1E6FFF'),
+    kpiCard('Resultado YTD', fmt(ytd.resultado), ytd.planos ? `Meta dos projetos e meses com plano: ${fmt(ytd.resultadoP)}` : 'Sem planejamento no período', ytd.resultado>=0?'#10B981':'#EF4444'),
     kpiCard('Margem Grupo', fmtPct(margem), `Meta: ${fmtPct(m.margem)}`, margem>=(m.margem||0)?'#10B981':'#EF4444'),
     kpiCard('Investimento Inicial', fmt(totalInv), '', '#8B5CF6'),
     kpiCard('Burn Rate Mensal', fmt(burnRate), '', '#F59E0B'),
@@ -2782,10 +2786,12 @@ function renderPainel(cons, ytd, totals, companiesYTD) {
     {label:'Resultado Operacional', fn:c=>c.resultado},
     {label:'Margem Operacional', fn:c=>c.receita>0?fmtPct(c.resultado/c.receita):'—', noFmt:true},
   ];
+  const elapsed = DashboardFinance.monthsToDate();
   document.getElementById('painel-month-table').innerHTML = monthRows.map((r,ri)=>`
     <tr style="background:${ri%2===0?'#FAFAFA':'#fff'}">
       <td><strong>${r.label}</strong></td>
       ${cons.map(c=>{
+        if (!elapsed.includes(c.mes)) return '<td>—</td>';
         const v=r.fn(c);
         const disp=r.noFmt?v:fmt(v);
         const neg=!r.noFmt&&v<0;
@@ -3064,10 +3070,8 @@ function mpParseSaldo(s){
 
 function saldoDisponivelMercadoPago() {
   if (!mpSaldo || !mpSaldo.ok || !mpSaldo.saldo_ok) return null;
-  const s = mpParseSaldo(mpSaldo.saldo);
-  if (s.disp !== null) return s.disp;
-  if (s.total !== null) return s.total;
-  return null;
+  const moeda = String(mpSaldo.saldo?.moeda || 'BRL').toUpperCase();
+  return moeda === 'BRL' ? mpParseSaldo(mpSaldo.saldo).disp : null;
 }
 
 function saldoDisponivelStripe() {
@@ -3239,8 +3243,8 @@ function pintarCartaoSaldo(prefixo, estado) {
 function estadoCartaoMercadoPago() {
   if (mpSaldo && mpSaldo.ok) {
     const s = mpParseSaldo(mpSaldo.saldo);
-    if (mpSaldo.saldo_ok && (s.disp !== null || s.total !== null)) {
-      const valor = s.disp ?? s.total ?? 0;
+    if (mpSaldo.saldo_ok && s.disp !== null) {
+      const valor = s.disp;
       const origem = mpSaldo.origem === 'relatorio' ? 'relatório de liberações' : ((mpSaldo.conta && mpSaldo.conta.nickname) || 'conta');
       return {
         valor: fmt(valor),
@@ -3251,7 +3255,7 @@ function estadoCartaoMercadoPago() {
     }
     if (mpSaldo.saldo_erro === 'preparando') return { valor: '…', sub: 'relatório em preparação', extra: '', cor: '#9CA3AF' };
     if (mpSaldo.saldo_erro === 'sem_permissao') return { valor: '—', sub: 'Mercado Pago recusou a leitura do saldo', extra: '', cor: '#EF4444' };
-    return { valor: '—', sub: 'saldo indisponível nesta conta', extra: '', cor: '#9CA3AF' };
+    return { valor: '—', sub: 'saldo disponível sem leitura', extra: s.pend !== null ? 'A liberar ' + fmt(s.pend) : '', cor: '#9CA3AF' };
   }
   if (mpSaldo && !mpSaldo.ok) return { valor: '—', sub: mpSaldo.error || 'falha na consulta', extra: '', cor: '#EF4444' };
   return { valor: '…', sub: mpSaldoLoading ? 'consultando' : 'consultando', extra: '', cor: '#9CA3AF' };
@@ -4758,7 +4762,7 @@ function renderEmails(){
 // no schema; a UI grava o total em custos_diretos_p e zera os demais, então
 // calcResP e todo o resto seguem valendo sem migração.
 const PLAN_CUSTO_CAMPOS = ['custos_diretos_p','folha_p','impostos_p','despesas_adm_p','outras_despesas_p'];
-const getCustoPlanTotal = p => PLAN_CUSTO_CAMPOS.reduce((a,k)=>a+(p[k]||0), 0);
+const getCustoPlanTotal = p => PLAN_CUSTO_CAMPOS.reduce((a,k)=>a+(Number(p[k])||0), 0);
 
 function renderPlanejado() {
   document.getElementById('plan-months').innerHTML = MONTHS.map(m=>
@@ -5369,9 +5373,10 @@ function renderEmpresaIndividual(cid) {
   const mesMargem = agrMes.receita > 0 ? mesRes / agrMes.receita : 0;
 
   // Dados mensais para o gráfico — mesmo agregador do cabeçalho e da tabela anual
+  const elapsed = DashboardFinance.monthsToDate();
   const dadosMensais = MONTHS.map(m => {
     const a = getEmpresaMes(cid, m);
-    const decorrido = MONTHS_OPERACIONAIS.includes(m) && MONTHS.indexOf(m) <= new Date().getMonth();
+    const decorrido = elapsed.includes(m);
     return { mes: m, receita: decorrido ? a.receita : null, custos: decorrido ? a.custos : null, resultado: decorrido ? a.resultado : null };
   });
 
@@ -6445,8 +6450,8 @@ async function initDashboard(epoch) {
   return falhas || [];
 }
 </script>
-<script src="dashboard-security.js?v=20261114"></script>
-<script src="dashboard-finance.js?v=20261114-stripe-contas"></script>
-<script src="dashboard-operations.js?v=20261114"></script>
+<script src="dashboard-security.js?v=20261118-financeiro"></script>
+<script src="dashboard-finance.js?v=20261118-financeiro"></script>
+<script src="dashboard-operations.js?v=20261118-financeiro"></script>
 </body>
 </html>

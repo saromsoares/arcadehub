@@ -112,10 +112,10 @@ test('refund never implies a refunded processing fee or a known post-refund net'
 test('Stripe movements explain signed fees and preserve provider restrictions', () => {
   const h = dashboardHarness();
   h.run("stripeSaldo={ok:true,saldo_ok:true,saldo:{disponivel:-0.28,a_liberar:95.52},movimentos:[{conta_id:'arcade_hub',tipo:'stripe_fee',valor:-0.14,taxa:0,liquido:-0.14,moeda:'BRL',status:'available',data:'2026-11-14T12:00:00Z'}]};renderCartoesFinanceiro()");
-  const markup = h.element('financeiro-inteligencia').innerHTML;
+  const markup = h.element('fin-receipt-history').innerHTML;
   assert.match(markup, /cobertura parcial/); assert.match(markup, /Taxa Stripe/); assert.match(markup, /-R\$\s*0,14/);
   h.run("paginasBloqueadas=new Set(['stripe']);renderCartoesFinanceiro()");
-  assert.doesNotMatch(h.element('financeiro-inteligencia').innerHTML, /Taxa Stripe/);
+  assert.doesNotMatch(h.element('fin-receipt-history').innerHTML, /Taxa Stripe/);
 });
 
 test('annual charts show future plans while excluding future realized entries', () => {

@@ -234,23 +234,51 @@
 
   async function assign(provider, id, company) {
     const page = provider === 'stripe' ? 'stripe' : 'mercadopago';
-    if (!paginaLiberada(page)) return;
+    if (!paginaLiberada(page)) return false;
     const key = provider + ':' + id, epoch = painelEpoch;
-    if (pending.has(key)) return;
+    if (pending.has(key)) return false;
     const list = provider === 'stripe' ? stripeRecebimentos : mpRecebimentos;
     const original = list.find(row => String(row.id) === String(id));
-    if (!original) return;
-    if (company && !COMPANIES.some(c => c.id === company) && !SOCIOS.some(s => company === 'aporte:' + s)) { toast('Destino inválido.', 'erro'); return; }
+    if (!original) return false;
+    if (company && !COMPANIES.some(c => c.id === company) && !SOCIOS.some(s => company === 'aporte:' + s)) { toast('Destino inválido.', 'erro'); return false; }
+    const destination = company || null;
+    const before = original.empresa_id ?? null;
+    if (before === destination) return true;
+    const linked = globalThis.DashboardFinance?.receipts().find(r => r.provider === provider && String(r.row.id) === String(id));
+    if (linked && custosExtras.some(item => item.gateway_receipt_ref === linked.ref && item.empresa_id === before)
+      && !confirm('Este pagamento tem uma taxa lançada no destino atual. Se mudar o vínculo, revise essa taxa em Lançamentos. Alterar destino?')) return false;
     pending.add(key);
+    let confirmed = false;
     try {
-      const response = await sb.from(provider === 'stripe' ? 'stripe_recebimentos' : 'mp_recebimentos').update({ empresa_id: company || null }).eq('id', id).select('id,empresa_id').maybeSingle();
-      if (!current(epoch)) return;
-      if (response.error || !response.data) throw new Error('Não foi possível confirmar o vínculo. O destino anterior foi mantido.');
-      const actual = (provider === 'stripe' ? stripeRecebimentos : mpRecebimentos).find(row => String(row.id) === String(id));
-      if (actual) actual.empresa_id = response.data.empresa_id;
-      refresh(); toast('Recebimento vinculado.');
-    } catch (error) { if (current(epoch)) { failure(error); if (provider === 'stripe') renderStripe(); else renderMercadoPago(); } }
-    finally { if (current(epoch)) pending.delete(key); }
+      const update = sb.from(provider === 'stripe' ? 'stripe_recebimentos' : 'mp_recebimentos')
+        .update({ empresa_id: destination }).eq('id', id);
+      const guardedUpdate = before === null ? update.is('empresa_id', null) : update.eq('empresa_id', before);
+      const response = await comTempoLimite(guardedUpdate.select('id,empresa_id').maybeSingle(), 12000);
+      if (current(epoch) && !response.error && response.data?.empresa_id === destination) {
+        const apply = rows => rows.map(row => {
+          if (String(row.id) !== String(id) || (row.empresa_id ?? null) !== before) return row;
+          return { ...row, empresa_id: destination };
+        });
+        if (provider === 'stripe') stripeRecebimentos = apply(stripeRecebimentos);
+        else mpRecebimentos = apply(mpRecebimentos);
+        globalThis.DashboardFinance?.receiptChanged(provider);
+        confirmed = true;
+      }
+    } catch {
+      confirmed = false;
+    } finally {
+      if (current(epoch)) pending.delete(key);
+    }
+    if (!current(epoch)) return false;
+    if (confirmed) {
+      refresh();
+      toast(destination ? 'Vínculo confirmado.' : 'Vínculo removido.');
+    } else {
+      toast('O vínculo não foi confirmado. Confira a classificação atual antes de tentar de novo.', 'erro');
+      if (globalThis.DashboardFinance) await globalThis.DashboardFinance.reloadReceipts(provider);
+      else if (provider === 'stripe') renderStripe(); else renderMercadoPago();
+    }
+    return confirmed;
   }
   atribuirEmpresaStripe = (id, company) => assign('stripe', id, company);
   atribuirEmpresaMP = (id, company) => assign('mp', id, company);

@@ -60,3 +60,82 @@ test('an older receipt snapshot cannot erase a newer realtime insert',async()=>{
   await loading;
   assert.equal(h.run("mpRecebimentos.some(r=>r.id==='new-row')"),true);
 });
+
+test('cash uses available BRL even when Mercado Pago returns only combined amounts', () => {
+  const h = dashboardHarness();
+  h.run("mpSaldo={ok:true,saldo_ok:true,saldo:{total_amount:150,unavailable_balance:70}};stripeSaldo={ok:true,saldo_ok:true,saldo:{disponivel:-2,a_liberar:20,moeda:'BRL'}}");
+  assert.equal(h.run('saldoDisponivelMercadoPago()'), null);
+  assert.equal(h.run('estadoCaixaSaldos().valor'), -2);
+  assert.equal(h.run('estadoCartaoMercadoPago().valor'), '—');
+});
+
+test('gateway dates follow São Paulo and legacy cost categories remain in the cash totals', () => {
+  const h = dashboardHarness({ now: '2027-01-01T01:00:00Z' });
+  h.run(`lancamentos={'Dez:clickdrop':{custos_diretos:'2.00',folha:'3.00'}};
+    mpRecebimentos=[{id:'internal-id',mp_payment_id:7123,status:'approved',empresa_id:'clickdrop',valor:10,taxa:1,valor_liquido:9,date_approved:'2027-01-01T01:00:00Z'}];
+    custosExtras=[{mes:'Dez',empresa_id:'clickdrop',categoria:'Categoria anterior',valor:'4.00',gateway_receipt_ref:null}];`);
+  assert.equal(h.run('EXERCICIO'), 2026);
+  assert.equal(h.run("getEmpresaMes('clickdrop','Dez').resultado"), 0);
+  assert.equal(h.run("getRealizadoCustoMes('Dez','Outros Custos')"), 9);
+  assert.equal(h.run("getTotals().totalRealizadoAcum"), 10);
+  assert.equal(h.run('DashboardFinance.receipts()[0].externalId'), '7123');
+  assert.equal(h.run('DashboardFinance.receipts()[0].ref'), 'mp:internal-id');
+});
+
+test('planning comparisons use the same projects and months while actual totals retain broader coverage', () => {
+  const h = dashboardHarness();
+  h.run(`lancamentos={'Nov:clickdrop':{receita:50,custos_diretos:35},'Out:clickdrop':{receita:150},'Nov:priva_br':{receita:500,custos_diretos:80}};
+    planejado={'Nov:clickdrop':{receita_p:'100.00',custos_diretos_p:'50.00',folha_p:'10.00'}};`);
+  const ytd = h.run('getYTD(getConsolidado())');
+  assert.equal(ytd.receita, 700);
+  assert.equal(ytd.receitaComparavel, 50);
+  assert.equal(ytd.custosComparaveis, 35);
+  assert.equal(ytd.custosP, 60);
+  assert.equal(h.run("getCompaniesYTD().find(x=>x.id==='clickdrop').atR"), 0.5);
+  assert.equal(h.run("getCompaniesYTD().find(x=>x.id==='clickdrop').resultadoDelta"), -25);
+});
+
+test('payment filters can find the provider ID, retain unknown amounts and hide blocked providers', () => {
+  const h = dashboardHarness();
+  h.run(`mpRecebimentos=[{id:'mp-row',mp_payment_id:991234,status:'approved',empresa_id:null,descricao:'Ação promocional',valor:12,moeda:'BRL',date_approved:'2026-11-03T15:00:00Z'}];
+    stripeRecebimentos=[{id:'stripe-row',stripe_id:'ch_usd',status:'approved',empresa_id:'clickdrop',valor:20,taxa:2,valor_liquido:18,moeda:'USD',date_approved:'2026-11-04T15:00:00Z'}];
+    renderCartoesFinanceiro();`);
+  const list = h.element('fin-receipt-list'), summary = h.element('fin-receipt-summary');
+  assert.match(summary.innerHTML, /USD/);
+  assert.match(summary.innerHTML, /1 sem vínculo/);
+  h.events.get('document:input')({ target: { id: 'fin-receipt-search', value: 'acao 991234' } });
+  assert.match(list.innerHTML, /991234/);
+  assert.match(list.innerHTML, /Valores incompletos/);
+  assert.doesNotMatch(list.innerHTML, /ch_usd/);
+  h.run("paginasBloqueadas=new Set(['mercadopago','stripe']);renderCartoesFinanceiro()");
+  assert.equal(h.element('financeiro-inteligencia').hidden, true);
+  assert.equal(list.innerHTML, '');
+});
+
+test('receipt assignment guards against another user changing the destination and confirms removal', async () => {
+  const modules = ['dashboard-security.js', 'dashboard-finance.js'];
+  let database = { id: 'row', empresa_id: 'jogadaca' };
+  const h = dashboardHarness({ modules, query(call) {
+    if (call.method === 'UPDATE') {
+      if (call.filters.find(([name]) => name === 'empresa_id')[1] !== database.empresa_id) return { data: null, error: null };
+      database = { ...database, ...call.payload }; return { data: database, error: null };
+    }
+    return { data: [database], error: null, count: 1 };
+  } });
+  h.context.renderAll = () => {};
+  h.run("mpRecebimentos=[{id:'row',empresa_id:'priva_br'}]");
+  assert.equal(await h.run("atribuirEmpresaMP('row','clickdrop')"), false);
+  assert.equal(h.run('mpRecebimentos[0].empresa_id'), 'jogadaca');
+  assert.equal(await h.run("atribuirEmpresaMP('row','')"), true);
+  assert.equal(h.run('DashboardFinance.receipts()[0].company'), '');
+  assert.equal(database.empresa_id, null);
+  assert.equal(await h.run("atribuirEmpresaMP('row','clickdrop')"), true);
+  assert.equal(database.empresa_id, 'clickdrop');
+});
+
+test('realtime deletes use the old record when Supabase supplies an empty new object', () => {
+  const h = dashboardHarness();
+  h.run("mpRecebimentos=[{id:'deleted',empresa_id:'clickdrop'}];iniciarRealtimeMP()");
+  h.callbacks.get('mp_recebimentos')({ eventType: 'DELETE', new: {}, old: { id: 'deleted' } });
+  assert.equal(h.run('mpRecebimentos.length'), 0);
+});

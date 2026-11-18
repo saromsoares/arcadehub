@@ -230,8 +230,8 @@ element('cal-modal-titulo').value = 'Synthetic project action'; element('cal-mod
 await run('saveCalModal()'); assert.equal(calls.at(-1).payload.empresa_id, 'clickdrop');
 assert.equal(run('acoesCal.at(-1).empresa_id'), 'clickdrop'); checks.push('calendar project is explicit and persisted without assigning old actions');
 context.recibosFinanceiros = () => [
-  { company: 'clickdrop', currency: 'BRL', row: { status: 'approved' }, date: new Date('2026-11-14T12:00:00Z'), gross: 100, fee: null, net: null },
-  { company: 'clickdrop', currency: 'BRL', row: { status: 'rejected' }, date: new Date('2026-11-14T12:00:00Z'), gross: 900, fee: 0, net: 900 },
+  { company: 'clickdrop', currency: 'BRL', row: { status: 'approved' }, period: '2026-11', month: 'Nov', gross: 100, fee: null, net: null },
+  { company: 'clickdrop', currency: 'BRL', row: { status: 'rejected' }, period: '2026-11', month: 'Nov', gross: 900, fee: 0, net: 900 },
 ];
 const commercial = run("buildPlanosSection('clickdrop')");
 assert.match(commercial, /Recebimentos aprovados/); assert.match(commercial, /líquido não confirmado/); assert.doesNotMatch(commercial, /1\.000,00/);

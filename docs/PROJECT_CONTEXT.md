@@ -86,6 +86,12 @@ Validação final: **97 testes Deno**, **23 regressões financeiras + seis revis
 
 Migrações específicas aplicadas: `20261114184422_stripe_history_coverage.sql`, `20261114184425_dashboard_secure_operations.sql` e `20261114191002_dashboard_legacy_function_grants.sql`; sem `db push`. A última restringe a rotina mensal legada ao servidor/cron e fixa search_path dos helpers MP sem mudar sua lógica. Aportes ainda em rascunho ficam fora do valor societário confirmado e do caixa teórico. Backend precede frontend. Testes Deno, VM/SDK e SQL descartável não substituem desktop/mobile/console autenticados. Essa observação de navegador foi feita em 16/11/2026 e está no início deste documento.
 
+### Revisão financeira e pagamentos por projeto — story 1.10
+
+Em 18/11/2026, o Financeiro ganhou **Pagamentos por projeto**, com busca pelo ID do provedor, descrição ou pagador e filtros por período, origem, situação e destino. A tabela mostra divergências de bruto, taxa e líquido, estornos, contestações e valores ausentes. O resumo de aprovados usa o recorte selecionado e mantém as moedas separadas. A página de cada empresa abre o mesmo recorte para o mês selecionado. O vínculo continua em `empresa_id` e só muda na tela após confirmação do banco. A classificação de pagamentos pode ser editada pelo navegador, e os campos financeiros são gravados pelas integrações.
+
+O Caixa Atual usa o disponível informado em BRL, com indicação quando uma fonte está ausente. Cálculos dos recebimentos usam o calendário de São Paulo. O comparativo calcula atingimento e variações na interseção dos projetos e meses com plano. Categorias legadas de custos aparecem em Outros Custos. O orçamento sinaliza a diferença entre custos dos projetos ativos e custos usados no caixa teórico. [Story e validação](stories/1.10.story.md).
+
 ## Sete caixas conectadas
 
 | `mailbox_id` | Endereço |

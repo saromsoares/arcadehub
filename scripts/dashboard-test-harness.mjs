@@ -22,6 +22,7 @@ export function dashboardHarness({ modules = ['dashboard-finance.js'], query, in
     const chain = {
       select(columns) { call.columns = columns; return chain; },
       eq(key, value) { call.filters.push([key, value]); return chain; },
+      is(key, value) { call.filters.push([key, value]); return chain; },
       in(key, value) { call.filters.push([key, value]); return chain; },
       order() { return chain; }, limit(value) { call.limit = value; return chain; }, range(a, b) { call.range = [a, b]; return chain; },
       maybeSingle() { call.single = true; return chain; }, single() { call.single = true; return chain; },

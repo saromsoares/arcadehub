@@ -8,6 +8,16 @@
   const currency = row => String(row.moeda || 'BRL').toUpperCase();
   const byId = id => document.getElementById(id);
   const html = value => escapeHtml(String(value ?? ''));
+  const zone = 'America/Sao_Paulo';
+  const monthKey = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const localDate = new Intl.DateTimeFormat('pt-BR', { timeZone: zone, dateStyle: 'short' });
+  const companyNames = new Map(COMPANIES.map(c => [c.id, c.name]));
+  const providerNames = { mp: 'Mercado Pago', stripe: 'Stripe' };
+  const statuses = { approved: 'Aprovado', refunded: 'Estornado', rejected: 'Recusado', pending: 'Pendente',
+    in_process: 'Em análise', cancelled: 'Cancelado', charged_back: 'Contestado' };
+  const receiptPageSize = 25;
+  const defaultFilters = () => ({ search: '', period: String(EXERCICIO), provider: 'all', status: 'all', destination: 'all', page: 1 });
+  let receiptFilters = defaultFilters();
   const FEE_CATEGORY = 'Taxas de pagamento';
   if (!CUSTO_CATS.includes(FEE_CATEGORY)) CUSTO_CATS.push(FEE_CATEGORY);
   let loadFailures = [];
@@ -17,41 +27,65 @@
   const receiptRequest = { mp: 0, stripe: 0 };
 
   function monthsToDate(now = new Date()) {
-    if (EXERCICIO > now.getFullYear()) return [];
-    return MONTHS_OPERACIONAIS.filter(m => EXERCICIO < now.getFullYear() || MONTHS.indexOf(m) <= now.getMonth());
+    const [year, month] = monthKey.format(now).split('-').map(Number);
+    if (EXERCICIO > year) return [];
+    return MONTHS_OPERACIONAIS.filter(m => EXERCICIO < year || MONTHS.indexOf(m) < month);
   }
   function dateOf(row) {
-    const value = row.date_approved || row.date_created;
-    const date = value ? new Date(value) : null;
-    return date && !Number.isNaN(date.getTime()) ? date : null;
+    for (const value of [row.date_approved, row.date_created, row.created_at]) {
+      if (value && !Number.isNaN(Date.parse(value))) return new Date(value);
+    }
+    return null;
   }
-  function receipts() {
-    const out = [];
-    for (const [provider, page, list] of [
-      ['mp', 'mercadopago', mpRecebimentos], ['stripe', 'stripe', stripeRecebimentos],
-    ]) {
-      if (!paginaLiberada(page)) continue;
-      for (const row of list || []) {
-        const date = dateOf(row);
-        const gross = num(row.valor);
-        const net = known(row.valor_liquido) ? num(row.valor_liquido) : null;
-        const fee = known(row.taxa) ? num(row.taxa) : net !== null ? money(gross - net) : null;
-        out.push({ provider, row, ref: provider + ':' + String(row.stripe_id || row.mp_id || row.payment_id || row.id),
-          company: row.empresa_id || '', currency: currency(row), date, gross, net, fee });
+  const normalizedRows = new WeakMap();
+  function normalizeReceipt(provider, row) {
+    const cached = normalizedRows.get(row);
+    if (cached) return cached;
+    const date = dateOf(row);
+    const period = date ? monthKey.format(date).slice(0, 7) : '';
+    const gross = known(row.valor) ? num(row.valor) : null;
+    const net = known(row.valor_liquido) ? num(row.valor_liquido) : null;
+    const fee = known(row.taxa) ? num(row.taxa) : row.status === 'approved' && gross !== null && net !== null ? money(gross - net) : null;
+    const legacyId = row.stripe_id || row.mp_id || row.payment_id || row.id;
+    const externalId = String(row.mp_payment_id ?? legacyId);
+    const receipt = { provider, row, externalId, ref: provider + ':' + legacyId, company: row.empresa_id || '',
+      currency: currency(row), date, period, month: MONTHS[Number(period.slice(5)) - 1], gross, net, fee };
+    normalizedRows.set(row, receipt);
+    return receipt;
+  }
+  let indexCache;
+  function receiptIndex() {
+    const mp = paginaLiberada('mercadopago') ? mpRecebimentos : null;
+    const stripe = paginaLiberada('stripe') ? stripeRecebimentos : null;
+    if (indexCache?.mp === mp && indexCache?.stripe === stripe && indexCache.mpLength === mp?.length && indexCache.stripeLength === stripe?.length) return indexCache;
+    const all = [], byPeriod = new Map();
+    for (const [provider, rows] of [['mp', mp], ['stripe', stripe]]) {
+      for (const row of rows || []) {
+        const receipt = normalizeReceipt(provider, row);
+        all.push(receipt);
+        if (!byPeriod.has(receipt.period)) byPeriod.set(receipt.period, []);
+        byPeriod.get(receipt.period).push(receipt);
       }
     }
-    return out;
+    indexCache = { all, byPeriod, mp, stripe, mpLength: mp?.length, stripeLength: stripe?.length };
+    return indexCache;
   }
-  function matches(r, month, company) {
-    return r.row.status === 'approved' && r.currency === 'BRL' && r.date && r.date.getFullYear() === EXERCICIO
-      && (!month || MONTHS[r.date.getMonth()] === month) && (!company || r.company === company);
+  function receipts() {
+    return receiptIndex().all;
+  }
+  function exerciseReceipts(month) {
+    const index = receiptIndex();
+    if (month) return index.byPeriod.get(EXERCICIO + '-' + String(MONTHS.indexOf(month) + 1).padStart(2, '0')) || [];
+    return index.all.filter(r => r.period.startsWith(EXERCICIO + '-'));
+  }
+  function isApprovedBRL(r, company) {
+    return r.row.status === 'approved' && r.currency === 'BRL' && (!company || r.company === company);
   }
   function sales(month, company) {
-    return receipts().filter(r => matches(r, month, company) && r.company && !r.company.startsWith('aporte:'));
+    return exerciseReceipts(month).filter(r => isApprovedBRL(r, company) && companyNames.has(r.company));
   }
   function feeReceipts(month, company) {
-    return receipts().filter(r => ['approved', 'refunded', 'charged_back'].includes(r.row.status) && r.currency === 'BRL'
-      && r.date && r.date.getFullYear() === EXERCICIO && (!month || MONTHS[r.date.getMonth()] === month)
+    return exerciseReceipts(month).filter(r => ['approved', 'refunded', 'charged_back'].includes(r.row.status) && r.currency === 'BRL'
       && r.company && !r.company.startsWith('aporte:') && (!company || r.company === company));
   }
   function fees(month, company) {
@@ -71,12 +105,17 @@
   }
   function additionalFees(month, company) { return money(fees(month, company) - matchedManualFees(month, company)); }
   function grossByProvider(provider, month, company) {
-    return money(receipts().filter(r => r.provider === provider && matches(r, month, company)).reduce((n, r) => n + r.gross, 0));
+    return money(sales(month, company).filter(r => r.provider === provider).reduce((n, r) => n + (r.gross ?? 0), 0));
   }
   getMpReceita = (month, company) => company ? grossByProvider('mp', month, company) : 0;
   getStripeReceita = (month, company) => company ? grossByProvider('stripe', month, company) : 0;
-  getMpTaxa = () => money(feeReceipts().filter(r => r.provider === 'mp' && monthsToDate().includes(MONTHS[r.date.getMonth()])).reduce((n, r) => n + (r.fee || 0), 0));
-  getStripeTaxa = () => money(feeReceipts().filter(r => r.provider === 'stripe' && monthsToDate().includes(MONTHS[r.date.getMonth()])).reduce((n, r) => n + (r.fee || 0), 0));
+  function periodFees(provider) {
+    const elapsed = monthsToDate();
+    return money(feeReceipts().filter(r => r.provider === provider && companyNames.has(r.company) && elapsed.includes(r.month))
+      .reduce((n, r) => n + (r.fee ?? 0), 0));
+  }
+  getMpTaxa = () => periodFees('mp');
+  getStripeTaxa = () => periodFees('stripe');
 
   getEmpresaMes = function (company, month) {
     const entry = getLanc(month, company);
@@ -87,7 +126,7 @@
     const taxasGateway = fees(month, company), taxasIncluidasManualmente = matchedManualFees(month, company);
     const sourceReceipts = sales(month, company);
     const taxasPendentes = sourceReceipts.filter(r => r.fee === null).length;
-    const resultadoProvisorio = feeReceipts(month, company).some(r => r.row.raw?.financial_review || r.row.status !== 'approved' || r.net === null || r.fee === null);
+    const resultadoProvisorio = feeReceipts(month, company).some(r => needsReview(r) || differences(r) || r.gross === null || r.net === null || r.fee === null);
     const liquidoGateway = sourceReceipts.some(r => r.net === null) ? null : money(sourceReceipts.reduce((n, r) => n + r.net, 0));
     const receita = money(receitaManual + receitaMp + receitaStripe);
     const custos = money(custosLegado + custosItens + taxasGateway - taxasIncluidasManualmente);
@@ -104,7 +143,9 @@
   getYTD = function (cons) {
     const scope = monthsToDate();
     const data = cons.filter(c => scope.includes(c.mes));
-    return Object.fromEntries(['receita', 'custos', 'resultado', 'receitaP', 'resultadoP'].map(k => [k, money(data.reduce((n, c) => n + num(c[k]), 0))]));
+    const fields = ['receita', 'custos', 'resultado', 'receitaP', 'custosP', 'resultadoP',
+      'receitaComparavel', 'custosComparaveis', 'resultadoComparavel', 'planos'];
+    return Object.fromEntries(fields.map(k => [k, money(data.reduce((n, c) => n + num(c[k]), 0))]));
   };
   getEmpresaYTD = function (company) {
     const months = monthsToDate();
@@ -116,17 +157,21 @@
     const months = monthsToDate();
     return COMPANIES.map(company => {
       const value = getEmpresaYTD(company.id);
-      const plans = months.map(m => getPlan(m, company.id));
+      const plannedMonths = months.filter(m => planExists(company.id, [m]));
+      const plans = plannedMonths.map(m => getPlan(m, company.id));
       const receitaP = money(plans.reduce((n, p) => n + num(p.receita_p), 0));
       const resultadoP = money(plans.reduce((n, p) => n + calcResP(p), 0));
-      const hasPlan = planExists(company.id, months);
-      const sr = favorableStatus(value.receita, receitaP, hasPlan, 0.1);
-      const se = favorableStatus(value.resultado, resultadoP, hasPlan);
+      const comparables = plannedMonths.map(m => getEmpresaMes(company.id, m));
+      const receitaComparavel = money(comparables.reduce((n, r) => n + r.receita, 0));
+      const resultadoComparavel = money(comparables.reduce((n, r) => n + r.resultado, 0));
+      const hasPlan = plannedMonths.length > 0;
+      const sr = favorableStatus(receitaComparavel, receitaP, hasPlan, 0.1);
+      const se = favorableStatus(resultadoComparavel, resultadoP, hasPlan);
       const status = [sr, se].includes('VERMELHO') ? 'VERMELHO' : [sr, se].includes('AMARELO') ? 'AMARELO' : hasPlan ? 'VERDE' : 'SEM DADOS';
-      return { ...company, ...value, receitaP, resultadoP, hasPlan, status,
-        atR: hasPlan && receitaP > 0 ? value.receita / receitaP : null,
-        atRe: hasPlan && resultadoP > 0 ? value.resultado / resultadoP : null,
-        resultadoDelta: hasPlan ? money(value.resultado - resultadoP) : null };
+      return { ...company, ...value, receitaP, resultadoP, hasPlan, status, plannedMonths: plannedMonths.length,
+        atR: receitaP > 0 ? receitaComparavel / receitaP : null,
+        atRe: resultadoP > 0 ? resultadoComparavel / resultadoP : null,
+        resultadoDelta: hasPlan ? money(resultadoComparavel - resultadoP) : null };
     });
   };
   const oldGetRealizado = getRealizadoCustoMes;
@@ -138,13 +183,18 @@
   };
   getTotalRealizadoMes = month => money(CUSTO_CATS.reduce((n, c) => n + getRealizadoCustoMes(month, c), 0));
   function aporteFees() {
-    const now = new Date();
-    return money(receipts().filter(r => matches(r) && r.company.startsWith('aporte:') && (EXERCICIO < now.getFullYear() || r.date.getMonth() <= now.getMonth())).reduce((n, r) => n + (r.fee || 0), 0));
+    const months = aporteMonths();
+    return money(exerciseReceipts().filter(r => isApprovedBRL(r) && SOCIOS.some(s => r.company === 'aporte:' + s) && months.includes(r.month))
+      .reduce((n, r) => n + (r.fee ?? 0), 0));
   }
-  function aporteMonths() { const now = new Date(); return MONTHS.filter((m, index) => EXERCICIO < now.getFullYear() || (EXERCICIO === now.getFullYear() && index <= now.getMonth())); }
+  function aporteMonths() {
+    const [year, month] = monthKey.format(new Date()).split('-').map(Number);
+    return MONTHS.filter((_, index) => EXERCICIO < year || (EXERCICIO === year && index < month));
+  }
   function aporte(provider, socio, month) {
-    return money(receipts().filter(r => r.provider === provider && matches(r, month, 'aporte:' + socio)
-      && (month || aporteMonths().includes(MONTHS[r.date.getMonth()]))).reduce((n, r) => n + r.gross, 0));
+    const months = month ? [month] : aporteMonths();
+    return money(exerciseReceipts(month).filter(r => r.provider === provider && isApprovedBRL(r, 'aporte:' + socio)
+      && months.includes(r.month)).reduce((n, r) => n + (r.gross ?? 0), 0));
   }
   getMpAporte = (socio, month) => aporte('mp', socio, month);
   getStripeAporte = (socio, month) => aporte('stripe', socio, month);
@@ -156,18 +206,21 @@
       : aporteMonths().reduce((n, m) => n + num(values[m]), 0);
     return money(manual + SOCIOS.reduce((n, s) => n + getMpAporte(s) + getStripeAporte(s), 0));
   };
-  const originalTotals = getTotals;
-  getTotals = function () {
-    const original = originalTotals();
+  getTotals = function (cons = getConsolidado(), ytd = getYTD(cons)) {
     const months = monthsToDate();
-    const ytd = getYTD(getConsolidado());
-    const totalRealizadoAcum = money(months.reduce((n, m) => n + getTotalRealizadoMes(m), 0));
+    const actualCosts = months.map(getTotalRealizadoMes);
+    const totalRealizadoAcum = money(actualCosts.reduce((n, value) => n + value, 0));
     const totalAportes = getTotalAportes();
     const feeAporte = aporteFees();
     const caixaAtual = money(totalAportes + ytd.receita - totalRealizadoAcum - feeAporte);
-    const spentMonths = months.filter(m => getTotalRealizadoMes(m) > 0).length;
+    const spentMonths = actualCosts.filter(value => value > 0).length;
     const burnRate = spentMonths ? money(totalRealizadoAcum / spentMonths) : 0;
-    return { ...original, ytd, totalRealizadoAcum, totalAportes, aportesLiquidos: money(totalAportes - feeAporte), taxasAportes: feeAporte,
+    const totalCusto = money(CUSTO_CATS.reduce((n, cat) => n + num(estrutura.custos_mensais[cat]), 0));
+    const totalInv = money(INV_CATS.reduce((n, cat) => n + num(estrutura.investimento[cat]), 0));
+    const totalCustoAcum = money(MONTHS_OPERACIONAIS.reduce((n, m) => n + getTotalCustoMes(m), 0));
+    return { ytd, totalCusto, totalCustoAcum, totalInv, totalAporteMeta: getTotalAporteMeta(), totalRealizadoAcum, totalAportes,
+      custosForaDosProjetosAtivos: money(totalRealizadoAcum - ytd.custos),
+      aportesLiquidos: money(totalAportes - feeAporte), taxasAportes: feeAporte,
       resultadoAcum: ytd.resultado, receitaRealizada: money(ytd.receita - getMpTaxa() - getStripeTaxa()),
       caixaAtual, burnRate, runway: burnRate > 0 ? Math.max(0, caixaAtual / burnRate) : null,
       margem: ytd.receita > 0 ? ytd.resultado / ytd.receita : 0 };
@@ -195,6 +248,8 @@
     ].map(([label, amount]) => '<div><span>' + html(label) + '</span><strong>' + (amount === null ? 'Não informado' : fmt(amount)) + '</strong></div>').join('')
       + '</div><p class="insight-note">Taxas vinculadas explicitamente a um custo manual são reconhecidas uma única vez. Sem vínculo, a taxa mantém sua origem no recebimento.</p>'
       + (value.resultadoProvisorio ? '<p class="insight-note">Resultado parcial: taxas/líquido ou efeitos de estorno ainda precisam de conciliação. Taxas originais conhecidas são mantidas até confirmação de ajuste.</p>' : '')
+      + (paginaLiberada('mercadopago') || paginaLiberada('stripe') ? '<button class="finance-action" type="button" data-finance-destination="' + html(company)
+        + '" data-finance-period="' + EXERCICIO + '-' + String(MONTHS.indexOf(month) + 1).padStart(2, '0') + '">Ver pagamentos deste mês</button>' : '')
       + originalEmpresaForm(company, month).replace('Receita Bruta (R$)', 'Receita manual (R$)').replace('Total Custos (R$)', 'Custos por itens (R$)');
   };
   const originalComparativo = renderComparativo;
@@ -210,29 +265,31 @@
     originalComparativo(cons, ytd, companies);
     scopeChart(chartComp);
     const scope = monthsToDate();
-    const groupPlanned = month => COMPANIES.some(c => planExists(c.id, [month]));
     const rows = [
       { label: 'Receita realizada', value: c => c.receita, total: ytd.receita },
-      { label: 'Receita planejada', value: c => groupPlanned(c.mes) ? c.receitaP : null, total: companies.some(c => c.hasPlan) ? ytd.receitaP : null },
-      { label: 'Atingimento de receita', value: c => c.receitaP > 0 ? c.receita / c.receitaP : null, total: ytd.receitaP > 0 ? ytd.receita / ytd.receitaP : null, pct: true },
+      { label: 'Receita planejada', value: c => c.planos ? c.receitaP : null, total: ytd.planos ? ytd.receitaP : null, planned: true },
+      { label: 'Atingimento de receita', value: c => c.receitaP > 0 ? c.receitaComparavel / c.receitaP : null, total: ytd.receitaP > 0 ? ytd.receitaComparavel / ytd.receitaP : null, pct: true },
+      { label: 'Custos realizados', value: c => c.custos, total: ytd.custos },
+      { label: 'Custos planejados', value: c => c.planos ? c.custosP : null, total: ytd.planos ? ytd.custosP : null, planned: true },
+      { label: 'Variação favorável de custos', value: c => c.planos ? c.custosP - c.custosComparaveis : null, total: ytd.planos ? ytd.custosP - ytd.custosComparaveis : null, delta: true },
       { label: 'Resultado realizado', value: c => c.resultado, total: ytd.resultado },
-      { label: 'Resultado planejado', value: c => groupPlanned(c.mes) ? c.resultadoP : null, total: companies.some(c => c.hasPlan) ? ytd.resultadoP : null },
-      { label: 'Variação favorável do resultado', value: c => groupPlanned(c.mes) ? c.resultado - c.resultadoP : null, total: companies.some(c => c.hasPlan) ? ytd.resultado - ytd.resultadoP : null, delta: true },
+      { label: 'Resultado planejado', value: c => c.planos ? c.resultadoP : null, total: ytd.planos ? ytd.resultadoP : null, planned: true },
+      { label: 'Variação favorável do resultado', value: c => c.planos ? c.resultadoComparavel - c.resultadoP : null, total: ytd.planos ? ytd.resultadoComparavel - ytd.resultadoP : null, delta: true },
     ];
     const monthly = byId('comp-table');
     const display = (row, value) => value === null ? '—' : row.pct ? fmtPct(value) : fmt(value);
     if (monthly) monthly.innerHTML = rows.map(row => '<tr><td>' + row.label + '</td>' + cons.map(c => {
-      const value = row.value(c);
+      const value = row.planned || scope.includes(c.mes) ? row.value(c) : null;
       return '<td' + (!scope.includes(c.mes) ? ' title="Fora do acumulado corrente" style="color:#9CA3AF"' : row.delta && value < 0 ? ' style="color:#DC2626"' : '') + '>' + display(row, value) + '</td>';
     }).join('') + '<td><strong>' + display(row, row.total) + '</strong></td></tr>').join('');
     const table = byId('comp-empresa-table');
     if (table) table.innerHTML = companies.map(c => '<tr><td>' + html(c.name) + '</td><td>' + fmt(c.receita)
-      + '</td><td>' + (c.hasPlan ? fmt(c.receitaP) : 'Sem planejamento') + '</td><td>' + (c.atR === null ? '—' : fmtPct(c.atR))
+      + '</td><td>' + (c.hasPlan ? fmt(c.receitaP) + '<small class="receipt-source">' + c.plannedMonths + '/' + scope.length + ' meses com plano</small>' : 'Sem planejamento') + '</td><td>' + (c.atR === null ? '—' : fmtPct(c.atR))
       + '</td><td>' + fmt(c.resultado) + '</td><td>' + (c.hasPlan ? fmt(c.resultadoP) : '—') + '</td><td>'
       + (c.resultadoDelta === null ? '—' : (c.resultadoDelta >= 0 ? '+' : '') + fmt(c.resultadoDelta)) + '</td><td>' + badgeHtml(c.status) + '</td></tr>').join('');
     const note = byId('comparativo-explicacao');
-    if (note) note.textContent = 'Acumulado até ' + (monthsToDate().at(-1) || 'o início do exercício') + '/' + EXERCICIO
-      + '. Variação do resultado = realizado − meta; valor positivo é favorável, inclusive para metas negativas. O gráfico mantém as metas anuais; realizado somente até o mês corrente. Registros futuros ficam fora do acumulado.';
+    if (note) note.textContent = 'Acumulado até ' + (scope.at(-1) || 'o início do exercício') + '/' + EXERCICIO
+      + '. Atingimento e variações usam somente os meses e projetos com plano. O realizado total inclui todos os projetos ativos. Variação favorável de custos = meta menos realizado. Para resultado, realizado menos meta.';
   };
   buildEmpresaAnualTable = function (company) {
     const categories = getCategoriasComCusto(company);
@@ -247,13 +304,25 @@
   };
 
   function pendingReceipts() { return receipts().filter(r => r.row.status === 'approved' && !r.company); }
+  function needsReview(r) {
+    return Boolean(r.row.raw?.financial_review || ['refunded', 'charged_back'].includes(r.row.status) || r.row.status_detail === 'partial_refund');
+  }
+  function differences(r) {
+    return r.gross !== null && r.net !== null && r.fee !== null && cents(r.gross) !== cents(r.net) + cents(r.fee);
+  }
+  function financialIssue(r) {
+    return needsReview(r) || (r.row.status === 'approved' && (differences(r) || [r.gross, r.net, r.fee].includes(null)));
+  }
+  function isAporte(r) { return SOCIOS.some(s => r.company === 'aporte:' + s); }
+  function isLegacy(r) { return r.company && !isAporte(r) && !companyNames.has(r.company); }
   function financialInsights() {
     const alerts = [];
     const issues = window.DashboardOperations?.getIssues?.() || [];
     for (const issue of issues) if (paginaLiberada(issue.page)) alerts.push({ tone: 'danger', title: 'Gravação ainda não confirmada', detail: issue.message, page: issue.page });
     const pending = pendingReceipts();
     if (pending.length) alerts.push({ tone: 'warning', title: pending.length + ' recebimento(s) aguardam classificação',
-      detail: fmt(pending.filter(r => r.currency === 'BRL').reduce((n, r) => n + r.gross, 0)) + ' brutos em BRL. Revise se são receita de projeto ou aporte.', page: 'financeiro' });
+      detail: fmt(pending.filter(r => r.currency === 'BRL').reduce((n, r) => n + (r.gross ?? 0), 0)) + ' brutos informados em BRL. Revise se são receita de projeto ou aporte.',
+      page: 'financeiro', destination: 'pending' });
     if (!Object.keys(planejado).length) alerts.push({ tone: 'info', title: 'Sem planejamento cadastrado', detail: 'Defina metas para comparar realizado e previsto no mesmo período.', page: 'estrutura' });
     if (loadFailures.length) alerts.push({ tone: 'danger', title: 'Dados incompletos nesta sessão', detail: loadFailures.join(', ') + '. Atualize a página antes de tomar decisões com os totais.', page: 'painel' });
     for (const [name, page, balance] of [['Mercado Pago', 'mercadopago', mpSaldo], ['Stripe', 'stripe', stripeSaldo]]) {
@@ -263,9 +332,15 @@
     }
     const missingFee = receipts().filter(r => r.row.status === 'approved' && r.company && r.fee === null);
     if (missingFee.length) alerts.push({ tone: 'warning', title: 'Taxas ainda não informadas', detail: missingFee.length + ' recebimento(s) sem taxa/líquido confirmado. O resultado pode mudar após a conciliação.', page: 'financeiro' });
-    const refundReview = receipts().filter(r => r.row.raw?.financial_review || ['refunded', 'charged_back'].includes(r.row.status));
+    const refundReview = receipts().filter(needsReview);
     if (refundReview.length) alerts.push({ tone: 'warning', title: 'Estornos e contestações para conciliar', detail: refundReview.length + ' recebimento(s). A taxa original não é presumida devolvida; confira os movimentos e o efeito financeiro confirmado.', page: 'financeiro' });
-    const mismatched = custosExtras.filter(item => item.gateway_receipt_ref && !receipts().some(r => r.ref === item.gateway_receipt_ref && r.company === item.empresa_id && r.date && MONTHS[r.date.getMonth()] === item.mes && r.date.getFullYear() === EXERCICIO && r.fee !== null && cents(r.fee) === cents(item.valor)));
+    const byRef = new Map(receipts().map(r => [r.ref, r]));
+    const mismatched = custosExtras.filter(item => {
+      const ref = item.gateway_receipt_ref;
+      if (!ref || (ref.startsWith('mp:') && !paginaLiberada('mercadopago')) || (ref.startsWith('stripe:') && !paginaLiberada('stripe'))) return false;
+      const r = byRef.get(ref);
+      return !(r && r.company === item.empresa_id && r.month === item.mes && r.period.startsWith(EXERCICIO + '-') && r.fee !== null && cents(r.fee) === cents(item.valor));
+    });
     if (mismatched.length) alerts.push({ tone: 'warning', title: 'Vínculos de taxa precisam de revisão', detail: mismatched.length + ' custo(s) não coincidem com a taxa do recebimento. Nenhum desconto automático foi feito nesses vínculos.', page: 'lancamentos' });
     const months = monthsToDate();
     if (months.length >= 2) {
@@ -294,67 +369,184 @@
     const alerts = financialInsights();
     box.innerHTML = '<div class="section-title">Pendências e decisões</div><div class="insights-grid">'
       + (alerts.length ? alerts.map(a => '<article class="insight-card ' + a.tone + '"><strong>' + html(a.title) + '</strong><p>' + html(a.detail)
-        + '</p><button type="button" data-finance-page="' + html(a.page) + '">Revisar</button></article>').join('')
+        + '</p><button type="button" data-finance-page="' + html(a.page) + '"' + (a.destination ? ' data-finance-focus="' + html(a.destination) + '"' : '')
+        + '>Revisar</button></article>').join('')
         : '<article class="insight-card"><strong>Sem pendências financeiras identificadas</strong><p>Os alertas usam os dados carregados e não substituem a revisão dos extratos.</p></article>') + '</div>';
   }
   function formatMoney(value, code = 'BRL') {
     try { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: code }).format(num(value)); }
     catch { return html(code) + ' ' + num(value).toFixed(2); }
   }
+  function amount(value, code) { return value === null ? '—' : formatMoney(value, code); }
+  const receiptDate = r => r.date ? localDate.format(r.date) : '—';
+  const searchKey = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  function sortedReceipts(list) {
+    return [...list].sort((a, b) => (b.date?.getTime() ?? -Infinity) - (a.date?.getTime() ?? -Infinity) || a.ref.localeCompare(b.ref));
+  }
+  function destinationOptions() {
+    return '<optgroup label="Projetos">' + COMPANIES.map(c => option(c.id, c.name)).join('') + '</optgroup>'
+      + '<optgroup label="Aportes">' + SOCIOS.map(s => option('aporte:' + s, 'Aporte · ' + socioLabel(s))).join('') + '</optgroup>';
+  }
+  function option(value, label) { return '<option value="' + html(value) + '">' + html(label) + '</option>'; }
+  function receiptSelect(r) {
+    const current = r.company;
+    const legacy = isLegacy(r) ? option(current, current + ' (histórico)') : '';
+    const choices = (option('', 'Sem vínculo') + legacy + destinationOptions()).replace('value="' + html(current) + '"', 'value="' + html(current) + '" selected');
+    const busy = window.DashboardSecurity?.pending.has(r.provider + ':' + r.row.id);
+    return '<select class="receipt-destination" aria-label="Vínculo do pagamento ' + html(r.externalId) + '" data-finance-assign="' + r.provider
+      + '" data-finance-row="' + html(r.row.id) + '"' + (busy ? ' disabled' : '') + '>' + choices + '</select>';
+  }
+  function receiptContext(r) {
+    const source = r.row.raw?.account_source;
+    const account = source === 'clickdrop' ? 'Conta ClickDrop' : source === 'arcade_hub' ? 'Conta Geral' : '';
+    return html(r.row.descricao || 'Pagamento') + '<small class="receipt-source">' + html([account, r.externalId].filter(Boolean).join(' · ')) + '</small>';
+  }
   function renderReceiptTable(provider) {
     const page = provider === 'stripe' ? 'stripe' : 'mercadopago';
     const key = provider === 'stripe' ? 'stripe' : 'mp';
-    if (!paginaLiberada(page)) return;
+    if (!paginaLiberada(page)) {
+      for (const id of [key + '-kpis', key + '-receb-body']) if (byId(id)) byId(id).innerHTML = '';
+      return;
+    }
     const list = receipts().filter(r => r.provider === provider);
     const approved = list.filter(r => r.row.status === 'approved');
-    const now = new Date();
+    const period = monthKey.format(new Date()).slice(0, 7);
     const totals = new Map();
     for (const r of approved) {
-      const group = totals.get(r.currency) || { total: 0, month: 0, count: 0, unknown: 0 };
+      const group = totals.get(r.currency) || { total: 0, month: 0, count: 0, unknown: 0, monthCount: 0, monthKnown: 0 };
       if (r.net !== null) group.total += r.net; else group.unknown++;
       group.count++;
-      if (r.net !== null && r.date && r.date.getMonth() === now.getMonth() && r.date.getFullYear() === now.getFullYear()) group.month += r.net;
+      if (r.period === period) {
+        group.monthCount++;
+        if (r.net !== null) { group.month += r.net; group.monthKnown++; }
+      }
       totals.set(r.currency, group);
     }
     const kpis = byId(key + '-kpis');
-    if (kpis) kpis.innerHTML = [...totals].map(([code, t]) => kpiCard('Líquido confirmado no mês · ' + html(code), formatMoney(t.month, code), 'Somente líquido informado; não é saldo disponível', provider === 'stripe' ? '#635BFF' : '#009EE3')
-      + kpiCard('Líquido confirmado total · ' + html(code), formatMoney(t.total, code), t.count + ' aprovado(s)' + (t.unknown ? ' · ' + t.unknown + ' sem líquido informado, fora desta soma' : ''), '#6D28D9')).join('');
+    if (kpis) kpis.innerHTML = [...totals].map(([code, t]) => kpiCard('Líquido informado no mês · ' + html(code),
+      amount(t.monthKnown || !t.monthCount ? t.month : null, code), t.monthCount - t.monthKnown ? (t.monthCount - t.monthKnown) + ' sem líquido informado no mês' : 'Pagamentos aprovados', provider === 'stripe' ? '#635BFF' : '#009EE3')
+      + kpiCard('Líquido informado no histórico · ' + html(code), amount(t.unknown < t.count ? t.total : null, code), t.count + ' aprovado(s)' + (t.unknown ? ' · ' + t.unknown + ' sem líquido informado' : ''), '#6D28D9')).join('');
     const body = byId(key + '-receb-body');
     if (!body) return;
-    body.innerHTML = list.length ? list.map(r => {
-      const status = { approved: 'Aprovado', refunded: 'Estornado', rejected: 'Recusado', pending: 'Pendente', cancelled: 'Cancelado', charged_back: 'Chargeback' }[r.row.status] || r.row.status || '—';
-      return '<tr><td>' + (r.date ? r.date.toLocaleDateString('pt-BR') : '—') + '</td><td>' + html(r.row.descricao || 'Pagamento')
-        + (r.row.raw?.account_source ? '<small class="receipt-source">Conta ' + (r.row.raw.account_source === 'clickdrop' ? 'ClickDrop' : 'ARCADE HUB TECH') + '</small>' : '')
-        + '</td><td>' + (provider === 'stripe' ? stripeEmpresaSelect(r.row) : mpEmpresaSelect(r.row)) + '</td><td>' + html(r.row.payer_nome || r.row.payer_email || '—')
-        + '</td><td>' + html(r.row.tipo_pagamento || '—') + '</td><td>' + html(status) + '</td><td>' + formatMoney(r.gross, r.currency)
-        + '</td>' + (provider === 'stripe' ? '<td>' + (r.fee === null ? '—' : formatMoney(r.fee, r.currency)) + '</td>' : '')
-        + '<td>' + (r.net === null ? '—' : formatMoney(r.net, r.currency)) + '</td></tr>';
-    }).join('') : '<tr><td colspan="' + (provider === 'stripe' ? 9 : 8) + '">Nenhum recebimento carregado.</td></tr>';
+    body.innerHTML = list.length ? sortedReceipts(list).slice(0, receiptPageSize).map(r =>
+      '<tr><td>' + receiptDate(r) + '</td><td>' + receiptContext(r) + '</td><td>' + receiptSelect(r) + '</td><td>' + html(r.row.payer_nome || r.row.payer_email || '—')
+      + '</td><td>' + html(r.row.tipo_pagamento || '—') + '</td><td>' + html(statuses[r.row.status] || r.row.status || '—') + '</td><td>' + amount(r.gross, r.currency)
+      + '</td><td>' + amount(r.fee, r.currency) + '</td><td>' + amount(r.net, r.currency) + '</td></tr>').join('')
+      : '<tr><td colspan="9">Nenhum recebimento carregado.</td></tr>';
   }
-  const originalStripe = renderStripe, originalMP = renderMercadoPago;
-  renderStripe = function () { originalStripe(); renderReceiptTable('stripe'); };
-  renderMercadoPago = function () { originalMP(); renderReceiptTable('mp'); };
+  renderStripe = function () { iniciarRealtimeStripe(); renderReceiptTable('stripe'); };
+  renderMercadoPago = function () { iniciarRealtimeMP(); renderReceiptTable('mp'); };
 
   function renderReconciliation() {
     const box = byId('financeiro-inteligencia');
     if (!box) return;
-    const pending = pendingReceipts();
-    const approved = receipts().filter(r => r.row.status === 'approved');
-    const inconsistent = approved.filter(r => r.net !== null && r.fee !== null && Math.abs(cents(r.gross) - cents(r.net) - cents(r.fee)) > 1);
-    const options = '<option value="">Selecione a classificação</option>' + COMPANIES.map(c => '<option value="' + html(c.id) + '">Receita · ' + html(c.name) + '</option>').join('')
-      + SOCIOS.map(s => '<option value="aporte:' + html(s) + '">Aporte · ' + html(s) + '</option>').join('');
-    box.innerHTML = '<div class="section-title">Conferência dos recebimentos</div><p class="insight-note">Cobranças, taxas e vínculos por origem. Repasses, ajustes e saldo bancário não são novas vendas. Valores de moedas diferentes permanecem separados.</p>'
-      + '<p>' + approved.length + ' aprovado(s) carregados · ' + pending.length + ' sem classificação · ' + inconsistent.length + ' diferença(s) entre bruto, taxa e líquido.</p>'
-      + (pending.length ? '<div class="table-wrap"><table><thead><tr><th>Origem</th><th>Data</th><th>Bruto</th><th>Taxa</th><th>Líquido</th><th>Classificação revisada</th></tr></thead><tbody>'
-        + pending.map(r => '<tr><td>' + (r.provider === 'stripe' ? 'Stripe' : 'Mercado Pago') + '</td><td>' + (r.date ? r.date.toLocaleDateString('pt-BR') : '—') + '</td><td>' + formatMoney(r.gross, r.currency)
-          + '</td><td>' + (r.fee === null ? '—' : formatMoney(r.fee, r.currency)) + '</td><td>' + (r.net === null ? '—' : formatMoney(r.net, r.currency))
-          + '</td><td><select data-finance-provider="' + r.provider + '" data-finance-row="' + html(r.row.id) + '">' + options + '</select></td></tr>').join('') + '</tbody></table></div>'
-        : '<p class="insight-note">Nenhum recebimento aprovado carregado aguarda classificação.</p>')
-      + (paginaLiberada('stripe') && Array.isArray(stripeSaldo?.historico)
+    box.hidden = !paginaLiberada('mercadopago') && !paginaLiberada('stripe');
+    if (box.hidden) {
+      for (const id of ['summary', 'list', 'history']) byId('fin-receipt-' + id).innerHTML = '';
+      return;
+    }
+    const periods = new Set([String(EXERCICIO), ...MONTHS.map((_, i) => EXERCICIO + '-' + String(i + 1).padStart(2, '0'))]);
+    for (const r of receipts()) if (r.period) { periods.add(r.period.slice(0, 4)); periods.add(r.period); }
+    periods.add(receiptFilters.period);
+    const provider = [['mp', 'mercadopago'], ['stripe', 'stripe']].filter(([, page]) => paginaLiberada(page)).map(([key]) => key);
+    if (!provider.includes(receiptFilters.provider)) receiptFilters.provider = 'all';
+    const controls = {
+      period: option('all', 'Todo o histórico') + [...periods].filter(value => value !== 'all').sort().reverse().map(value =>
+        option(value, value.length === 4 ? 'Ano ' + value : MONTHS[Number(value.slice(5)) - 1] + '/' + value.slice(0, 4))).join(''),
+      provider: option('all', 'Todos') + provider.map(key => option(key, providerNames[key])).join(''),
+      destination: option('all', 'Todos') + option('pending', 'Sem vínculo') + option('legacy', 'Vínculos históricos')
+        + option('aporte', 'Todos os aportes') + destinationOptions(),
+    };
+    for (const [key, options] of Object.entries(controls)) {
+      const field = byId('fin-receipt-' + key);
+      if (field.dataset.options !== options) {
+        field.innerHTML = options;
+        field.dataset.options = options;
+      }
+      field.value = receiptFilters[key];
+    }
+    for (const key of ['search', 'status']) byId('fin-receipt-' + key).value = receiptFilters[key];
+    renderReconciliationRows();
+    byId('fin-receipt-history').innerHTML = (paginaLiberada('stripe') && Array.isArray(stripeSaldo?.historico)
         ? '<p class="insight-note">Revisão histórica Stripe: ' + stripeSaldo.historico.map(h => html(h.account_key || h.id || '') + ' · '
           + (h.full_completed_at ? 'última rodada concluída em ' + new Date(h.full_completed_at).toLocaleString('pt-BR') : 'primeira rodada ainda não concluída')
           + (h.cursor_full ? ' · varredura em andamento' : '') + (h.error_sanitized ? ' · ' + html(h.error_sanitized) : '')).join(' | ') + '</p>' : '')
       + renderStripeMovements();
+  }
+  function filteredReceipts() {
+    const { search, period, provider, status, destination } = receiptFilters;
+    const terms = searchKey(search).split(/\s+/).filter(Boolean);
+    const matchesDestination = r => destination === 'all' || (destination === 'pending' && !r.company)
+      || (destination === 'legacy' && isLegacy(r)) || (destination === 'aporte' && isAporte(r)) || r.company === destination;
+    return sortedReceipts(receipts().filter(r => {
+      if (period !== 'all' && !r.period.startsWith(period)) return false;
+      if (provider !== 'all' && r.provider !== provider) return false;
+      if (status === 'approved' && r.row.status !== 'approved') return false;
+      if (status === 'review' && !financialIssue(r)) return false;
+      if (status === 'other' && (r.row.status === 'approved' || needsReview(r))) return false;
+      if (!matchesDestination(r)) return false;
+      if (!terms.length) return true;
+      const description = searchKey([r.externalId, r.row.descricao, r.row.payer_nome, r.row.payer_email, r.row.raw?.external_reference].join(' '));
+      return terms.every(term => description.includes(term));
+    }));
+  }
+  function destinationName(r) {
+    if (isAporte(r)) return 'Aporte · ' + socioLabel(r.company.slice(7));
+    if (isLegacy(r)) return 'Histórico · ' + r.company;
+    return companyNames.get(r.company) || 'Sem vínculo';
+  }
+  function summaries(list) {
+    const groups = new Map();
+    const approved = list.filter(r => r.row.status === 'approved');
+    for (const r of approved) {
+      const key = r.currency + ':' + r.company;
+      if (!groups.has(key)) groups.set(key, { currency: r.currency, name: destinationName(r), count: 0,
+        gross: 0, fee: 0, net: 0, counts: { gross: 0, fee: 0, net: 0 } });
+      const group = groups.get(key);
+      group.count++;
+      for (const field of ['gross', 'fee', 'net']) if (r[field] !== null) {
+        group[field] += r[field];
+        group.counts[field]++;
+      }
+    }
+    return { approved, groups: [...groups.values()].sort((a, b) => a.currency.localeCompare(b.currency) || b.gross - a.gross || a.name.localeCompare(b.name)) };
+  }
+  function renderReconciliationRows() {
+    const list = filteredReceipts();
+    const { approved, groups } = summaries(list);
+    const complete = approved.filter(r => companyNames.has(r.company) || isAporte(r)).length;
+    const pending = approved.filter(r => !r.company).length;
+    const review = list.filter(financialIssue).length;
+    const cell = (g, field) => amount(g.counts[field] ? g[field] : null, g.currency)
+      + (g.counts[field] && g.counts[field] < g.count ? '<small class="receipt-source">' + g.counts[field] + '/' + g.count + ' com valor</small>' : '');
+    const summary = byId('fin-receipt-summary');
+    const expanded = summary.querySelector('details')?.open;
+    summary.innerHTML = (loadFailures.some(label => label.startsWith('recebimentos'))
+      ? '<p class="receipt-warning" role="status">Leitura incompleta. A última lista confirmada foi preservada quando disponível.</p>' : '')
+      + '<p class="insight-note" aria-live="polite">' + approved.length + ' aprovados · ' + complete + ' vinculados a projeto ou aporte · '
+      + pending + ' sem vínculo · ' + (approved.length - complete - pending) + ' históricos · ' + review + ' para conciliar.</p>'
+      + (groups.length ? '<details class="receipt-breakdown"' + (expanded ? ' open' : '') + '><summary>Totais dos aprovados por destino e moeda</summary>'
+        + '<div class="table-wrap"><table><thead><tr><th>Destino</th><th>Moeda</th><th>Pagamentos</th><th>Bruto</th><th>Taxas</th><th>Líquido</th></tr></thead><tbody>'
+        + groups.map(g => '<tr><td>' + html(g.name) + '</td><td>' + html(g.currency) + '</td><td>' + g.count + '</td><td>' + cell(g, 'gross')
+          + '</td><td>' + cell(g, 'fee') + '</td><td>' + cell(g, 'net') + '</td></tr>').join('')
+        + '</tbody></table></div></details>' : '');
+    const pages = Math.max(1, Math.ceil(list.length / receiptPageSize));
+    receiptFilters.page = Math.min(pages, receiptFilters.page);
+    const start = (receiptFilters.page - 1) * receiptPageSize;
+    byId('fin-receipt-list').innerHTML = list.length ? '<div class="table-wrap"><table class="receipt-table"><thead><tr>'
+      + '<th>Data</th><th>Origem e pagamento</th><th>Pagador</th><th>Situação</th><th>Bruto</th><th>Taxa</th><th>Líquido</th><th>Vínculo</th></tr></thead><tbody>'
+      + list.slice(start, start + receiptPageSize).map(r => '<tr><td>' + receiptDate(r) + '</td><td><strong>' + providerNames[r.provider] + '</strong><br>'
+        + receiptContext(r) + '</td><td>' + html(r.row.payer_nome || r.row.payer_email || '—') + '</td><td>' + html(statuses[r.row.status] || r.row.status || '—')
+        + (needsReview(r) ? '<small class="receipt-source">Estorno ou contestação em revisão</small>' : differences(r) ? '<small class="receipt-source">Bruto, taxa e líquido divergem</small>'
+          : financialIssue(r) ? '<small class="receipt-source">Valores incompletos</small>' : '')
+        + '</td><td>' + amount(r.gross, r.currency) + '</td><td>' + amount(r.fee, r.currency) + '</td><td>' + amount(r.net, r.currency)
+        + '</td><td>' + receiptSelect(r) + (!r.company && r.provider === 'stripe' && r.row.raw?.account_source === 'clickdrop'
+          ? '<small class="receipt-source">Sugestão: ClickDrop, pela conta de origem</small>' : '') + '</td></tr>').join('')
+      + '</tbody></table></div><div class="receipt-pagination"><span tabindex="-1" id="fin-receipt-count" aria-live="polite">' + (start + 1) + '–'
+      + Math.min(start + receiptPageSize, list.length) + ' de ' + list.length + '</span>'
+      + '<button class="finance-action" type="button" data-finance-step="-1"' + (receiptFilters.page === 1 ? ' disabled' : '') + '>Anterior</button>'
+      + '<button class="finance-action" type="button" data-finance-step="1"' + (receiptFilters.page === pages ? ' disabled' : '') + '>Próxima</button></div>'
+      : '<p class="insight-note" role="status">Nenhum pagamento corresponde aos filtros.</p>';
   }
   function renderStripeMovements() {
     if (!paginaLiberada('stripe') || !stripeSaldo?.ok) return '';
@@ -371,7 +563,9 @@
   }
   function forecast(now = new Date()) {
     const elapsed = monthsToDate(now);
-    const closed = elapsed.filter(m => EXERCICIO < now.getFullYear() || MONTHS.indexOf(m) < now.getMonth()).slice(-3);
+    const today = monthKey.format(now);
+    const currentPeriod = today.slice(0, 7);
+    const closed = elapsed.filter(m => EXERCICIO + '-' + String(MONTHS.indexOf(m) + 1).padStart(2, '0') < currentPeriod).slice(-3);
     const average = closed.length ? money(closed.reduce((n, m) => n + getTotalRealizadoMes(m), 0) / closed.length) : null;
     const current = elapsed.at(-1);
     const budget = current ? getTotalCustoMes(current) : 0;
@@ -384,9 +578,13 @@
       if (balance?.ok && balance.saldo_ok && known(amount)) pendingParts.push(num(amount)); else pendingIncomplete = true;
     }
     const pending = pendingParts.length ? money(pendingParts.reduce((sum, amount) => sum + amount, 0)) : null;
-    const dates = receipts().filter(r => r.provider === 'stripe' && r.row.status === 'approved' && r.currency === 'BRL'
+    const pendingDates = receipts().filter(r => r.provider === 'stripe' && r.row.status === 'approved' && r.currency === 'BRL' && !needsReview(r)
       && r.row.raw?.balance_status === 'pending' && r.row.raw?.available_on && r.net !== null)
-      .map(r => ({ date: String(r.row.raw.available_on), net: r.net })).filter(r => !Number.isNaN(Date.parse(r.date)));
+      .map(r => ({ date: String(r.row.raw.available_on).slice(0, 10), net: r.net }))
+      .filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.date >= today && !Number.isNaN(Date.parse(r.date)));
+    const byDate = new Map();
+    for (const part of pendingDates) byDate.set(part.date, money((byDate.get(part.date) || 0) + part.net));
+    const dates = [...byDate].sort(([a], [b]) => a.localeCompare(b)).map(([date, net]) => ({ date, net }));
     const knownNet = money(dates.reduce((n, r) => n + r.net, 0));
     const scenarios = [0.8, 1, 1.2].map(factor => ({ label: factor === 1 ? 'Ritmo recente' : factor < 1 ? 'Consumo −20%' : 'Consumo +20%',
       monthly: average === null ? null : money(average * factor),
@@ -406,7 +604,7 @@
       + '<div class="table-wrap"><table><thead><tr><th>Cenário</th><th>Consumo mensal</th><th>Disponível após 30 dias sem novas entradas</th><th>Cobertura estimada</th></tr></thead><tbody>'
       + value.scenarios.map(s => '<tr><td>' + s.label + '</td><td>' + (s.monthly === null ? '—' : fmt(s.monthly)) + '</td><td>' + (s.after30 === null ? '—' : fmt(s.after30))
         + '</td><td>' + (s.runway === null ? '—' : fmtNum(s.runway) + ' meses') + '</td></tr>').join('') + '</tbody></table></div>'
-      + '<p class="insight-note">Datas conhecidas de disponibilização de cobranças Stripe: ' + (value.dates.length ? value.dates.map(d => new Date(d.date).toLocaleDateString('pt-BR') + ' · ' + fmt(d.net)).join(' | ') : 'nenhuma data confirmada nos recebimentos carregados.')
+      + '<p class="insight-note">Datas previstas de disponibilização Stripe: ' + (value.dates.length ? value.dates.map(d => d.date.split('-').reverse().join('/') + ' · ' + fmt(d.net)).join(' | ') : 'nenhuma data futura nos recebimentos carregados.')
       + ' Pendente sem data coberta: ' + (value.unknownPending === null ? 'sem leitura' : fmt(value.unknownPending)) + '. Disponibilização não é garantia de repasse bancário; ajustes e taxas podem alterar a cobertura.</p>';
   }
   function sourceTime(data) {
@@ -471,6 +669,11 @@
       if (element) element.innerHTML = element.innerHTML.replace(/>Runway</g, '>Runway teórico<')
         .replace(args[0]?.runway === null ? /0,0 (?:meses|m)/g : /__no_replacement__/g, 'Sem histórico de consumo');
     }
+    const historical = byId('estrutura-custos-historicos');
+    if (historical) {
+      const value = args[0]?.custosForaDosProjetosAtivos ?? 0;
+      historical.textContent = value ? 'Custos fora dos projetos ativos no acumulado do caixa teórico ' + fmt(value) + '.' : '';
+    }
     renderForecast();
   };
   const originalLoad = loadAll;
@@ -496,18 +699,24 @@
     const epoch = painelEpoch;
     const revision = receiptRevision[provider], request = ++receiptRequest[provider];
     const rows = [];
-    let complete = false;
+    let complete = false, expected = null;
     while (rows.length < 50000) {
-      const result = await comTempoLimite(sb.from(provider === 'stripe' ? 'stripe_recebimentos' : 'mp_recebimentos').select('*', { count: 'exact' })
+      const result = await comTempoLimite(sb.from(provider === 'stripe' ? 'stripe_recebimentos' : 'mp_recebimentos').select('*', rows.length ? {} : { count: 'exact' })
         .order('date_approved', { ascending: false, nullsFirst: false }).order('id', { ascending: true }).range(rows.length, rows.length + 499), 12000);
       if (epoch !== painelEpoch || !paginaLiberada(page)) return false;
       if (result.error || !Array.isArray(result.data)) break;
       rows.push(...result.data);
-      if (known(result.count) ? rows.length >= Number(result.count) : result.data.length < 500) { complete = true; break; }
+      if (known(result.count)) expected = Number(result.count);
+      if (known(expected) ? rows.length >= expected : result.data.length < 500) { complete = true; break; }
       if (!result.data.length) break;
     }
-    if (!complete) { if (paint) toast('A consulta dos recebimentos ficou incompleta. A lista anterior foi preservada.', 'erro'); return false; }
     if (request !== receiptRequest[provider]) return true;
+    if (!complete || new Set(rows.map(row => row.id)).size !== rows.length) {
+      const label = 'recebimentos ' + providerNames[provider];
+      if (!loadFailures.includes(label)) loadFailures.push(label);
+      if (paint) { renderReconciliationRows(); renderInsights(); }
+      return false;
+    }
     if (revision !== receiptRevision[provider]) {
       setTimeout(() => { if (epoch === painelEpoch && request === receiptRequest[provider]) loadReceipts(provider, paint); }, 400);
       return true;
@@ -542,7 +751,7 @@
         }
       } else if (provider === 'stripe') { stripeSaldo = result.data; stripeSaldoTs = new Date(); }
       else { mpSaldo = result.data; mpSaldoTs = new Date(); if (result.data.saldo_ok) mpRelatorioEsperas = 0; }
-      await loadReceipts(provider);
+      if (paginaLiberada(provider === 'mp' ? 'mercadopago' : 'stripe') && byId('tab-financeiro')?.classList.contains('active')) await loadReceipts(provider);
     } finally {
       if (epoch === painelEpoch) {
         if (provider === 'stripe') stripeSaldoLoading = false; else mpSaldoLoading = false;
@@ -565,11 +774,11 @@
     const channel = sb.channel(provider + '-recebimentos-rt-v3');
     channel.on('postgres_changes', { event: '*', schema: 'public', table: provider === 'stripe' ? 'stripe_recebimentos' : 'mp_recebimentos' }, payload => {
       if (epoch !== painelEpoch || !paginaLiberada(page)) return;
-      const row = payload.new || payload.old;
+      const row = payload.eventType === 'DELETE' ? payload.old : payload.new;
       if (!row?.id) return;
       receiptRevision[provider]++;
       let list = provider === 'stripe' ? stripeRecebimentos : mpRecebimentos;
-      list = payload.eventType === 'DELETE' ? list.filter(r => r.id !== row.id) : list.some(r => r.id === row.id) ? list.map(r => r.id === row.id ? row : r) : [row, ...list];
+      list = payload.eventType === 'DELETE' ? list.filter(r => r.id !== row.id) : list.some(r => r.id === row.id) ? list.map(r => r.id === row.id ? { ...r, ...row } : r) : [row, ...list];
       if (provider === 'stripe') stripeRecebimentos = list; else mpRecebimentos = list;
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => { if (epoch === painelEpoch) repaint(); }, 180);
@@ -587,20 +796,75 @@
   iniciarRealtimeStripe = () => realtime('stripe');
   document.addEventListener('click', event => {
     const button = event.target.closest?.('[data-finance-page]');
-    if (button && paginaLiberada(button.dataset.financePage)) showTab(button.dataset.financePage);
+    if (button && paginaLiberada(button.dataset.financePage)) {
+      const destination = button.dataset.financeFocus;
+      if (destination) openReceipts(destination, 'all', 'approved');
+      else showTab(button.dataset.financePage);
+    }
+    const project = event.target.closest?.('[data-finance-destination]');
+    if (project) openReceipts(project.dataset.financeDestination, project.dataset.financePeriod);
+    const step = event.target.closest?.('[data-finance-step]');
+    if (step) {
+      receiptFilters.page += Number(step.dataset.financeStep);
+      renderReconciliationRows();
+      byId('fin-receipt-count')?.focus();
+    }
   });
-  document.addEventListener('change', event => {
-    const select = event.target;
-    if (!select.dataset?.financeProvider || !select.value) return;
-    if (select.dataset.financeProvider === 'stripe') atribuirEmpresaStripe(select.dataset.financeRow, select.value);
-    else if (select.dataset.financeProvider === 'mp') atribuirEmpresaMP(select.dataset.financeRow, select.value);
+  function openReceipts(destination, period, status = 'all') {
+    if (!paginaLiberada('stripe') && !paginaLiberada('mercadopago')) return;
+    receiptFilters = { ...defaultFilters(), destination, period, status };
+    showTab('financeiro');
+    renderReconciliation();
+    byId('fin-receipts-title')?.focus();
+  }
+  document.addEventListener('input', event => {
+    if (event.target.id !== 'fin-receipt-search') return;
+    receiptFilters.search = event.target.value;
+    receiptFilters.page = 1;
+    renderReconciliationRows();
+  });
+  document.addEventListener('change', async event => {
+    const field = event.target;
+    for (const key of ['period', 'provider', 'status', 'destination']) if (field.id === 'fin-receipt-' + key) {
+      receiptFilters[key] = field.value;
+      receiptFilters.page = 1;
+      renderReconciliationRows();
+      return;
+    }
+    const provider = field.dataset?.financeAssign;
+    if (!provider) return;
+    const epoch = painelEpoch;
+    const id = field.dataset.financeRow;
+    const before = receipts().find(r => r.provider === provider && String(r.row.id) === id)?.company || '';
+    field.disabled = true;
+    try {
+      const finished = await (provider === 'stripe' ? atribuirEmpresaStripe(id, field.value) : atribuirEmpresaMP(id, field.value));
+      if (!finished && epoch === painelEpoch) field.value = before;
+    } finally {
+      if (epoch === painelEpoch) {
+        field.disabled = false;
+        if (!field.isConnected && byId('tab-financeiro')?.classList.contains('active') && document.activeElement === document.body) {
+          const replacement = [...document.querySelectorAll('[data-finance-assign]')].find(item => item.dataset.financeAssign === provider && item.dataset.financeRow === id);
+          (replacement || byId('fin-receipt-search'))?.focus();
+        }
+      }
+    }
   });
   const previousReset = resetState;
-  resetState = async function (...args) { clearTimeout(refreshTimer); refreshTimer = null; loadFailures = []; receiptRevision.mp++; receiptRevision.stripe++; receiptRequest.mp++; receiptRequest.stripe++; await previousReset(...args); };
+  resetState = async function (...args) {
+    clearTimeout(refreshTimer); refreshTimer = null;
+    loadFailures = []; indexCache = null; receiptFilters = defaultFilters();
+    for (const provider of ['mp', 'stripe']) { receiptRevision[provider]++; receiptRequest[provider]++; }
+    const result = await previousReset(...args);
+    const search = byId('fin-receipt-search');
+    if (search) search.value = '';
+    return result;
+  };
   window.recibosFinanceiros = receipts;
   window.getPendingReceipts = pendingReceipts;
   window.dashboardFinancialInsights = financialInsights;
   window.DashboardFinance = { receipts, pendingReceipts, financialInsights, forecast, monthsToDate, favorableStatus,
     projectSummary: (id, month) => getEmpresaMes(id, month), fees, matchedManualFees, formatMoney, renderInsights,
+    receiptChanged: provider => { receiptRevision[provider]++; }, reloadReceipts: loadReceipts, receiptDate,
     setLoadFailures: failures => { loadFailures = failures || []; } };
 })();

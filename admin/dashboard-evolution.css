@@ -6,6 +6,20 @@
 .finance-summary>div{padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;min-width:0}
 .finance-summary span{display:block;color:#6b7280;font-size:11px;line-height:1.5}.finance-summary strong{display:block;color:#111827;font-size:16px;margin-top:4px;overflow-wrap:anywhere}
 .receipt-source{display:block;color:#6b7280;font-size:10px;margin-top:4px}
+.receipt-filters{display:grid;grid-template-columns:2fr repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.receipt-filters label{display:grid;gap:5px;color:#374151;font-size:.78rem;font-weight:700;min-width:0}
+.receipt-filters input,.receipt-filters select,.receipt-destination{width:100%;min-width:0;border:1px solid #d1d5db;border-radius:6px;background:#fff;padding:7px;color:#111827;font:inherit}
+.receipt-filters input,.receipt-filters select{min-height:38px}
+.receipt-destination{min-width:150px;font-size:12px}
+.receipt-table td{vertical-align:top}
+.receipt-table td:nth-child(n+5):nth-child(-n+7){white-space:nowrap}
+.receipt-breakdown{margin:0 0 14px}
+.receipt-breakdown summary{cursor:pointer;color:#1d4ed8;font-weight:700;font-size:.82rem;margin-bottom:8px}
+.receipt-pagination{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 16px;color:#475569;font-size:.82rem}
+.finance-action{border:1px solid #bfdbfe;border-radius:6px;color:#1d4ed8;background:#eff6ff;padding:7px 11px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+.finance-action:disabled{opacity:.5;cursor:default}
+.receipt-warning{font-size:.82rem;color:#92400e;margin:0 0 10px}
+@media(max-width:950px){.receipt-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.receipt-filters label:first-child{grid-column:1/-1}}
 .stripe-accounts{margin:14px 0 10px}.stripe-accounts[hidden]{display:none}.stripe-account{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:8px;padding:12px 0;border-top:1px solid #ede9fe;align-items:start}.stripe-account dt{font-size:12px;font-weight:700;color:#4c1d95;overflow-wrap:anywhere}.stripe-account dd{margin:0;text-align:right;overflow-wrap:anywhere}.stripe-account strong{font-size:16px;color:#111827}.stripe-account strong.negative{color:#dc2626}.stripe-account small{display:block;font-size:11px;line-height:1.7;color:#6b7280;margin-top:4px}
 #financeiro-inteligencia table,#estrutura-projecao table{width:100%;min-width:620px;font-size:12px}
 #financeiro-inteligencia select{max-width:220px;width:100%;padding:7px;border:1px solid #d1d5db;border-radius:6px;background:#fff}

@@ -2,7 +2,7 @@
 
 Stories de desenvolvimento da Arcade Hub criadas via `@sm *draft` ou `@sm *create-story`.
 
-## Inventário em 2026-11-16
+## Inventário em 2026-11-18
 
 | Story | Entrega | Status do documento |
 | --- | --- | --- |
@@ -15,6 +15,7 @@ Stories de desenvolvimento da Arcade Hub criadas via `@sm *draft` ou `@sm *creat
 | [1.7](1.7.story.md) | Segurança, sessão, persistência e rascunhos | Ready for Review; publicada READY. Visual autenticado observado em 16/11/2026; parecer de 14/11 permanece histórico |
 | [1.8](1.8.story.md) | Financeiro unificado, conciliação e cenários de caixa | Ready for Review; card Stripe de `12304ab` conferido no admin em 16/11/2026, total e contas Geral/ClickDrop separados |
 | [1.9](1.9.story.md) | Inteligência operacional e próxima ação | Ready for Review; publicada READY. Painel, leads e calendário observados em 16/11/2026; parecer de 14/11 permanece histórico |
+| [1.10](1.10.story.md) | Revisão do dashboard e pagamentos por projeto | Ready for Review. Regressões e navegação simulada em desktop e celular aprovadas |
 
 Estado consolidado e limites de validação: [contexto do projeto](../PROJECT_CONTEXT.md). Atualização de memória/documentação não reabre stories nem altera pareceres históricos.
 
