@@ -20,9 +20,52 @@ test('report generation is identified separately from its future period end', ()
 // Independent review regressions: these assert the required, trustworthy behavior.
 test('unknown gateway net is never presented as a known liquid total', () => {
   const h = dashboardHarness();
-  h.run("stripeRecebimentos=[{stripe_id:'ch_unknown',empresa_id:'clickdrop',status:'approved',valor:100,valor_liquido:null,taxa:null,moeda:'BRL',date_approved:'2026-11-14T12:00:00Z'}];stripeSaldoLoading=true;renderStripe()");
+  h.run("stripeRecebimentos=[{stripe_id:'ch_unknown',empresa_id:'clickdrop',status:'approved',valor:100,valor_liquido:null,taxa:null,moeda:'BRL',date_approved:'2026-11-14T12:00:00Z'}];stripeSaldoLoading=true;renderCartoesFinanceiro()");
   assert.doesNotMatch(h.element('stripe-kpis').innerHTML, /Líquido[^<]*<[^>]*>[^<]*100,00/);
   assert.equal(h.run("getEmpresaMes('clickdrop','Nov').liquidoGateway"), null);
+});
+
+test('the Stripe shortcut clears conflicting filters and includes older payments', () => {
+  const h = dashboardHarness();
+  h.run(`stripeRecebimentos=[{id:'st',stripe_id:'ch_old',empresa_id:'clickdrop',status:'approved',valor:10,date_created:'2025-12-01T12:00:00Z'}];
+    mpRecebimentos=[{id:'mp',mp_payment_id:321,status:'approved',valor:20,date_created:'2026-11-14T12:00:00Z'}];renderCartoesFinanceiro()`);
+  const search = h.element('fin-receipt-search');
+  search.value = 'inexistente';
+  h.events.get('document:input')({ target: search });
+  h.events.get('document:click')({ target: { closest: selector => selector === '[data-finance-provider]' ? { dataset: { financeProvider: 'stripe' } } : null } });
+  assert.equal(search.value, '');
+  assert.equal(h.element('fin-receipt-provider').value, 'stripe');
+  assert.equal(h.element('fin-receipt-period').value, 'all');
+  assert.match(h.element('fin-receipt-list').innerHTML, /ch_old/);
+  assert.doesNotMatch(h.element('fin-receipt-list').innerHTML, /Mercado Pago/);
+});
+
+test('Stripe receipt failures appear separately from a successful balance and recover on retry', async () => {
+  let unavailable = true;
+  const h = dashboardHarness({
+    query: call => call.table === 'stripe_recebimentos' && unavailable ? { error: { message: 'offline' } } : { data: [] },
+    invoke: () => ({ data: { ok: true, saldo_ok: true, saldo: { disponivel: 1, a_liberar: 2 } } }),
+  });
+  h.context.renderAll = () => h.run('renderCartoesFinanceiro()');
+  assert.equal(await h.context.DashboardFinance.reloadReceipts('stripe'), false);
+  await h.run('carregarSaldoStripe()');
+  assert.equal(h.run('saldoDisponivelStripe()'), 1);
+  assert.match(h.element('fin-receipt-summary').innerHTML, /Falha ao consultar recebimentos de Stripe/);
+  assert.match(h.element('fin-receipt-list').innerHTML, /consulta incompleta/);
+  unavailable = false;
+  assert.equal(await h.context.DashboardFinance.reloadReceipts('stripe'), true);
+  assert.doesNotMatch(h.element('fin-receipt-summary').innerHTML, /Falha/);
+  assert.match(h.element('fin-receipt-list').innerHTML, /Nenhum pagamento corresponde/);
+});
+
+test('Stripe account errors from a failed balance request remain visible in the card', async () => {
+  const h = dashboardHarness({ invoke: () => ({ error: { context: { status: 502, json: async () => ({
+    ok: false, error: 'Consulta Stripe indisponível', contas: [{ id: 'clickdrop', ok: false, error: 'Consulta recusada' }],
+  }) } } }) });
+  await h.run('carregarSaldoStripe()');
+  assert.equal(h.element('fin-stripe-sub').textContent, 'Consulta Stripe indisponível');
+  assert.match(h.element('fin-stripe-contas').innerHTML, /Stripe ClickDrop[\s\S]+Consulta recusada/);
+  assert.equal(h.run('saldoDisponivelStripe()'), null);
 });
 
 test('report preparing retains the last confirmed MP amount as stale', async () => {

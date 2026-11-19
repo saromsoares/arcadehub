@@ -55,10 +55,10 @@ test('explicit exact manual fee reference prevents double deduction; mismatch is
 });
 test('USD and BRL are never aggregated or formatted as the same currency', () => {
   const h = dashboardHarness(); receipt(h, 'valor:100,valor_liquido:96,taxa:4');
-  h.run("stripeRecebimentos.push({...stripeRecebimentos[0],id:'usd',stripe_id:'ch_usd',moeda:'USD'}) ;stripeSaldo={ok:false};stripeSaldoLoading=true;renderStripe()");
+  h.run("stripeRecebimentos.push({...stripeRecebimentos[0],id:'usd',stripe_id:'ch_usd',moeda:'USD'}) ;stripeSaldo={ok:false};stripeSaldoLoading=true;renderCartoesFinanceiro()");
   assert.equal(h.run("getEmpresaMes('clickdrop','Nov').receita"), 100);
-  assert.match(h.element('stripe-kpis').innerHTML, /USD/); assert.match(h.element('stripe-kpis').innerHTML, /BRL/);
-  assert.doesNotMatch(h.element('stripe-kpis').innerHTML, /192,00/);
+  assert.match(h.element('fin-receipt-summary').innerHTML, /USD/); assert.match(h.element('fin-receipt-summary').innerHTML, /BRL/);
+  assert.doesNotMatch(h.element('fin-receipt-summary').innerHTML, /192,00/);
 });
 test('unclassified queue uses approved permitted receipts and cannot leak blocked providers', () => {
   const h = dashboardHarness(); receipt(h, "empresa_id:null");

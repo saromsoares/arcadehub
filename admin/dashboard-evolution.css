@@ -24,6 +24,15 @@
 .stripe-accounts{margin:14px 0 10px}.stripe-accounts[hidden]{display:none}.stripe-account{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:8px;padding:12px 0;border-top:1px solid #ede9fe;align-items:start}.stripe-account dt{font-size:12px;font-weight:700;color:#4c1d95;overflow-wrap:anywhere}.stripe-account dd{margin:0;text-align:right;overflow-wrap:anywhere}.stripe-account strong{font-size:16px;color:#111827}.stripe-account strong.negative{color:#dc2626}.stripe-account small{display:block;font-size:11px;line-height:1.7;color:#6b7280;margin-top:4px}
 #financeiro-inteligencia table,#estrutura-projecao table{width:100%;min-width:620px;font-size:12px}
 #financeiro-inteligencia .table-wrap,#estrutura-projecao .table-wrap{overflow-x:auto}
+.fin-section-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.fin-section-head #fin-receipts-title{margin:0;scroll-margin-top:70px}
+.fin-card-action{margin-top:12px}
+.fin-details{margin:12px 0;padding:0 14px;background:#fff;border:1px solid #e5e7eb;border-radius:10px}
+.fin-details>summary{padding:13px 0;cursor:pointer;color:#1f2937;font-size:.875rem;font-weight:700}
+.fin-details[open]{padding-bottom:14px}
+.fin-details .table-wrap{overflow-x:auto;margin:0}
+.fin-details table{min-width:620px}
+#nu-receber-fin{margin-top:10px}
 button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
 @media(max-width:700px){
   .insights-grid,.finance-summary{grid-template-columns:1fr}
@@ -39,5 +48,12 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,te
   .receipt-table tbody td:nth-child(4){grid-column:4/-1;grid-row:2}
   .receipt-table tbody td:nth-child(n+5):nth-child(-n+7){grid-column:span 2}
   .receipt-table .receipt-cell-label{display:block;margin-bottom:4px;color:#475569;font-weight:700}
-  .receipt-table .receipt-destination{min-height:38px}
+  #tab-financeiro :is(.fin-head button,.finance-action,.receipt-filters input,.receipt-filters select,.receipt-destination){min-height:44px}
+  #tab-financeiro :is(.receipt-filters input,.receipt-filters select,.receipt-destination){font-size:16px}
+  #tab-financeiro .fin-card{padding:12px 14px}
+  #tab-financeiro .fin-head{margin-bottom:6px;flex-wrap:wrap}
+  #tab-financeiro .fin-valor{font-size:23px}
+  .fin-card-action{width:100%;text-align:left}
+  .fin-section-head .finance-action{flex:0 0 auto}
+  .fin-details>summary{min-height:44px}
 }

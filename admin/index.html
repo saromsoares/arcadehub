@@ -19,7 +19,7 @@
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 <title>Arcade Hub | Dashboard</title>
 <link rel="icon" type="image/png" href="../favicon.png" />
-<link rel="stylesheet" href="dashboard-evolution.css?v=20261118-financeiro-mobile" />
+<link rel="stylesheet" href="dashboard-evolution.css?v=20261119-financeiro-iphone" />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" crossorigin="anonymous" />
 <!-- Versões pinadas para reduzir superfície de supply-chain; ver docs/runbooks/cdn-pinning.md para rotação -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
@@ -1172,7 +1172,7 @@
   <!-- FINANCEIRO: Mercado Pago, Stripe e Nubank -->
   <div id="tab-financeiro" class="tab-content">
     <div class="page-title" id="pt-financeiro">Financeiro</div>
-    <div class="page-sub" id="ps-financeiro">Saldos do Mercado Pago, da Stripe e do Nu Empresas. O Caixa Atual soma só o disponível do Mercado Pago e da Stripe.</div>
+    <div class="page-sub" id="ps-financeiro">Saldos das contas e pagamentos por projeto.</div>
 
     <div class="fin-grid" id="fin-saldos">
       <article class="fin-card mp" id="fin-card-mp">
@@ -1186,6 +1186,7 @@
         <div class="fin-sub" id="fin-mp-sub">consultando</div>
         <div class="fin-extra" id="fin-mp-extra"></div>
         <div class="fin-ts" id="mp-saldo-ts"></div>
+        <button type="button" class="finance-action fin-card-action" data-finance-provider="mp">Ver pagamentos do Mercado Pago</button>
       </article>
       <article class="fin-card stripe" id="fin-card-stripe">
         <div class="fin-head">
@@ -1199,6 +1200,7 @@
         <dl class="stripe-accounts" id="fin-stripe-contas" hidden></dl>
         <div class="fin-extra" id="fin-stripe-extra"></div>
         <div class="fin-ts" id="stripe-saldo-ts"></div>
+        <button type="button" class="finance-action fin-card-action" data-finance-provider="stripe">Ver pagamentos da Stripe</button>
       </article>
       <article class="fin-card nu" id="fin-card-nu">
         <div class="fin-head">
@@ -1213,7 +1215,10 @@
     </div>
     <p class="fin-nota" id="fin-nota">O valor a liberar fica de fora do Caixa Atual. O Nu Empresas pode atrasar até 24 horas no Meu Pluggy.</p>
     <section id="financeiro-inteligencia" aria-labelledby="fin-receipts-title" hidden>
-      <h2 class="section-title" id="fin-receipts-title" tabindex="-1">Pagamentos por projeto</h2>
+      <div class="fin-section-head">
+        <h2 class="section-title" id="fin-receipts-title" tabindex="-1">Pagamentos por projeto</h2>
+        <button type="button" class="finance-action" data-finance-reset>Limpar filtros</button>
+      </div>
       <div class="receipt-filters">
         <label>Busca<input type="search" id="fin-receipt-search" placeholder="Descrição, pagador ou ID" autocomplete="off"></label>
         <label>Período<select id="fin-receipt-period"></select></label>
@@ -1226,14 +1231,16 @@
       </div>
       <div id="fin-receipt-summary"></div>
       <div id="fin-receipt-list"></div>
-      <div id="fin-receipt-history"></div>
     </section>
 
-    <div id="fin-nu-detalhe">
-      <div class="section-title" style="flex-wrap:wrap;">
-        <span>Nubank · conta</span>
-        <button type="button" id="nu-receber-fin-copiar" onclick="copiarDadosReceber('nu-receber-fin','nu-receber-fin-copiar')" style="margin-left:auto;background:none;border:none;color:#1E6FFF;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Copiar todos</button>
-      </div>
+    <details class="fin-details" id="fin-stripe-detalhe" hidden>
+      <summary>Stripe · extrato de saldo e sincronização</summary>
+      <div id="fin-receipt-history"></div>
+    </details>
+
+    <details class="fin-details" id="fin-nu-detalhe">
+      <summary>Nubank · dados da conta</summary>
+      <button type="button" class="finance-action" id="nu-receber-fin-copiar" onclick="copiarDadosReceber('nu-receber-fin','nu-receber-fin-copiar')">Copiar dados da conta</button>
       <dl class="emp-card" id="nu-receber-fin">
         <div class="emp-row"><dt>Nome</dt><dd>ARCADE<span class="sub">Nu Empresas</span></dd></div>
         <div class="emp-row"><dt>Agência</dt><dd>0001</dd></div>
@@ -1241,33 +1248,7 @@
         <div class="emp-row"><dt>Banco</dt><dd>0260</dd></div>
         <div class="emp-row"><dt>Instituição</dt><dd>Nu Pagamentos S.A. - Instituição de Pagamento</dd></div>
       </dl>
-    </div>
-
-    <div id="fin-mp-detalhe">
-      <div class="section-title"><span>Mercado Pago · recebimentos recentes</span></div>
-      <div class="kpi-grid" id="mp-kpis"></div>
-      <div class="table-wrap" style="overflow-x:auto;">
-        <table style="min-width:900px;">
-          <thead><tr>
-            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Taxa</th><th>Líquido</th>
-          </tr></thead>
-          <tbody id="mp-receb-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="fin-stripe-detalhe">
-      <div class="section-title"><span>Stripe · recebimentos recentes</span></div>
-      <div class="kpi-grid" id="stripe-kpis"></div>
-      <div class="table-wrap" style="overflow-x:auto;">
-        <table style="min-width:900px;">
-          <thead><tr>
-            <th>Data</th><th>Descrição</th><th>Vínculo</th><th>Pagador</th><th>Método</th><th>Status</th><th>Valor</th><th>Taxa</th><th>Líquido</th>
-          </tr></thead>
-          <tbody id="stripe-receb-body"></tbody>
-        </table>
-      </div>
-    </div>
+    </details>
   </div>
 
   <!-- DADOS DA EMPRESA -->
@@ -3281,7 +3262,6 @@ function renderCartoesFinanceiro() {
   const mpOk = paginaLiberada('mercadopago');
   const stOk = paginaLiberada('stripe');
   mostrarBlocoFinanceiro('fin-card-mp', mpOk);
-  mostrarBlocoFinanceiro('fin-mp-detalhe', mpOk);
   mostrarBlocoFinanceiro('fin-card-stripe', stOk);
   mostrarBlocoFinanceiro('fin-stripe-detalhe', stOk);
   if (mpOk) pintarCartaoSaldo('mp', estadoCartaoMercadoPago());
@@ -6451,7 +6431,7 @@ async function initDashboard(epoch) {
 }
 </script>
 <script src="dashboard-security.js?v=20261118-financeiro"></script>
-<script src="dashboard-finance.js?v=20261118-financeiro-mobile"></script>
+<script src="dashboard-finance.js?v=20261119-financeiro-iphone"></script>
 <script src="dashboard-operations.js?v=20261118-financeiro"></script>
 </body>
 </html>

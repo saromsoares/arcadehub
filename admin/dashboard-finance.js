@@ -9,7 +9,7 @@
   const byId = id => document.getElementById(id);
   const html = value => escapeHtml(String(value ?? ''));
   const zone = 'America/Sao_Paulo';
-  const monthKey = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const localDay = new Intl.DateTimeFormat('pt-BR', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' });
   const localDate = new Intl.DateTimeFormat('pt-BR', { timeZone: zone, dateStyle: 'short' });
   const companyNames = new Map(COMPANIES.map(c => [c.id, c.name]));
   const providerNames = { mp: 'Mercado Pago', stripe: 'Stripe' };
@@ -17,7 +17,7 @@
     in_process: 'Em análise', cancelled: 'Cancelado', charged_back: 'Contestado' };
   const receiptColumns = ['Data', 'Origem e pagamento', 'Pagador', 'Situação', 'Bruto', 'Taxa', 'Líquido', 'Vínculo'];
   const receiptPageSize = 25;
-  const defaultFilters = () => ({ search: '', period: String(EXERCICIO), provider: 'all', status: 'all', destination: 'all', page: 1 });
+  const defaultFilters = () => ({ search: '', period: 'all', provider: 'all', status: 'all', destination: 'all', page: 1 });
   let receiptFilters = defaultFilters();
   const FEE_CATEGORY = 'Taxas de pagamento';
   if (!CUSTO_CATS.includes(FEE_CATEGORY)) CUSTO_CATS.push(FEE_CATEGORY);
@@ -27,8 +27,13 @@
   const receiptRevision = { mp: 0, stripe: 0 };
   const receiptRequest = { mp: 0, stripe: 0 };
 
+  function dateKey(date) {
+    const parts = Object.fromEntries(localDay.formatToParts(date).map(({ type, value }) => [type, value]));
+    return parts.year + '-' + parts.month + '-' + parts.day;
+  }
+
   function monthsToDate(now = new Date()) {
-    const [year, month] = monthKey.format(now).split('-').map(Number);
+    const [year, month] = dateKey(now).split('-').map(Number);
     if (EXERCICIO > year) return [];
     return MONTHS_OPERACIONAIS.filter(m => EXERCICIO < year || MONTHS.indexOf(m) < month);
   }
@@ -43,7 +48,7 @@
     const cached = normalizedRows.get(row);
     if (cached) return cached;
     const date = dateOf(row);
-    const period = date ? monthKey.format(date).slice(0, 7) : '';
+    const period = date ? dateKey(date).slice(0, 7) : '';
     const gross = known(row.valor) ? num(row.valor) : null;
     const net = known(row.valor_liquido) ? num(row.valor_liquido) : null;
     const fee = known(row.taxa) ? num(row.taxa) : row.status === 'approved' && gross !== null && net !== null ? money(gross - net) : null;
@@ -189,7 +194,7 @@
       .reduce((n, r) => n + (r.fee ?? 0), 0));
   }
   function aporteMonths() {
-    const [year, month] = monthKey.format(new Date()).split('-').map(Number);
+    const [year, month] = dateKey(new Date()).split('-').map(Number);
     return MONTHS.filter((_, index) => EXERCICIO < year || (EXERCICIO === year && index < month));
   }
   function aporte(provider, socio, month) {
@@ -402,41 +407,8 @@
     const account = source === 'clickdrop' ? 'Conta ClickDrop' : source === 'arcade_hub' ? 'Conta Geral' : '';
     return html(r.row.descricao || 'Pagamento') + '<small class="receipt-source">' + html([account, r.externalId].filter(Boolean).join(' · ')) + '</small>';
   }
-  function renderReceiptTable(provider) {
-    const page = provider === 'stripe' ? 'stripe' : 'mercadopago';
-    const key = provider === 'stripe' ? 'stripe' : 'mp';
-    if (!paginaLiberada(page)) {
-      for (const id of [key + '-kpis', key + '-receb-body']) if (byId(id)) byId(id).innerHTML = '';
-      return;
-    }
-    const list = receipts().filter(r => r.provider === provider);
-    const approved = list.filter(r => r.row.status === 'approved');
-    const period = monthKey.format(new Date()).slice(0, 7);
-    const totals = new Map();
-    for (const r of approved) {
-      const group = totals.get(r.currency) || { total: 0, month: 0, count: 0, unknown: 0, monthCount: 0, monthKnown: 0 };
-      if (r.net !== null) group.total += r.net; else group.unknown++;
-      group.count++;
-      if (r.period === period) {
-        group.monthCount++;
-        if (r.net !== null) { group.month += r.net; group.monthKnown++; }
-      }
-      totals.set(r.currency, group);
-    }
-    const kpis = byId(key + '-kpis');
-    if (kpis) kpis.innerHTML = [...totals].map(([code, t]) => kpiCard('Líquido informado no mês · ' + html(code),
-      amount(t.monthKnown || !t.monthCount ? t.month : null, code), t.monthCount - t.monthKnown ? (t.monthCount - t.monthKnown) + ' sem líquido informado no mês' : 'Pagamentos aprovados', provider === 'stripe' ? '#635BFF' : '#009EE3')
-      + kpiCard('Líquido informado no histórico · ' + html(code), amount(t.unknown < t.count ? t.total : null, code), t.count + ' aprovado(s)' + (t.unknown ? ' · ' + t.unknown + ' sem líquido informado' : ''), '#6D28D9')).join('');
-    const body = byId(key + '-receb-body');
-    if (!body) return;
-    body.innerHTML = list.length ? sortedReceipts(list).slice(0, receiptPageSize).map(r =>
-      '<tr><td>' + receiptDate(r) + '</td><td>' + receiptContext(r) + '</td><td>' + receiptSelect(r) + '</td><td>' + html(r.row.payer_nome || r.row.payer_email || '—')
-      + '</td><td>' + html(r.row.tipo_pagamento || '—') + '</td><td>' + html(statuses[r.row.status] || r.row.status || '—') + '</td><td>' + amount(r.gross, r.currency)
-      + '</td><td>' + amount(r.fee, r.currency) + '</td><td>' + amount(r.net, r.currency) + '</td></tr>').join('')
-      : '<tr><td colspan="9">Nenhum recebimento carregado.</td></tr>';
-  }
-  renderStripe = function () { iniciarRealtimeStripe(); renderReceiptTable('stripe'); };
-  renderMercadoPago = function () { iniciarRealtimeMP(); renderReceiptTable('mp'); };
+  renderStripe = iniciarRealtimeStripe = () => realtime('stripe');
+  renderMercadoPago = iniciarRealtimeMP = () => realtime('mp');
 
   function renderReconciliation() {
     const box = byId('financeiro-inteligencia');
@@ -472,7 +444,7 @@
         ? '<p class="insight-note">Revisão histórica Stripe: ' + stripeSaldo.historico.map(h => html(h.account_key || h.id || '') + ' · '
           + (h.full_completed_at ? 'última rodada concluída em ' + new Date(h.full_completed_at).toLocaleString('pt-BR') : 'primeira rodada ainda não concluída')
           + (h.cursor_full ? ' · varredura em andamento' : '') + (h.error_sanitized ? ' · ' + html(h.error_sanitized) : '')).join(' | ') + '</p>' : '')
-      + renderStripeMovements();
+      + renderStripeMovements() || '<p class="insight-note">Extrato indisponível nesta consulta.</p>';
   }
   function filteredReceipts() {
     const { search, period, provider, status, destination } = receiptFilters;
@@ -537,8 +509,12 @@
       + (g.counts[field] && g.counts[field] < g.count ? '<small class="receipt-source">' + g.counts[field] + '/' + g.count + ' com valor</small>' : '');
     const summary = byId('fin-receipt-summary');
     const expanded = summary.querySelector('details')?.open;
-    summary.innerHTML = (loadFailures.some(label => label.startsWith('recebimentos'))
-      ? '<p class="receipt-warning" role="status">Leitura incompleta. A última lista confirmada foi preservada quando disponível.</p>' : '')
+    const failedProviders = ['mp', 'stripe'].filter(provider => (receiptFilters.provider === 'all' || receiptFilters.provider === provider)
+      && paginaLiberada(provider === 'mp' ? 'mercadopago' : 'stripe')
+      && loadFailures.includes('recebimentos ' + providerNames[provider]));
+    summary.innerHTML = (failedProviders.length
+      ? '<p class="receipt-warning" role="status">Falha ao consultar recebimentos de ' + failedProviders.map(provider => providerNames[provider]).join(' e ')
+        + '. Últimos dados confirmados exibidos quando disponíveis.</p>' : '')
       + '<p class="insight-note" aria-live="polite">' + approved.length + ' aprovados · ' + complete + ' vinculados a projeto ou aporte · '
       + pending + ' sem vínculo · ' + (approved.length - complete - pending) + ' históricos · ' + review + ' para conciliar.</p>'
       + (groups.length ? '<details class="receipt-breakdown"' + (expanded ? ' open' : '') + '><summary>Totais dos aprovados por destino e moeda</summary>'
@@ -556,7 +532,9 @@
       + Math.min(start + receiptPageSize, list.length) + ' de ' + list.length + '</span>'
       + '<button class="finance-action" type="button" data-finance-step="-1"' + (receiptFilters.page === 1 ? ' disabled' : '') + '>Anterior</button>'
       + '<button class="finance-action" type="button" data-finance-step="1"' + (receiptFilters.page === pages ? ' disabled' : '') + '>Próxima</button></div>'
-      : '<p class="insight-note" role="status">Nenhum pagamento corresponde aos filtros.</p>';
+      : '<p class="insight-note" role="status">' + (failedProviders.length
+        ? 'A consulta incompleta impede confirmar se há pagamentos neste recorte.'
+        : 'Nenhum pagamento corresponde aos filtros.') + '</p>';
   }
   function renderStripeMovements() {
     if (!paginaLiberada('stripe') || !stripeSaldo?.ok) return '';
@@ -573,7 +551,7 @@
   }
   function forecast(now = new Date()) {
     const elapsed = monthsToDate(now);
-    const today = monthKey.format(now);
+    const today = dateKey(now);
     const currentPeriod = today.slice(0, 7);
     const closed = elapsed.filter(m => EXERCICIO + '-' + String(MONTHS.indexOf(m) + 1).padStart(2, '0') < currentPeriod).slice(-3);
     const average = closed.length ? money(closed.reduce((n, m) => n + getTotalRealizadoMes(m), 0) / closed.length) : null;
@@ -639,7 +617,8 @@
     box.innerHTML = accounts.map(account => {
       const label = account.id === 'arcade_hub' || account.nome === 'ARCADE HUB TECH' ? 'Stripe Geral'
         : account.id === 'clickdrop' || account.nome === 'ClickDrop' ? 'Stripe ClickDrop' : 'Stripe ' + (account.nome || 'Conta');
-      if (!account.ok || !account.saldo) return '<div class="stripe-account"><dt>' + html(label) + '</dt><dd><strong>Sem leitura</strong></dd></div>';
+      if (!account.ok || !account.saldo) return '<div class="stripe-account"><dt>' + html(label)
+        + '</dt><dd><strong>Sem leitura</strong>' + (account.error ? '<small>' + html(account.error) + '</small>' : '') + '</dd></div>';
       const balance = account.saldo;
       const available = known(balance.disponivel) ? num(balance.disponivel) : null;
       const pending = known(balance.a_liberar) ? num(balance.a_liberar) : null;
@@ -746,7 +725,12 @@
     const button = byId(key + '-btn-refresh');
     if (button) { button.disabled = true; button.textContent = 'Consultando…'; }
     try {
+      if (paginaLiberada(provider === 'mp' ? 'mercadopago' : 'stripe') && byId('tab-financeiro')?.classList.contains('active')) {
+        void loadReceipts(provider);
+      }
       const result = await comTempoLimite(sb.functions.invoke(provider === 'stripe' ? 'stripe-saldo' : 'mp-saldo'), 22000);
+      const failureBody = provider === 'stripe' && result.error?.context?.status === 502
+        ? await result.error.context.json().catch(() => null) : null;
       if (epoch !== painelEpoch) return;
       if (result.error || !result.data?.ok || !result.data?.saldo_ok || !result.data?.saldo) {
         const previous = provider === 'stripe' ? stripeSaldo : mpSaldo;
@@ -756,12 +740,11 @@
           previous.saldo_erro = result.data?.saldo_erro || 'indisponivel';
           toast('A consulta falhou. Mantivemos o último saldo confirmado com aviso de leitura antiga.', 'erro');
         } else {
-          const failure = result.data?.ok ? result.data : { ok: false, error: 'Não foi possível consultar o saldo.' };
+          const failure = result.data ?? failureBody ?? { ok: false, error: 'Não foi possível consultar o saldo.' };
           if (provider === 'stripe') stripeSaldo = failure; else mpSaldo = failure;
         }
       } else if (provider === 'stripe') { stripeSaldo = result.data; stripeSaldoTs = new Date(); }
       else { mpSaldo = result.data; mpSaldoTs = new Date(); if (result.data.saldo_ok) mpRelatorioEsperas = 0; }
-      if (paginaLiberada(provider === 'mp' ? 'mercadopago' : 'stripe') && byId('tab-financeiro')?.classList.contains('active')) await loadReceipts(provider);
     } finally {
       if (epoch === painelEpoch) {
         if (provider === 'stripe') stripeSaldoLoading = false; else mpSaldoLoading = false;
@@ -802,8 +785,6 @@
     }, 60000);
     if (provider === 'stripe') stripePollTimer = timer; else mpPollTimer = timer;
   }
-  iniciarRealtimeMP = () => realtime('mp');
-  iniciarRealtimeStripe = () => realtime('stripe');
   document.addEventListener('click', event => {
     const button = event.target.closest?.('[data-finance-page]');
     if (button && paginaLiberada(button.dataset.financePage)) {
@@ -813,6 +794,16 @@
     }
     const project = event.target.closest?.('[data-finance-destination]');
     if (project) openReceipts(project.dataset.financeDestination, project.dataset.financePeriod);
+    const provider = event.target.closest?.('[data-finance-provider]')?.dataset.financeProvider;
+    if (provider && paginaLiberada(provider === 'stripe' ? 'stripe' : 'mercadopago')) {
+      receiptFilters = { ...defaultFilters(), provider };
+      renderReconciliation();
+      byId('fin-receipts-title')?.focus();
+    }
+    if (event.target.closest?.('[data-finance-reset]')) {
+      receiptFilters = defaultFilters();
+      renderReconciliation();
+    }
     const step = event.target.closest?.('[data-finance-step]');
     if (step) {
       receiptFilters.page += Number(step.dataset.financeStep);
