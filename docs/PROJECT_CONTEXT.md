@@ -1,8 +1,10 @@
 # Arcade Hub — contexto atual do projeto
 
-Atualizado em **2026-11-18** a partir do código, das stories e da validação no navegador. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
+Atualizado em **2026-11-19** a partir do código, das stories e da conferência de produção. Este é o ponto de entrada versionado para retomar o trabalho. Estados externos abaixo são observações datadas, não monitoramento contínuo. Não armazenar senhas, tokens ou conteúdo de mensagens nesta documentação.
 
 **Última entrega de produto confirmada.** A revisão financeira e os pagamentos por projeto da [story 1.10](stories/1.10.story.md) estão em produção no commit `e8c706935b8c66d475406581fab1fffa8d953ff9`. O deployment Vercel `dpl_CPYCjp8C2yUFTFXMxFKecbxrkfof` estava **READY** em 18/11/2026 às 23:49 UTC. Admin, três módulos JS e CSS responderam HTTP 200 com bytes idênticos ao Git. Evidência local `.aiox/dashboard-finance-publication-20261118.json`. A entrega de 14/11, que consolidou o card Stripe e os saldos por conta, foi verificada separadamente em `.aiox/stripe-card-publication.json`.
+
+**Revalidação em 19/11/2026 às 04:44 (São Paulo).** A branch `main` local e no GitHub apontava para `ccc32231578db7a575806f9879adeb78e8a01bc3`, que documenta a entrega. O domínio de produção apontava para esse SHA no deployment `dpl_HU29RjFnjAuBJVgTDq2ipuMs9bbz`, **READY**. A home e o admin responderam HTTP 200. Os cinco arquivos do admin foram comparados byte a byte com o Git e o cabeçalho `frame-ancestors 'none'` foi confirmado em `/admin/`. Os fluxos de vínculo da story 1.10 foram exercitados com dados sintéticos em 18/11.
 
 **Validação visual de 16/11/2026:** site público e admin autenticado conferidos no navegador, em desktop e mobile, com o console aberto. A sessão do admin era `suporte@arcadehub.tech` e, nesta data, via Financeiro, Mercado Pago e Stripe. Nenhum e-mail foi enviado e nenhum dado foi gravado ou excluído. O teclado do admin não foi percorrido campo a campo; no site público, Escape fecha o modal de contato. O único aviso de console no admin é a diretiva `frame-ancestors` entregue por `<meta>`, que o navegador ignora.
 
